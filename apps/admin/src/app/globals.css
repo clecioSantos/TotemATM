@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+/* Kiosk Mode Tweaks */
+body {
+  -webkit-touch-callout: none; /* impede menu ao segurar o toque */
+  -webkit-user-select: none; /* impede seleção de texto */
+  user-select: none;
+  touch-action: pan-y; /* apenas scroll vertical se necessário */
+}
+
+/* Esconder scrollbars para experiência premium */
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+/* Efeito de clique touch-friendly */
+button:active {
+  transform: scale(0.98);
+}
