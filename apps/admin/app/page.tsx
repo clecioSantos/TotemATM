@@ -1,11 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import "./page.css";
 
 export default function AdminPage() {
-  const [collapsed, setCollapsed] = useState(false);
-
   const stats = [
     {
       title: "Pedidos Hoje",
@@ -52,101 +49,26 @@ export default function AdminPage() {
       total: "R$ 42,50",
     },
   ];
-
-  const menuItems = [
-    "Dashboard",
-    "Pedidos",
-    "Produtos",
-    "Categorias",
-    "Cupons",
-    "Relatórios",
-    "Configurações",
-  ];
-
+  
   return (
-    <main className="admin-container">
-      {/* SIDEBAR */}
-      <aside
-        className={`sidebar ${collapsed ? "sidebar-collapsed" : ""}`}
-      >
-        <div className="sidebar-top">
-          {!collapsed && (
-            <div>
-              <h1 className="logo-title">NexOrder</h1>
-              <p className="logo-subtitle">
-                Painel Administrativo
-              </p>
-            </div>
-          )}
-
-          <button
-            className="collapse-button"
-            onClick={() => setCollapsed(!collapsed)}
-          >
-            {collapsed ? "→" : "←"}
-          </button>
-        </div>
-
-        <nav className="sidebar-menu">
-          {menuItems.map((item, index) => (
-            <button
-              key={item}
-              className={`menu-item ${
-                index === 0 ? "menu-item-active" : ""
-              }`}
-            >
-              {collapsed ? item.charAt(0) : item}
-            </button>
-          ))}
-        </nav>
-
-        {!collapsed && (
-          <div className="sidebar-status">
-            <p className="status-label">
-              Sistema Online
-            </p>
-
-            <div className="status-row">
-              <div className="status-dot" />
-
-              <span>
-                Todos serviços operando
-              </span>
-            </div>
-          </div>
-        )}
-      </aside>
-
-      {/* CONTENT */}
-      <section
-        className={`content ${
-          collapsed ? "content-expanded" : ""
-        }`}
-      >
+    <div className="dashboard-view">
         {/* HEADER */}
         <div className="header">
           <div>
-            <h2 className="page-title">
-              Dashboard
-            </h2>
-
+            <h2 className="page-title">Dashboard</h2>
             <p className="page-subtitle">
               Visão geral da operação em tempo real
             </p>
-          </div>
-
+          </div> 
           <button className="primary-button">
-            + Novo Produto
+            <span>➕</span> Novo Pedido
           </button>
         </div>
 
         {/* STATS */}
         <div className="stats-grid">
           {stats.map((item) => (
-            <div
-              key={item.title}
-              className="stat-card"
-            >
+            <div key={item.title} className="stat-card">
               <p className="stat-title">
                 {item.title}
               </p>
@@ -225,7 +147,6 @@ export default function AdminPage() {
             ))}
           </div>
         </div>
-      </section>
-    </main>
+    </div>
   );
 }

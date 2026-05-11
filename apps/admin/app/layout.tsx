@@ -1,3 +1,8 @@
+"use client";
+
+import { useState } from "react";
+import Head from "next/head";
+import Sidebar from "./components/Sidebar";
 import "./globals.css";
 
 export default function RootLayout({
@@ -5,10 +10,20 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const [collapsed, setCollapsed] = useState(false);
+  // Define as CSS custom properties (variables)
+  // These can be overridden by individual components if needed
+
+
   return (
     <html lang="pt-BR">
-      <body className="bg-zinc-100 text-zinc-900 antialiased">
-        {children}
+      <body>
+        <div className="admin-layout">
+          <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
+          <main className={`admin-content ${collapsed ? "content-expanded" : ""}`}>
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   );
