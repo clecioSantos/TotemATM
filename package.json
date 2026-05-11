@@ -2,20 +2,20 @@
   "name": "nexorder",
   "private": true,
   "packageManager": "npm@11.12.1",
-
   "workspaces": [
     "apps/*",
     "backend/*"
   ],
-
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint"
   },
-
   "devDependencies": {
     "turbo": "^2.9.9",
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "firebase": "^12.13.0"
   }
 }

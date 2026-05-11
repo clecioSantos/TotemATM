@@ -1,0 +1,36 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-card {
+  background: white;
+  width: 100%;
+  max-width: 500px;
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.modal-header h3 { font-size: 24px; margin: 0; }
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 32px;
+  cursor: pointer;
+  color: #a1a1aa;
+}
