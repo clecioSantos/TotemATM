@@ -6,3 +6,6 @@ build
 coverage
 .firebase
 .png
+backend\api\uploads\*
+.jpg
+.webp
