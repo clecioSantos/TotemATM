@@ -7,10 +7,28 @@ export interface Product {
   categoryId: string;
   active: boolean;
   featured: boolean;
-  createdAt: Date; // Using Date object after conversion from Firebase Timestamp
+  createdAt: Date;
 }
 
 export interface Category {
   id: string;
   name: string;
+}
+
+export interface OrderLineItem {
+  productId: string;
+  name: string;
+  quantity: number;
+  price: number;
+  observation?: string;
+}
+
+export interface Order {
+  id: string;
+  items: OrderLineItem[];
+  total: number;
+  status: "pending" | "preparing" | "ready" | "finished";
+  customerName?: string;
+  tableNumber?: string;
+  createdAt: Date;
 }
