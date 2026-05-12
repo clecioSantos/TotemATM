@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useProducts } from "./hooks/useProducts";
 import { useCategories } from "./hooks/useCategories";
 import ProductTable from "./components/ProductTable";
-import ProductModal from "./components/ProductModal";
+import Modal from "../components/Modal";
 import ProductForm from "./components/ProductForm"; // Keep this import
 import { Product } from "../../../../../index";
 import "./page.css";
@@ -61,7 +61,7 @@ export default function ProductsPage() {
         )}
       </section>
 
-      <ProductModal 
+      <Modal 
         isOpen={isModalOpen} 
         onClose={handleClose}
         title={editingProduct ? "Editar Produto" : "Novo Produto"}
@@ -74,7 +74,7 @@ export default function ProductsPage() {
             handleClose();
           }}
         />
-      </ProductModal>
+      </Modal>
     </div>
   );
 }

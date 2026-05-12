@@ -9,7 +9,7 @@ interface Props {
   children: React.ReactNode;
 }
 
-export default function ProductModal({ isOpen, onClose, title, children }: Props) {
+export default function Modal({ isOpen, onClose, title, children }: Props) {
   if (!isOpen) return null;
 
   return (
