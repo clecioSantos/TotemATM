@@ -22,7 +22,7 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Initialize and export services
-export const firestore = getFirestore(app);
+export const db = getFirestore(app);
 export const auth = getAuth(app);
 
 let analytics;
