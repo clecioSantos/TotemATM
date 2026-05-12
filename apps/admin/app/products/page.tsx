@@ -69,8 +69,8 @@ export default function ProductsPage() {
         <ProductForm 
           categories={categories} 
           initialData={editingProduct}
-          onSubmit={async (data) => {
-            await saveProduct(data);
+          onSubmit={async (data, file) => {
+            await saveProduct(data, file);
             handleClose();
           }}
         />

@@ -7,7 +7,7 @@ import "./styles.css";
 interface Props {
   initialData?: Product | null;
   categories: Category[];
-  onSubmit: (data: Partial<Product>) => Promise<void>;
+  onSubmit: (data: Partial<Product>, file?: File) => Promise<void>;
 }
 
 export default function ProductForm({ initialData, categories, onSubmit }: Props) {
@@ -15,6 +15,9 @@ export default function ProductForm({ initialData, categories, onSubmit }: Props
   const [price, setPrice] = useState(initialData?.price || 0);
   const [categoryId, setCategoryId] = useState(initialData?.categoryId || "");
   const [description, setDescription] = useState(initialData?.description || "");
+  const [active, setActive] = useState(initialData?.active ?? true);
+  const [featured, setFeatured] = useState(initialData?.featured ?? false);
+  const [imageFile, setImageFile] = useState<File | undefined>();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,15 +27,16 @@ export default function ProductForm({ initialData, categories, onSubmit }: Props
       price: Number(price),
       categoryId,
       description,
-      active: initialData?.active ?? true,
-      featured: initialData?.featured ?? false,
+      active,
+      featured,
+      imageUrl: initialData?.imageUrl, // Garante que a URL atual seja mantida na edição
     };
 
     if (initialData?.id) {
       productData.id = initialData.id;
     }
 
-    await onSubmit(productData);
+    await onSubmit(productData, imageFile);
   };
 
   return (
@@ -58,6 +62,22 @@ export default function ProductForm({ initialData, categories, onSubmit }: Props
       <div className="input-group">
         <label>Descrição</label>
         <textarea className="form-input form-textarea" value={description} onChange={e => setDescription(e.target.value)} />
+      </div>
+
+      <div className="input-group">
+        <label>Imagem do Produto</label>
+        {initialData?.imageUrl && !imageFile && (
+          <div className="current-image-preview">
+            <img src={initialData.imageUrl} alt="Atual" />
+            <span>Imagem atual preservada</span>
+          </div>
+        )}
+        <input 
+          type="file" 
+          className="form-input" 
+          accept="image/*" 
+          onChange={e => setImageFile(e.target.files?.[0])} 
+        />
       </div>
 
       <div className="input-group checkbox-group">
