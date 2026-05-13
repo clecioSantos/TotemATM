@@ -6,7 +6,7 @@ import { useCategories } from "./hooks/useCategories";
 import ProductTable from "./components/ProductTable";
 import Modal from "../components/Modal";
 import ProductForm from "./components/ProductForm"; // Keep this import
-import { Product } from "../../../../../index";
+import { Product } from "../../../totem/app/index";
 import "./page.css";
 
 export default function ProductsPage() {

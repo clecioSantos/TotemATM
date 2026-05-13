@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, doc, addDoc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
-import { Product } from '../types';
+import { Product } from '../../../../totem/app/index';
 import { firestore } from '@/src/services/firebase';
 
 // URL do seu backend Express
