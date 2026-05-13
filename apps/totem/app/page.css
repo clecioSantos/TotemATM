@@ -36,7 +36,8 @@
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   grid-auto-rows: auto; /* Permite que os itens definam sua própria altura */
   gap: 20px; /* Distancia vertical e horizontal iguais */
-  align-content: start; /* Garante que as linhas da grade se alinhem ao topo e não se espalhem */
+  align-content: start; /* Alinha as linhas da grade ao topo */
+  align-items: start; /* Garante que os itens da grade não se estiquem verticalmente */
   overflow-y: auto;
 }
 
