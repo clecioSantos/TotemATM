@@ -1,54 +1,74 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { collection, onSnapshot, query, orderBy, limit, Timestamp } from "firebase/firestore";
+import { firestore } from "@/src/services/firebase";
 import "./page.css";
 
 export default function AdminPage() {
-  const stats = [
-    {
-      title: "Pedidos Hoje",
-      value: "128",
-      growth: "+12%",
-    },
-    {
-      title: "Em Produção",
-      value: "14",
-      growth: "+4%",
-    },
-    {
-      title: "Finalizados",
-      value: "97",
-      growth: "+18%",
-    },
-    {
-      title: "Faturamento",
-      value: "R$ 4.820",
-      growth: "+22%",
-    },
-  ];
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState([
+    { title: "Pedidos Hoje", value: "0", growth: "0%" },
+    { title: "Em Produção", value: "0", growth: "0%" },
+    { title: "Finalizados", value: "0", growth: "0%" },
+    { title: "Faturamento", value: "R$ 0,00", growth: "0%" },
+  ]);
 
-  const orders = [
-    {
-      id: "#1042",
-      customer: "Mesa 04",
-      items: "2x Smash Burger + Fritas",
-      status: "Preparando",
-      total: "R$ 58,90",
-    },
-    {
-      id: "#1043",
-      customer: "Totem 02",
-      items: "3x Combo Chicken",
-      status: "Pendente",
-      total: "R$ 89,00",
-    },
-    {
-      id: "#1044",
-      customer: "Mesa 07",
-      items: "Pizza + Refrigerante",
-      status: "Pronto",
-      total: "R$ 42,50",
-    },
-  ];
+  useEffect(() => {
+    const q = query(collection(firestore, "orders"), limit(10));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const loadedOrders = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: `#${doc.id.slice(0, 4).toUpperCase()}`,
+          customer: data.customerName || `Mesa ${data.tableNumber}`,
+          items: data.items?.map((i: any) => `${i.quantity}x ${i.name}`).join(", ") || "Sem itens",
+          total: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.total || 0),
+          status: data.status === 'pending' ? 'Pendente' : 
+                  data.status === 'preparing' ? 'Preparando' : 
+                  data.status === 'ready' ? 'Pronto' : 'Finalizado'
+        };
+      });
+
+      setOrders(loadedOrders);
+      
+      // Cálculo dinâmico das estatísticas
+      const totalRevenue = snapshot.docs.reduce((acc, doc) => acc + (doc.data().total || 0), 0);
+      const inProd = snapshot.docs.filter(doc => doc.data().status === 'preparing').length;
+      const finished = snapshot.docs.filter(doc => doc.data().status === 'delivered' || doc.data().status === 'ready').length;
+
+      setStats([
+        {
+          title: "Pedidos Hoje",
+          value: snapshot.docs.length.toString(),
+          growth: "+0%",
+        },
+        {
+          title: "Em Produção",
+          value: inProd.toString(),
+          growth: "+0%",
+        },
+        {
+          title: "Finalizados",
+          value: finished.toString(),
+          growth: "+0%",
+        },
+        {
+          title: "Faturamento",
+          value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalRevenue),
+          growth: "+0%",
+        },
+      ]);
+      setLoading(false);
+    }, (error) => {
+      console.error("🔥 Erro ao carregar Dashboard:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
   
   return (
     <div className="dashboard-view">

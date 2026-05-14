@@ -8,6 +8,7 @@
     ], 
     "paths": {
       "@/*": ["./*"], 
+      "@totem/shared/*": ["../../packages/shared/src/*"]
     },
     "allowJs": true,
     "skipLibCheck": true,

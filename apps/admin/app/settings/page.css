@@ -1,0 +1,53 @@
+.configurations-view {
+  padding: 0;
+}
+
+.settings-card {
+  background: white;
+  border-radius: 32px;
+  padding: 40px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  max-width: 500px;
+  margin-top: 32px;
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+.user-detail {
+  font-size: 16px;
+  color: #52525b;
+  margin-bottom: 12px;
+}
+
+.settings-footer {
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 1px solid #f1f1f1;
+}
+
+.logout-button {
+  height: 58px;
+  padding: 0 32px;
+  border: none;
+  border-radius: 18px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.logout-button:hover {
+  background: #fecaca;
+  transform: translateY(-2px);
+}

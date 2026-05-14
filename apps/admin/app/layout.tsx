@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Head from "next/head";
 import Sidebar from "./components/Sidebar";
+import { AuthProvider } from "./orders/AuthContext";
 import "./globals.css";
 
 export default function RootLayout({
@@ -18,12 +19,14 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body>
-        <div className="admin-layout">
-          <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
-          <main className={`admin-content ${collapsed ? "content-expanded" : ""}`}>
-            {children}
-          </main>
-        </div>
+        <AuthProvider>
+          <div className="admin-layout">
+            <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
+            <main className={`admin-content ${collapsed ? "content-expanded" : ""}`}>
+              {children}
+            </main>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

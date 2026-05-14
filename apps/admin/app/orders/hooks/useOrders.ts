@@ -10,15 +10,25 @@ export const useOrders = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(firestore, 'orders'), orderBy('createdAt', 'desc'));
+    // Removido orderBy da query para evitar erros de índice ausente no console do Firebase
+    const q = query(collection(firestore, 'orders'));
     
     const unsubscribe = onSnapshot(q, 
       (snapshot) => {
-        setOrders(snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: (doc.data().createdAt as Timestamp).toDate(),
-        })) as Order[]);
+        const items = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            // Conversão segura: se o timestamp for nulo (comum em escritas recentes), usa a data atual
+            createdAt: data.createdAt instanceof Timestamp 
+              ? data.createdAt.toDate() 
+              : new Date(),
+          };
+        }) as Order[];
+        
+        // Ordenação manual no cliente
+        setOrders(items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
         setLoading(false);
       },
       (error) => {

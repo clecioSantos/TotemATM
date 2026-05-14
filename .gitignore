@@ -5,7 +5,8 @@ build
 .env
 coverage
 .firebase
-.png
+*.png
 backend\api\uploads\*
-.jpg
-.webp
+*.jpg
+*.webp
+.env.local

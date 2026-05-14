@@ -13,16 +13,30 @@ export const useProducts = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(firestore, 'products'), orderBy('createdAt', 'desc'));
-    return onSnapshot(q, (snapshot) => {
-      setProducts(snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        imageUrl: doc.data().imageUrl || "",
-        createdAt: (doc.data().createdAt as Timestamp).toDate(),
-      })) as Product[]);
+    // Removido orderBy temporariamente para evitar falhas por falta de índice no Firestore
+    const q = query(collection(firestore, 'products'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const items = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          imageUrl: data.imageUrl || "",
+          // Conversão segura: serverTimestamp() pode retornar null localmente antes de sincronizar
+          createdAt: (data.createdAt as Timestamp)?.toDate() || new Date(),
+        };
+      }) as Product[];
+      
+      // Ordenação manual no cliente para garantir funcionamento sem erros de índice
+      setProducts(items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
+      setLoading(false);
+    }, (error) => {
+      console.error("🔥 Erro useProducts:", error);
       setLoading(false);
     });
+
+    return () => unsubscribe();
   }, []);
 
   const saveProduct = async (data: Partial<Product>, file?: File) => {
