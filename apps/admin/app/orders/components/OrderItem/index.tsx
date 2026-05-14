@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Order } from '../../../../../../../index'; 
+import { Order } from '../../../../../../index'; 
 import "./styles.css";
 
 interface Props {

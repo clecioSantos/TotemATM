@@ -1,0 +1,15 @@
+/* Estilos compartilhados com login para consistência */
+@import "../login/page.css";
+
+.footer-text {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.footer-text a {
+  color: #000;
+  font-weight: 600;
+  text-decoration: none;
+}
