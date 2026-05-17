@@ -3,9 +3,9 @@
   "private": true,
   "packageManager": "npm@11.12.1",
   "scripts": {
-    "dev": "cd apps/admin && npx next dev -p 3000",
-    "build": "cd apps/admin && npx next build",
-    "start": "cd apps/admin && npx next start",
+    "dev": "cd apps && npx next dev -p 3000",
+    "build": "cd apps && npx next build",
+    "start": "cd apps && npx next start",
     "dev:backend": "cd backend/api && npx ts-node-dev --respawn --transpile-only src/index.ts"
   },
   "devDependencies": {
