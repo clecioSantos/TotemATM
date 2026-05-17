@@ -1,5 +1,5 @@
 /* Estilos compartilhados com login para consistência */
-@import "../admin/login/page.css";
+@import "../login/page.css";
 
 .footer-text {
   margin-top: 24px;

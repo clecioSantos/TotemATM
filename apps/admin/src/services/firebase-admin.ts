@@ -1,6 +1,8 @@
 import admin from "firebase-admin";
 
-if (!admin.apps.length) {
+function initializeFirebaseAdmin() {
+  if (admin.apps.length) return;
+
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_PRIVATE_KEY;
@@ -24,8 +26,15 @@ if (!admin.apps.length) {
       clientEmail,
       privateKey: privateKey.includes("-----BEGIN") ? privateKey.replace(/\\n/g, "\n") : privateKey,
     }),
-  }); 
+  });
 }
 
-export const adminAuth = admin.auth();
-export const adminDb = admin.firestore();
+export function getAdminAuth() {
+  initializeFirebaseAdmin();
+  return admin.auth();
+}
+
+export function getAdminDb() {
+  initializeFirebaseAdmin();
+  return admin.firestore();
+}
