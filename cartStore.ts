@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { OrderItem, Product } from '@lancheria/shared-types';
+import { OrderItem, Product } from './order';
 
 interface CartState {
   items: OrderItem[];

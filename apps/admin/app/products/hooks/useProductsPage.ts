@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Product } from '../../../../totem/app/index';
+import { Product } from '@totem/shared/types';
 import { useProducts } from './useProducts';
 import { useCategories } from './useCategories';
 

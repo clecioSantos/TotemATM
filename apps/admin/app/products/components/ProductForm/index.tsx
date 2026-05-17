@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Product, Category } from "../../../../../../index"; // Assuming this path is correct
+import { Product, Category } from '@totem/shared/types';
 import "./styles.css";
 
 interface Props {

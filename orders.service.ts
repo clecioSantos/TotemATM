@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Order, CreateOrderDTO, OrderStatus } from '@lancheria/shared-types';
+import { Order, CreateOrderDTO, OrderStatus } from './order';
 import * as admin from 'firebase-admin';
 
 @Injectable()

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Product, Category, CartItem } from "../../../../../packages/shared/src/types/index";
+import { Product, Category, CartItem } from "../../types";
 
 interface OrderingScreenProps {
   products: Product[];

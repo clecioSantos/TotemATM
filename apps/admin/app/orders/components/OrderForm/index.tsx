@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Product, OrderLineItem, Order } from "../../../../../../index";
+import { Product, OrderLineItem, Order } from "../../types";
 import styles from "./OrderForm.module.css";
 
 interface Props {
