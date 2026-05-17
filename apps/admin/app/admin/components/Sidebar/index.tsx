@@ -13,13 +13,13 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) { // Remo
   const pathname = usePathname();
 
   const menuItems = [
-    { name: "Dashboard", path: "/", icon: "📊" },
-    { name: "Pedidos", path: "/orders", icon: "📋" },
-    { name: "Produtos", path: "/products", icon: "📦" },
-    { name: "Categorias", path: "/categories", icon: "📁" },
-    { name: "Cupons", path: "/coupons", icon: "🏷️" },
-    { name: "Relatórios", path: "/reports", icon: "📈" },
-    { name: "Configurações", path: "/settings", icon: "⚙️" },
+    { name: "Dashboard", path: "/admin", icon: "📊" },
+    { name: "Pedidos", path: "/admin/orders", icon: "📋" },
+    { name: "Produtos", path: "/admin/products", icon: "📦" },
+    { name: "Categorias", path: "/admin/categories", icon: "📁" },
+    { name: "Cupons", path: "/admin/coupons", icon: "🏷️" },
+    { name: "Relatórios", path: "/admin/reports", icon: "📈" },
+    { name: "Configurações", path: "/admin/settings", icon: "⚙️" },
   ];
 
   return (
