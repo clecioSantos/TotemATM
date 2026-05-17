@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, Timestamp, addDoc, doc, updateDoc } from 'firebase/firestore';
-import { Order } from '../../../../../index';
+import { Order } from '../types';
 import { firestore } from '@/src/services/firebase';
 
 export const useOrders = () => {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, doc, addDoc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
-import { Product } from '../../../../totem/app/index';
+import { Product } from '@totem/shared/types';
 import { firestore } from '@/src/services/firebase';
 
 // URL do seu backend Express
@@ -11,6 +11,7 @@ const API_BASE_URL = 'http://localhost:3010';
 export const useProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Removido orderBy temporariamente para evitar falhas por falta de índice no Firestore
@@ -28,11 +29,20 @@ export const useProducts = () => {
         };
       }) as Product[];
       
-      // Ordenação manual no cliente para garantir funcionamento sem erros de índice
-      setProducts(items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
+      const normalizeDate = (value: Date | { seconds: number; nanoseconds: number }) =>
+        value instanceof Date
+          ? value
+          : new Date(value.seconds * 1000 + value.nanoseconds / 1e6);
+
+      setProducts(items.sort((a, b) => {
+        const dateA = normalizeDate(a.createdAt);
+        const dateB = normalizeDate(b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      }));
       setLoading(false);
     }, (error) => {
       console.error("🔥 Erro useProducts:", error);
+      setError(error?.message || 'Falha ao carregar produtos');
       setLoading(false);
     });
 
@@ -101,5 +111,5 @@ export const useProducts = () => {
     await deleteDoc(doc(firestore, 'products', id));
   };
 
-  return { products, loading, saveProduct, removeProduct };
+  return { products, loading, error, saveProduct, removeProduct };
 };

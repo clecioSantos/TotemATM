@@ -1,6 +1,6 @@
 "use client";
 
-import { Product, Category } from "../../types";
+import { Product, Category } from '@totem/shared/types';
 import "./styles.css";
 
 interface Props {

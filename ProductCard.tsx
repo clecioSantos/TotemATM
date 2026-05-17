@@ -1,6 +1,6 @@
 'use client';
 
-import { Product } from '@lancheria/shared-types';
+import { Product } from './packages/shared/src/types';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { useCartStore } from '../store/cartStore';

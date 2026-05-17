@@ -11,7 +11,7 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
-  orderNumber: number; // Ex: 123 (para o cliente ver)
+  orderNumber: number;
   customerName?: string;
   items: OrderItem[];
   totalAmount: number;
