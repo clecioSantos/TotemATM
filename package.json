@@ -2,28 +2,32 @@
   "name": "nexorder",
   "private": true,
   "packageManager": "npm@11.12.1",
-  "workspaces": [
-    "apps/*",
-    "backend/*",
-    "backend/api"
-  ],
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "lint": "turbo run lint"
+    "dev": "cd apps/admin && npx next dev -p 3000",
+    "build": "cd apps/admin && npx next build",
+    "start": "cd apps/admin && npx next start",
+    "dev:backend": "cd backend/api && npx ts-node-dev --respawn --transpile-only src/index.ts"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.1.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "^19.0.0",
     "ts-node-dev": "^2.0.0",
-    "turbo": "^2.9.9",
     "typescript": "^5.9.3"
   },
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "firebase": "^12.13.0",
-    "multer": "^2.1.1"
+    "firebase-admin": "^13.9.0",
+    "lucide-react": "^0.475.0",
+    "multer": "^2.1.1",
+    "next": "^15.5.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zustand": "^5.0.0"
   }
 }
