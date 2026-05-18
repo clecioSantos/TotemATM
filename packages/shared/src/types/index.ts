@@ -22,10 +22,28 @@ export interface CartItem extends Product {
   observation?: string;
 }
 
+export interface OrderLineItem {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  observation?: string;
+}
+
 export interface Order {
   id: string;
-  items: CartItem[];
+  items: OrderLineItem[];
   total: number;
   status: OrderStatus;
+  customerName?: string;
+  tableNumber?: string;
   createdAt: Date | { seconds: number; nanoseconds: number };
+}
+
+export interface OrderFormPayload {
+  customerName: string;
+  tableNumber: string;
+  items: OrderLineItem[];
+  total: number;
+  status: OrderStatus;
 }

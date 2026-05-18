@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Product, Category, CartItem } from "../../types";
+import { Product, Category, CartItem } from "@totem/shared/types";
 
 interface OrderingScreenProps {
   products: Product[];

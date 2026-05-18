@@ -7,7 +7,7 @@ import {
   where, 
   serverTimestamp 
 } from "firebase/firestore";
-import { Product, Category, Order } from "../index";
+import { Product, Category, Order } from "@totem/shared/types";
 
 const getDb = () => getFirestore();
 
