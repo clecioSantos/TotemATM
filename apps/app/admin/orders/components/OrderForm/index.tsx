@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Product, OrderLineItem, Order } from "../../types";
+import { Product, OrderLineItem, OrderFormPayload } from "@totem/shared/types";
 import styles from "./OrderForm.module.css";
 
 interface Props {
   products: Product[];
-  onSubmit: (order: Partial<Order>) => Promise<void>;
+  onSubmit: (order: OrderFormPayload) => Promise<void>;
   onClose: () => void;
 }
 
@@ -51,13 +51,15 @@ export default function OrderForm({ products, onSubmit, onClose }: Props) {
       return;
     }
 
-    await onSubmit({
+    const payload: OrderFormPayload = {
       customerName,
       tableNumber,
       items: selectedItems,
       total,
       status: "pending"
-    });
+    };
+
+    await onSubmit(payload);
   };
 
   return (

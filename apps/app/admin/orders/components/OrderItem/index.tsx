@@ -30,6 +30,10 @@ export default function OrderItem({ order, onStatusUpdate }: Props) {
 
   const nextStatus = getNextStatus(order.status);
 
+  const displayDate = order.createdAt instanceof Date
+    ? order.createdAt
+    : new Date(order.createdAt.seconds * 1000 + order.createdAt.nanoseconds / 1e6);
+
   return (
     <div className={`order-card ${isExpanded ? 'expanded' : ''}`}>
       <div className="order-header" onClick={() => setIsExpanded(!isExpanded)}>
@@ -37,7 +41,7 @@ export default function OrderItem({ order, onStatusUpdate }: Props) {
           <span className="order-id">#{order.id.slice(-4).toUpperCase()}</span>
           <div className="order-meta">
             <span className="order-customer">{order.customerName || `Mesa ${order.tableNumber || 'N/A'}`}</span>
-            <span className="order-date">{order.createdAt.toLocaleTimeString()}</span>
+            <span className="order-date">{displayDate.toLocaleTimeString()}</span>
           </div>
         </div>
         
