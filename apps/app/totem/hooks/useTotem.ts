@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../services/firebase';
-import { Product, Category, CartItem } from '../types';
+import { Product, Category, CartItem } from '@totem/shared/types';
 
 export const useTotem = () => {
   const [products, setProducts] = useState<Product[]>([]);

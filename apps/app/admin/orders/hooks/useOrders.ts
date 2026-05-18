@@ -17,15 +17,17 @@ export const useOrders = () => {
       (snapshot) => {
         const items = snapshot.docs.map(doc => {
           const data = doc.data();
+          const createdAt = data.createdAt instanceof Timestamp
+            ? data.createdAt.toDate()
+            : new Date();
+
           return {
             id: doc.id,
             ...data,
-            // Conversão segura: se o timestamp for nulo (comum em escritas recentes), usa a data atual
-            createdAt: data.createdAt instanceof Timestamp 
-              ? data.createdAt.toDate() 
-              : new Date(),
-          };
-        }) as Order[];
+            // Conversão segura: se o timestamp for nulo ou tipo já convertido
+            createdAt,
+          } as Omit<Order, 'createdAt'> & { createdAt: Date };
+        });
         
         // Ordenação manual no cliente
         setOrders(items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));

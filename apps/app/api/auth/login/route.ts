@@ -34,7 +34,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ status: "success" });
   } catch (error) {
-    console.error("❌ Erro na API de Login:", error);
+    console.error("❌ Erro na API de Login:", JSON.stringify(error, null, 2));
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 }
