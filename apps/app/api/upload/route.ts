@@ -34,14 +34,15 @@ export async function POST(request: NextRequest) {
       originalname: file.name,
     };
 
-    // Salvar o arquivo
-    const fileUrl = await saveFile(fileData);
+    // Salvar o arquivo no Cloudinary
+    const result = await saveFile(fileData);
 
-    return NextResponse.json({ imageUrl: fileUrl });
+    return NextResponse.json({ imageUrl: result.imageUrl, publicId: result.publicId });
   } catch (error) {
     console.error('Erro no upload:', error);
+    const message = error instanceof Error ? error.message : 'Erro interno ao processar imagem.';
     return NextResponse.json(
-      { error: 'Erro interno ao processar imagem.' },
+      { error: message },
       { status: 500 }
     );
   }
@@ -50,16 +51,16 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const fileName = searchParams.get('fileName');
+    const fileUrl = searchParams.get('fileUrl');
 
-    if (!fileName) {
+    if (!fileUrl) {
       return NextResponse.json(
-        { error: 'Nome do arquivo não fornecido.' },
+        { error: 'URL do arquivo não fornecida.' },
         { status: 400 }
       );
     }
 
-    await deleteFile(`/uploads/${fileName}`);
+    await deleteFile(decodeURIComponent(fileUrl));
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {
