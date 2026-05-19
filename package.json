@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "cd apps && npx next dev -p 3000",
     "build": "cd apps && npx next build",
-    "start": "cd apps && npx next start",
-    "dev:backend": "cd backend/api && npx ts-node-dev --respawn --transpile-only src/index.ts"
+    "start": "cd apps && npx next start"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
