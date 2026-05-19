@@ -68,14 +68,18 @@ export const useProducts = () => {
           body: formData,
         });
 
-        if (!response.ok) throw new Error('Falha no servidor de imagens');
+        const result = await response.json().catch(() => ({}));
 
-        const result = await response.json();
+        if (!response.ok) {
+          console.error('LOG: [useProducts] Upload response not ok:', response.status, result);
+          throw new Error(result?.error || 'Falha no servidor de imagens');
+        }
+
         imageUrl = result.imageUrl;
-      } catch (error) {
+      } catch (error: any) {
         // Se o servidor de imagens falhar, ainda permitimos salvar o produto sem imagem
-        console.warn("LOG: [useProducts] Servidor de imagens offline. Salvando sem nova imagem.");
-        alert("Aviso: A imagem não pôde ser enviada porque o servidor de arquivos está offline, mas os dados do produto serão salvos.");
+        console.warn("LOG: [useProducts] Servidor de imagens offline. Salvando sem nova imagem.", error?.message || error);
+        alert(`Aviso: A imagem não pôde ser enviada: ${error?.message || 'Erro no upload'}. Os dados do produto serão salvos sem imagem.`);
       }
     }
 
