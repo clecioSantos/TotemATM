@@ -1,6 +1,6 @@
 'use client';
 
-import { Product } from './packages/shared/src/types';
+import { Product } from '@totem/shared/types';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { useCartStore } from '../store/cartStore';
