@@ -98,10 +98,10 @@ export const useProducts = () => {
     const product = products.find(p => p.id === id);
     
     // 1. Solicita ao backend a exclusão do arquivo físico apenas se houver um nome de arquivo válido
-    const fileName = product?.imageUrl?.split('/').pop();
-    if (fileName && product?.imageUrl?.includes('/uploads/')) {
+    const fileUrl = product?.imageUrl;
+    if (fileUrl && product?.imageUrl?.includes('/')) {
       try {
-        await fetch(`/api/upload?fileName=${fileName}`, { method: 'DELETE' });
+        await fetch(`/api/upload?fileUrl=${encodeURIComponent(fileUrl)}`, { method: 'DELETE' });
       } catch (error) {
         console.warn("LOG: [useProducts] Não foi possível deletar o arquivo físico no servidor:", error);
       }

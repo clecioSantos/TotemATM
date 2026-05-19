@@ -1,42 +1,47 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as crypto from 'crypto';
+import { v2 as cloudinary } from 'cloudinary';
 
-// No Vercel, usar /tmp para arquivos temporários
-const uploadFolder = process.env.VERCEL 
-  ? path.join(process.env.TMP || '/tmp', 'uploads')
-  : path.resolve(process.cwd(), 'public', 'uploads');
-
-if (!fs.existsSync(uploadFolder)) {
-  fs.mkdirSync(uploadFolder, { recursive: true });
-}
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export const saveFile = async (file: {
   buffer: Buffer;
   originalname: string;
-}): Promise<string> => {
-  const fileHash = crypto.randomBytes(10).toString('hex');
-  const fileName = `${fileHash}-${file.originalname.replace(/\s/g, '_')}`;
-  const filePath = path.join(uploadFolder, fileName);
+}): Promise<{ imageUrl: string; publicId: string }> => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: process.env.CLOUDINARY_FOLDER || 'nexorder' },
+      (error, result) => {
+        if (error) return reject(error);
+        if (!result) return reject(new Error('No result from Cloudinary'));
+        resolve({ imageUrl: result.secure_url, publicId: result.public_id });
+      }
+    );
 
-  await fs.promises.writeFile(filePath, file.buffer);
-  
-  // Retorna o caminho relativo (ex: /uploads/nome_arquivo.jpg)
-  return `/uploads/${fileName}`;
+    stream.end(file.buffer);
+  });
 };
 
-export const deleteFile = async (fileUrl: string | undefined): Promise<void> => {
-  if (!fileUrl) return;
+export const deleteFile = async (fileUrlOrPublicId: string | undefined): Promise<void> => {
+  if (!fileUrlOrPublicId) return;
 
   try {
-    const fileName = fileUrl.split('/').pop();
-    if (fileName) {
-      const filePath = path.join(uploadFolder, fileName);
-      if (fs.existsSync(filePath)) {
-        await fs.promises.unlink(filePath);
+    // If it's a Cloudinary URL, extract the public_id
+    if (fileUrlOrPublicId.includes('res.cloudinary.com')) {
+      // Example URL: https://res.cloudinary.com/<cloud>/image/upload/v123456/folder/name.jpg
+      const m = fileUrlOrPublicId.match(/\/image\/upload\/(?:v\d+\/)?(.+)\.[a-zA-Z0-9]+$/);
+      const publicId = m ? m[1] : null;
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId);
+        return;
       }
     }
+
+    // If it's already a public id, try destroy directly
+    await cloudinary.uploader.destroy(fileUrlOrPublicId);
   } catch (error) {
-    console.error('Erro ao deletar arquivo:', error);
+    console.error('Erro ao deletar arquivo na Cloudinary:', error);
   }
 };
