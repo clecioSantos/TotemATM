@@ -5,8 +5,8 @@ import { collection, onSnapshot, query, orderBy, doc, addDoc, updateDoc, deleteD
 import { Product } from '@totem/shared/types';
 import { firestore } from '@/src/services/firebase';
 
-// URL do seu backend Express
-const API_BASE_URL = 'http://localhost:3010';
+// Usar a mesma aplicação Next.js para upload
+const API_BASE_URL = '';
 
 export const useProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -52,18 +52,18 @@ export const useProducts = () => {
   const saveProduct = async (data: Partial<Product>, file?: File) => {
     let imageUrl = data.imageUrl || "";
 
-    // 1. Se houver um novo arquivo, faz o upload para o backend Express
+    // 1. Se houver um novo arquivo, faz o upload para a rota API do Next.js
     if (file) {
       try {
         const formData = new FormData();
         formData.append('image', file);
         
-        // Se for edição, envia a URL antiga para o backend deletar o arquivo anterior
+        // Se for edição, envia a URL antiga para o servidor deletar o arquivo anterior
         if (data.imageUrl) {
           formData.append('oldImageUrl', data.imageUrl);
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/upload`, {
+        const response = await fetch(`/api/upload`, {
           method: 'POST',
           body: formData,
         });
@@ -71,7 +71,7 @@ export const useProducts = () => {
         if (!response.ok) throw new Error('Falha no servidor de imagens');
 
         const result = await response.json();
-        imageUrl = `${API_BASE_URL}${result.imageUrl}`;
+        imageUrl = result.imageUrl;
       } catch (error) {
         // Se o servidor de imagens falhar, ainda permitimos salvar o produto sem imagem
         console.warn("LOG: [useProducts] Servidor de imagens offline. Salvando sem nova imagem.");
@@ -101,7 +101,7 @@ export const useProducts = () => {
     const fileName = product?.imageUrl?.split('/').pop();
     if (fileName && product?.imageUrl?.includes('/uploads/')) {
       try {
-        await fetch(`${API_BASE_URL}/api/upload/${fileName}`, { method: 'DELETE' });
+        await fetch(`/api/upload?fileName=${fileName}`, { method: 'DELETE' });
       } catch (error) {
         console.warn("LOG: [useProducts] Não foi possível deletar o arquivo físico no servidor:", error);
       }
