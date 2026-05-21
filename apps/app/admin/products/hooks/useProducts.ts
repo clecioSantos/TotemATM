@@ -103,7 +103,7 @@ export const useProducts = () => {
     
     // 1. Solicita ao backend a exclusão do arquivo físico apenas se houver um nome de arquivo válido
     const fileUrl = product?.imageUrl;
-    if (fileUrl && product?.imageUrl?.includes('/')) {
+    if (fileUrl && fileUrl.includes('res.cloudinary.com')) {
       try {
         await fetch(`/api/upload?fileUrl=${encodeURIComponent(fileUrl)}`, { method: 'DELETE' });
       } catch (error) {
