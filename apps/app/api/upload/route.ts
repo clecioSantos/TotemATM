@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ imageUrl: result.imageUrl, publicId: result.publicId });
   } catch (error) {
     console.error('Erro no upload:', error);
+    console.error(JSON.stringify(error, null, 2)); 
     const message = error instanceof Error ? error.message : 'Erro interno ao processar imagem.';
     return NextResponse.json(
       { error: message },
