@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { saveFile, deleteFile } from '@/src/services/file-manager';
 
+export const runtime = 'nodejs';
+
 export const config = {
   api: {
     bodyParser: {
@@ -12,34 +14,38 @@ export const config = {
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const file = formData.get('image') as File;
+    const file = formData.get('image');
     const oldImageUrl = formData.get('oldImageUrl') as string | null;
 
-    if (!file) {
+    if (!(file instanceof File) || !file.name) {
       return NextResponse.json(
-        { error: 'Nenhum arquivo enviado.' },
+        { error: 'Nenhum arquivo de imagem válido foi enviado.' },
         { status: 400 }
       );
     }
 
-    // Se houver uma imagem antiga, remove-a do disco
     if (oldImageUrl) {
       await deleteFile(oldImageUrl);
     }
 
-    // Converter File para buffer
-    const buffer = await file.arrayBuffer();
+    const buffer = Buffer.from(await file.arrayBuffer());
     const fileData = {
-      buffer: Buffer.from(buffer),
+      buffer,
       originalname: file.name,
     };
 
-    // Salvar o arquivo no Cloudinary
     const result = await saveFile(fileData);
 
     return NextResponse.json({ imageUrl: result.imageUrl, publicId: result.publicId });
   } catch (error) {
-    console.error('Erro no upload:', error);
+    console.error('🔥 ERRO CLOUDINARY');
+console.error(error);
+
+if (error instanceof Error) {
+  console.error(error.message);
+  console.error(error.stack);
+}
+    console.error(JSON.stringify(error, null, 2)); 
     const message = error instanceof Error ? error.message : 'Erro interno ao processar imagem.';
     return NextResponse.json(
       { error: message },
