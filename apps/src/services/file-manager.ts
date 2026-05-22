@@ -5,16 +5,39 @@ export const saveFile = async (file: {
   originalname: string;
 }): Promise<{ imageUrl: string; publicId: string }> => {
   return new Promise((resolve, reject) => {
+    console.log('🔍 saveFile - starting upload', {
+      originalname: file.originalname,
+      bufferLength: file.buffer?.length ?? 0,
+      folder: CLOUDINARY_FOLDER,
+    });
+
     const stream = cloudinary.uploader.upload_stream(
       { folder: CLOUDINARY_FOLDER },
       (error, result) => {
-        if (error) return reject(error);
-        if (!result) return reject(new Error('No result from Cloudinary'));
+        if (error) {
+          console.error('🔴 saveFile - Cloudinary error:', error);
+          return reject(error);
+        }
+        if (!result) {
+          console.error('🔴 saveFile - Cloudinary returned no result');
+          return reject(new Error('No result from Cloudinary'));
+        }
+
+        console.log('✅ saveFile - Cloudinary result:', {
+          secure_url: result.secure_url,
+          public_id: result.public_id,
+        });
+
         resolve({ imageUrl: result.secure_url, publicId: result.public_id });
       }
     );
 
-    stream.end(file.buffer);
+    try {
+      stream.end(file.buffer);
+    } catch (err) {
+      console.error('🔴 saveFile - stream.end error:', err);
+      reject(err);
+    }
   });
 };
 
