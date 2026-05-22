@@ -15,7 +15,16 @@ export const saveFile = async (file: {
       { folder: CLOUDINARY_FOLDER },
       (error, result) => {
         if (error) {
-          console.error('🔴 saveFile - Cloudinary error:', error);
+          // Cloudinary sometimes returns HTML error pages when the upstream fails;
+          // log detailed fields (but never log API secrets)
+          const e: any = error;
+          console.error('🔴 saveFile - Cloudinary error summary:', {
+            name: e.name,
+            messageSnippet: typeof e.message === 'string' ? e.message.slice(0, 1000) : String(e.message),
+            http_code: e.http_code ?? e.statusCode ?? null,
+            http_body: (e.http_body && typeof e.http_body === 'string') ? e.http_body.slice(0, 1000) : undefined,
+          });
+          console.error('🔴 saveFile - Cloudinary full error object:', error);
           return reject(error);
         }
         if (!result) {
