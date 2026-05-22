@@ -16,7 +16,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "cloudinary": "^1.41.3",
+    "cloudinary": "^2.10.0",
     "firebase": "^12.13.0",
     "firebase-admin": "^13.9.0",
     "lucide-react": "^0.475.0",
