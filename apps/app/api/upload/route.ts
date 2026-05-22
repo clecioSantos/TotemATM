@@ -24,9 +24,9 @@ export async function POST(request: NextRequest) {
 
     // Debug: log presence of relevant environment variables (do not print secrets)
     console.log('🔍 /api/upload - DEBUG env:', {
-      hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
-      hasApiKey: !!process.env.CLOUDINARY_API_KEY,
-      hasApiSecret: !!process.env.CLOUDINARY_API_SECRET,
+      hasCloudName: process.env.CLOUDINARY_CLOUD_NAME,
+      hasApiKey: process.env.CLOUDINARY_API_KEY,
+      hasApiSecret: process.env.CLOUDINARY_API_SECRET,
       nodeEnv: process.env.NODE_ENV,
     });
 
@@ -96,9 +96,9 @@ export async function POST(request: NextRequest) {
     const message = error instanceof Error ? error.message : 'Erro interno ao processar imagem.';
     // Include safe debug flags about env var presence to help diagnose deployment issues
     const debug = {
-      hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
-      hasApiKey: !!process.env.CLOUDINARY_API_KEY,
-      hasApiSecret: !!process.env.CLOUDINARY_API_SECRET,
+      hasCloudName: process.env.CLOUDINARY_CLOUD_NAME,
+      hasApiKey: process.env.CLOUDINARY_API_KEY,
+      hasApiSecret: process.env.CLOUDINARY_API_SECRET,
       nodeEnv: process.env.NODE_ENV ?? null,
     };
 
