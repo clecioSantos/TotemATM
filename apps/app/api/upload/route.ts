@@ -13,6 +13,13 @@ export const config = {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔍 /api/upload POST - request started');
+    console.log('🔍 /api/upload - request headers:', {
+      contentType: request.headers.get('content-type'),
+      contentLength: request.headers.get('content-length'),
+      userAgent: request.headers.get('user-agent')?.slice(0, 100),
+    });
+
     const formData = await request.formData();
 
     // Debug: log presence of relevant environment variables (do not print secrets)
@@ -41,11 +48,14 @@ export async function POST(request: NextRequest) {
         name: file.name,
         size: (file as any).size ?? 'unknown',
         type: (file as any).type ?? 'unknown',
+        isFile: file instanceof File,
       });
     }
 
     if (!(file instanceof File) || !file.name) {
       console.error('⚠️ /api/upload - no valid File received');
+      console.error('⚠️ file instanceof File:', file instanceof File);
+      console.error('⚠️ file?.name:', (file as any)?.name);
       return NextResponse.json(
         { error: 'Nenhum arquivo de imagem válido foi enviado.' },
         { status: 400 }
@@ -57,18 +67,25 @@ export async function POST(request: NextRequest) {
       await deleteFile(oldImageUrl);
     }
 
+    console.log('🔍 /api/upload - converting file to buffer');
     const buffer = Buffer.from(await file.arrayBuffer());
+    console.log('🔍 /api/upload - buffer created:', {
+      length: buffer.length,
+      type: buffer.constructor.name,
+    });
+
     const fileData = {
       buffer,
       originalname: file.name,
     };
 
+    console.log('🔍 /api/upload - calling saveFile');
     const result = await saveFile(fileData);
 
     console.log('✅ /api/upload - upload finished, returning url');
     return NextResponse.json({ imageUrl: result.imageUrl, publicId: result.publicId });
   } catch (error) {
-    console.error('🔥 /api/upload - ERRO CLOUDINARY:', error);
+    console.error('🔥 /api/upload - ERRO:', error);
     if (error instanceof Error) {
       console.error('message:', error.message);
       console.error('stack:', error.stack);
