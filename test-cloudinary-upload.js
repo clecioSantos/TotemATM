@@ -9,8 +9,29 @@ const { v2: cloudinary } = require('cloudinary');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🔍 TEST: Loading environment variables');
-require('dotenv').config({ path: path.join(__dirname, 'apps/.env.local') });
+console.log('🔍 TEST: Reading .env.local');
+
+// Read .env.local manually
+const envPath = path.join(__dirname, 'apps/.env.local');
+let envContent = '';
+
+try {
+  envContent = fs.readFileSync(envPath, 'utf8');
+} catch (err) {
+  console.warn('⚠️ TEST: Could not read .env.local, using process.env directly');
+}
+
+// Parse .env file
+envContent.split('\n').forEach(line => {
+  const trimmed = line.trim();
+  if (trimmed && !trimmed.startsWith('#')) {
+    const [key, ...valueParts] = trimmed.split('=');
+    const value = valueParts.join('=').trim();
+    if (key && value) {
+      process.env[key] = value;
+    }
+  }
+});
 
 const {
   CLOUDINARY_CLOUD_NAME,
@@ -27,6 +48,7 @@ console.log('🔍 TEST: ENV CHECK', {
 
 if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
   console.error('🔴 TEST: Missing environment variables!');
+  console.error('Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET');
   process.exit(1);
 }
 
