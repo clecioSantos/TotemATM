@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       hasApiKey: process.env.CLOUDINARY_API_KEY?.toString(),
       hasApiSecret: process.env.CLOUDINARY_API_SECRET?.toString(),
       nodeEnv: process.env.NODE_ENV ?? null,
-      formData,
+      FormData: formData,
     };
 
     return NextResponse.json(
