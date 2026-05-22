@@ -18,6 +18,8 @@ cloudinary.config({
   api_key: CLOUDINARY_API_KEY,
   api_secret: CLOUDINARY_API_SECRET,
 });
+// Safe debug: log only the cloud name (never log keys/secrets)
+console.log('🔍 Cloudinary configured for cloud:', CLOUDINARY_CLOUD_NAME);
 
 export const CLOUDINARY_FOLDER = CLOUDINARY_FOLDER_ENV || 'nexorder';
 export { cloudinary };
