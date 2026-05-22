@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     let safe = null;
     try { safe = JSON.stringify(error, Object.getOwnPropertyNames(error)); } catch(e) { /* ignore */ }
     console.error('raw error:', safe);
-    const message = error instanceof Error ? error.message : 'Erro interno ao processar imagem.';
+    const message = error;
     // Include safe debug flags about env var presence to help diagnose deployment issues
     const debug = {
       hasCloudName: process.env.CLOUDINARY_CLOUD_NAME?.toString(),
