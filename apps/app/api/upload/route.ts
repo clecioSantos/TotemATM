@@ -12,6 +12,7 @@ export const config = {
 };
 
 export async function POST(request: NextRequest) {
+  var formData;
   try {
     console.log('🔍 /api/upload POST - request started');
     console.log('🔍 /api/upload - request headers:', {
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
       userAgent: request.headers.get('user-agent')?.slice(0, 100),
     });
 
-    const formData = await request.formData();
+    formData = await request.formData();
 
     // Debug: log presence of relevant environment variables (do not print secrets)
     console.log('🔍 /api/upload - DEBUG env:', {
@@ -100,10 +101,11 @@ export async function POST(request: NextRequest) {
       hasApiKey: process.env.CLOUDINARY_API_KEY?.toString(),
       hasApiSecret: process.env.CLOUDINARY_API_SECRET?.toString(),
       nodeEnv: process.env.NODE_ENV ?? null,
+      FormData: formData,
     };
 
     return NextResponse.json(
-      { error: message, debug },
+      { error: message, debug }, 
       { status: 500 }
     );
   }
