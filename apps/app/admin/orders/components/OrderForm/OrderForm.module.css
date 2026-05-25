@@ -9,7 +9,7 @@
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
   margin-bottom: 16px;
   font-weight: 800;
 }
@@ -34,13 +34,13 @@
 }
 
 .addItemBox {
-  background: var(--color-background);
+  background: var(--bg-light);
   padding: 21px; /* Reduzido de 24px */
   border-radius: 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  border: 1px solid var(--color-border-light);
+  border: 1px solid var(--border-light);
 }
 
 .formInput {
@@ -54,7 +54,7 @@
 }
 
 .formInput:focus {
-  border-color: var(--color-primary);
+  border-color: var(--primary-color);
   box-shadow: 0 0 0 4px rgba(9, 9, 11, 0.05);
 }
 
@@ -67,7 +67,8 @@
 .obsInput { flex: 1; }
 
 .addItemBtn {
-  background: var(--color-primary);
+  background: var(--text-primary);
+  color: var(--white);
   border: none;
   border-radius: 14px;
   width: 54px;
@@ -95,7 +96,7 @@
 .selectedItemCard {
   padding: 18px; /* Reduzido de 20px */
   background: white;
-  border: 1px solid var(--color-border-light);
+  border: 1px solid var(--border-light);
   border-radius: 18px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.02);
   animation: slideIn 0.2s ease;
@@ -114,8 +115,8 @@
 }
 
 .itemQuantity {
-  background: var(--color-primary);
-  color: white;
+  background: var(--primary-color);
+  color: var(--text-primary);
   padding: 4px 10px;
   border-radius: 8px;
   font-size: 12px;
@@ -128,22 +129,22 @@
 
 .itemPrice {
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: var(--text-primary);
 }
 
 .itemObs {
   font-size: 14px;
-  color: var(--color-warning);
+  color: var(--warning-color);
   margin-top: 8px;
   font-style: italic;
   padding-left: 12px;
-  border-left: 2px solid var(--color-warning);
+  border-left: 2px solid var(--warning-color);
 }
 
 .removeItem {
   background: none;
   border: none;
-  color: var(--color-danger);
+  color: var(--danger-color);
   font-size: 13px;
   font-weight: 600;
   padding: 0;
@@ -154,7 +155,7 @@
 .formFooter {
   margin-top: 8px;
   padding-top: 24px;
-  border-top: 1px solid var(--color-border-light);
+  border-top: 1px solid var(--border-light);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -163,7 +164,7 @@
 }
 
 .totalArea { display: flex; flex-direction: column; }
-.totalArea strong { font-size: 32px; color: var(--color-primary); letter-spacing: -1px; }
+.totalArea strong { font-size: 32px; color: var(--text-primary); letter-spacing: -1px; }
 
 .footerActions { display: flex; gap: 12px; }
 
@@ -189,8 +190,8 @@
 }
 
 .submitOrderBtn {
-  background: var(--color-primary);
-  color: white;
+  background: var(--text-primary);
+  color: var(--white);
   border: none;
   border-radius: 16px;
   padding: 0 32px;
