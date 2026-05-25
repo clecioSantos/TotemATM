@@ -1,0 +1,21 @@
+/* Global responsive overrides for src app (client) */
+
+@media (max-width: 767px) {
+  /* Layout */
+  body, .page { padding: 8px !important; }
+
+  /* Product cards / grids */
+  .products-grid { grid-template-columns: 1fr !important; gap: 12px !important; padding: 12px !important; }
+  .product-card { height: auto !important; }
+  .product-card img { height: auto !important; }
+
+  /* Forms and buttons */
+  .form-input, .form-submit, .primary-button { width: 100% !important; }
+
+  /* Modals */
+  .modal-card { max-width: 94% !important; padding: 16px !important; }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .products-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
