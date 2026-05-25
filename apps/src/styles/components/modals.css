@@ -1,0 +1,40 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  padding: 3%; /* Adicionado para garantir espaçamento em telas menores */
+}
+
+.modal-card {
+  background: var(--white);
+  width: 100%;
+  max-width: 600px;
+  border-radius: 24px;
+  padding: 32px;
+  margin: 3%;
+  box-shadow: var(--shadow-modal);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.modal-header h3 {
+  font-size: 24px;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.modal-body {
+  display: flex;
+  margin-right: 10%;
+  flex-direction: column;
+}

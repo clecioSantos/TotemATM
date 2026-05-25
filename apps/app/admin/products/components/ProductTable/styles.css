@@ -1,9 +1,12 @@
 .product-table-wrapper {
-  background: white;
-  border-radius: 18px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-  overflow: hidden;
-  border: 1px solid #f1f1f1;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border-light);
+  overflow-x: auto;
+  display: block;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .p-table {
@@ -14,18 +17,18 @@
 
 .p-table th {
   padding: 20px 24px;
-  background: #fafafa;
-  color: #71717a;
+  background: var(--bg-light);
+  color: var(--text-secondary);
   font-weight: 600;
   font-size: 14px;
   text-transform: uppercase;
-  border-bottom: 1px solid #f1f1f1;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .p-table td {
   padding: 16px 24px;
-  border-bottom: 1px solid #f1f1f1;
-  color: #18181b;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-primary);
   font-size: 16px;
 }
 
@@ -53,7 +56,9 @@
 
 .actions-cell {
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
 }
 
 .btn-action {

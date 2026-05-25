@@ -23,18 +23,28 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) { // Remo
   ];
 
   return (
-    <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : ""}`}> {/* Adicionado a classe sidebar-collapsed */}
-      <div className="sidebar-top"> {/* Adicionado um container para o topo da sidebar */}
-        {!collapsed && (
-          <div className="sidebar-logo">
-            <h1 className="logo-title">NexOrder</h1>
-            <p className="logo-subtitle">Painel Administrativo</p>
-          </div>
-        )}
-        <button className="collapse-button" onClick={onToggle}> {/* Botão para recolher/expandir */}
-          {collapsed ? "▶" : "◀"} {/* Ícones simples para indicar estado */}
+    <>
+      {collapsed && (
+        <button
+          className="mobile-sidebar-open-button"
+          onClick={onToggle}
+          aria-label="Abrir menu"
+        >
+          ☰
         </button>
-      </div>
+      )}
+      <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : ""}`}> {/* Adicionado a classe sidebar-collapsed */}
+        <div className="sidebar-top"> {/* Adicionado um container para o topo da sidebar */}
+          {!collapsed && (
+            <div className="sidebar-logo">
+              <h1 className="logo-title">NexOrder</h1>
+              <p className="logo-subtitle">Painel Administrativo</p>
+            </div>
+          )}
+          <button className="collapse-button" onClick={onToggle}> {/* Botão para recolher/expandir */}
+            {collapsed ? "▶" : "◀"} {/* Ícones simples para indicar estado */}
+          </button>
+        </div>
 
       <nav className="sidebar-menu"> {/* Menu de navegação */}
         {menuItems.map((item) => (
@@ -54,5 +64,6 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) { // Remo
         {!collapsed && <div className="status-dot" />}
       </div>
     </aside>
+    </>
   );
 }

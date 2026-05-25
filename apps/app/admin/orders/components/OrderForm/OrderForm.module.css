@@ -1,7 +1,7 @@
 .orderForm {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 28px; /* Reduzido de 32px */
   padding: 8px 4px;
 }
 
@@ -17,6 +17,7 @@
 .inputRow {
   display: flex;
   gap: 20px;
+  flex-wrap: wrap; /* Permite quebrar linha no mobile */
 }
 
 .inputGroup {
@@ -34,7 +35,7 @@
 
 .addItemBox {
   background: var(--color-background);
-  padding: 24px;
+  padding: 21px; /* Reduzido de 24px */
   border-radius: 20px;
   display: flex;
   flex-direction: column;
@@ -92,7 +93,7 @@
 }
 
 .selectedItemCard {
-  padding: 20px;
+  padding: 18px; /* Reduzido de 20px */
   background: white;
   border: 1px solid var(--color-border-light);
   border-radius: 18px;
@@ -152,17 +153,30 @@
 
 .formFooter {
   margin-top: 8px;
-  padding-top: 32px;
+  padding-top: 24px;
   border-top: 1px solid var(--color-border-light);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap; /* Faz o total e os botões empilharem se necessário */
+  gap: 20px;
 }
 
 .totalArea { display: flex; flex-direction: column; }
 .totalArea strong { font-size: 32px; color: var(--color-primary); letter-spacing: -1px; }
 
 .footerActions { display: flex; gap: 12px; }
+
+@media (max-width: 600px) {
+  .footerActions {
+    width: 100%;
+    flex-direction: column;
+  }
+  .totalArea {
+    width: 100%;
+    text-align: center;
+  }
+}
 
 .cancelBtn {
   background: #f4f4f5;

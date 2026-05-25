@@ -1,15 +1,13 @@
-:root {
-  --color-background: #fafafa;
-  --color-text-primary: #18181b;
-  --color-text-secondary: #71717a;
-  --color-border-light: #f1f1f1;
-  --color-primary: #09090b; /* Dark for primary actions */
-  --color-white: #ffffff;
-  --color-success: #22c55e;
-  --color-warning: #a16207;
-  --color-danger: #b91c1c;
-  --color-info: #4f46e5;
-}
+/* NexOrder Design Tokens */
+@import "../src/styles/abstracts/_variables.css";
+/* Base Styles */
+@import "../src/styles/base/_layout.css";
+/* UI Components */
+@import "../src/styles/components/buttons.css";
+@import "../src/styles/components/badges.css";
+@import "../src/styles/components/feedback.css";
+@import "../src/styles/components/modals.css";
+@import "../src/styles/components/inputs.css";
 
 body {
   margin: 0;
@@ -25,12 +23,21 @@ body {
 
 .admin-content {
   flex: 1;
-  margin-left: 280px; /* Compensação da largura da sidebar fixa */
-  padding: 40px;
+  min-width: 0; /* Permite que o container encolha e os filhos scrollagem lateralmente */
+  margin-left: 196px; /* Compensação da largura da sidebar fixa */
+  padding: 32px;
   min-height: 100vh;
   transition: margin-left 0.3s ease; /* Animação suave */
 }
 
 .admin-content.content-expanded {
-  margin-left: 80px; /* Largura da sidebar recolhida */
+  margin-left: 56px; /* Largura da sidebar recolhida */
+}
+
+@media (max-width: 768px) {
+  .admin-content,
+  .admin-content.content-expanded {
+    margin-left: 0;
+    padding: 24px;
+  }
 }

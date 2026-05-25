@@ -10,12 +10,15 @@
 }
 
 .modal-card {
-  background: white;
+  background: var(--white);
   width: 100%;
-  max-width: 600px;
-  border-radius: 24px;
-  padding: 32px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  max-width: 540px; /* Reduzido em 10% de 600px */
+  max-height: 90vh; /* Impede que o modal saia da tela */
+  overflow-y: auto; /* Adiciona scroll interno se o form for grande */
+  border-radius: var(--radius-lg);
+  padding: 28px; /* Reduzido em ~10% de 32px */
+  box-shadow: var(--shadow-modal);
+  position: relative;
 }
 
 .modal-header {
@@ -26,7 +29,7 @@
 }
 
 .modal-header h3 { font-size: 24px; margin: 0; color: var(--color-text-primary); }
-
+.modal-header h3 { color: var(--text-primary); }
 .close-btn {
   background: none;
   border: none;
