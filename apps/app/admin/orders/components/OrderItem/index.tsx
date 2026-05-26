@@ -8,9 +8,10 @@ import "./styles.css";
 interface Props {
   order: Order;
   onStatusUpdate: (id: string, nextStatus: Order['status']) => void;
+  onCancel: (id: string) => void;
 }
 
-export default function OrderItem({ order, onStatusUpdate }: Props) {
+export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const statusMap = {
@@ -18,6 +19,7 @@ export default function OrderItem({ order, onStatusUpdate }: Props) {
     preparing: { label: "Preparando", class: "status-preparing" },
     ready: { label: "Pronto", class: "status-ready" },
     finished: { label: "Finalizado", class: "status-finished" },
+    canceled: { label: "Cancelado", class: "status-canceled" },
   };
 
   const getNextStatus = (current: Order['status']): Order['status'] | null => {
@@ -86,6 +88,17 @@ export default function OrderItem({ order, onStatusUpdate }: Props) {
           </table>
           {nextStatus && (
             <div className="order-actions-footer">
+              <button 
+                className="action-btn-danger"
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  if (window.confirm("Deseja realmente cancelar este pedido?")) {
+                    onCancel(order.id);
+                  }
+                }}
+              >
+                Cancelar Pedido
+              </button>
               <button 
                 className="action-btn-primary"
                 onClick={(e) => { e.stopPropagation(); onStatusUpdate(order.id, nextStatus); }}

@@ -9,7 +9,7 @@ import { useState } from "react";
 import "./page.css";
 
 export default function OrdersPage() {
-  const { orders, loading, addOrder, updateOrderStatus } = useOrders();
+  const { orders, loading, addOrder, updateOrderStatus, removeOrder } = useOrders();
   const { products } = useProducts();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -20,6 +20,7 @@ export default function OrdersPage() {
     { id: "preparing", label: "Em preparo" },
     { id: "ready", label: "Prontos" },
     { id: "finished", label: "Finalizados" },
+    { id: "canceled", label: "Cancelados" },
   ];
   const getStatusCount = (statusId: string) => {
     if (statusId === "all") return orders.length;
@@ -74,6 +75,7 @@ export default function OrdersPage() {
                 key={order.id} 
                 order={order} 
                 onStatusUpdate={(id, next) => updateOrderStatus(id, next)}
+                onCancel={(id) => updateOrderStatus(id, 'canceled' as any)}
               />
             ))}
           </div>
