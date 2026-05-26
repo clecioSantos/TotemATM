@@ -5,7 +5,6 @@ import OrderingScreen from "./components/OrderingScreen";
 import IdentificationScreen from "./components/IdentificationScreen";
 import FinishedScreen from "./components/FinishedScreen";
 import { useTotem } from "./hooks/useTotem";
-import "./page.css";
 
 type TotemStep = 'WELCOME' | 'ORDERING' | 'IDENTIFICATION' | 'FINISHED';
 
@@ -29,7 +28,11 @@ export default function TotemPage() {
   };
 
   if (loading) {
-    return <div className="loading-screen"><div className="loader"></div></div>;
+    return (
+      <div className="flex h-screen items-center justify-center bg-brand-light">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-stone-200 border-t-brand-accent"></div>
+      </div>
+    );
   }
 
   switch (step) {
