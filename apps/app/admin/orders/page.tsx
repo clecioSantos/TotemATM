@@ -21,15 +21,13 @@ export default function OrdersPage() {
     { id: "ready", label: "Prontos" },
     { id: "finished", label: "Finalizados" },
   ];
-
-  const filteredOrders = statusFilter === "all"
-    ? orders
-    : orders.filter(order => order.status === statusFilter);
-
   const getStatusCount = (statusId: string) => {
     if (statusId === "all") return orders.length;
     return orders.filter((order) => order.status === statusId).length;
   };
+  const filteredOrders = statusFilter === "all"
+    ? orders
+    : orders.filter(order => order.status === statusFilter);
 
   return (
     <div className="orders-page-view">
@@ -47,14 +45,14 @@ export default function OrdersPage() {
         {statuses.map((status) => {
           const count = getStatusCount(status.id);
           return (
-          <button
-            key={status.id}
-            className={`filter-btn ${statusFilter === status.id ? "active" : ""}`}
-            onClick={() => setStatusFilter(status.id)}
-          >
-            {status.label}
-            {count > 0 && <span className="filter-count">{count}</span>}
-          </button>
+            <button
+              key={status.id}
+              className={`filter-btn ${statusFilter === status.id ? "active" : ""}`}
+              onClick={() => setStatusFilter(status.id)}
+            >
+              {status.label}
+              {count > 0 && <span className="filter-count">{count}</span>}
+            </button>
           );
         })}
       </div>

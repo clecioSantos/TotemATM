@@ -40,6 +40,12 @@
   flex-direction: column;
 }
 
+.order-time-info {
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+
 .order-customer {
   font-weight: 700;
   font-size: 11px;
@@ -48,6 +54,25 @@
 .order-date {
   font-size: 9px;
   color: var(--text-secondary);
+  margin-right: 8px;
+}
+
+.order-elapsed-timer {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--secondary-color);
+  background: rgba(219, 0, 7, 0.08);
+  padding: 2px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  animation: pulse 2s infinite;
+}
+
+.order-elapsed-timer::before {
+  content: "🕒";
+  font-size: 10px;
 }
 
 .order-summary {
@@ -138,4 +163,10 @@
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
 }

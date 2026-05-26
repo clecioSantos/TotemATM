@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Order } from '../../types';
+import OrderTimer from './OrderTimer';
 import "./styles.css";
 
 interface Props {
@@ -41,7 +42,10 @@ export default function OrderItem({ order, onStatusUpdate }: Props) {
           <span className="order-id">#{order.id.slice(-4).toUpperCase()}</span>
           <div className="order-meta">
             <span className="order-customer">{order.customerName || `Mesa ${order.tableNumber || 'N/A'}`}</span>
-            <span className="order-date">{displayDate.toLocaleTimeString()}</span>
+            <div className="order-time-info">
+              <span className="order-date">{displayDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <OrderTimer createdAt={order.createdAt} />
+            </div>
           </div>
         </div>
         
