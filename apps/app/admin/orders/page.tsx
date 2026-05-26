@@ -21,12 +21,10 @@ export default function OrdersPage() {
     { id: "ready", label: "Prontos" },
     { id: "finished", label: "Finalizados" },
   ];
-
   const getStatusCount = (statusId: string) => {
     if (statusId === "all") return orders.length;
     return orders.filter((order) => order.status === statusId).length;
   };
-
   const filteredOrders = statusFilter === "all"
     ? orders
     : orders.filter(order => order.status === statusFilter);

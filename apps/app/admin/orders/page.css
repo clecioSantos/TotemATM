@@ -9,7 +9,7 @@
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  margin-top: -8px;
+  margin-top: -8px; /* Ajuste para aproximar do header */
 }
 
 .filter-btn {
