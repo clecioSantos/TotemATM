@@ -96,6 +96,11 @@
   text-transform: uppercase;
 }
 
+.status-canceled {
+  background: var(--bg-light);
+  color: var(--text-secondary);
+}
+
 .expand-icon {
   color: #a1a1aa;
   font-size: 9px;
@@ -146,6 +151,19 @@
   margin-top: 11px;
   padding-top: 9px;
   border-top: 1px solid var(--border-light);
+}
+
+.action-btn-danger {
+  padding: 6px 13px;
+  background: var(--secondary-color);
+  color: var(--white);
+  border: none;
+  border-radius: 7px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  font-size: 11px;
+  margin-right: 8px;
 }
 
 .action-btn-primary {

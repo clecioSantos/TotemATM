@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, Timestamp, addDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, Timestamp, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Order } from '../types';
 import { firestore } from '@/src/services/firebase';
 
@@ -66,5 +66,14 @@ export const useOrders = () => {
     }
   };
 
-  return { orders, loading, addOrder, updateOrderStatus };
+  const removeOrder = async (orderId: string) => {
+    try {
+      const orderRef = doc(firestore, 'orders', orderId);
+      await deleteDoc(orderRef);
+    } catch (error) {
+      console.error("LOG: [useOrders] Erro ao remover pedido:", error);
+    }
+  };
+
+  return { orders, loading, addOrder, updateOrderStatus, removeOrder };
 };
