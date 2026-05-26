@@ -21,6 +21,7 @@ interface OrderingScreenProps {
 export default function OrderingScreen({ products, categories, cart, actions, onFinish, onCancel }: OrderingScreenProps) {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const filteredProducts = activeCategory === "all" 
     ? products 
@@ -172,7 +173,7 @@ export default function OrderingScreen({ products, categories, cart, actions, on
                   <div 
                     key={product.id} 
                     className="bg-white rounded-premium border border-brand-border/60 p-3 md:p-4 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer flex flex-col"
-                    onClick={() => actions.addToCart(product)}
+                    onClick={() => setSelectedProduct(product)}
                   >
                     <div className="w-full aspect-square rounded-xl overflow-hidden bg-stone-50 mb-3 border border-stone-100">
                       <img 
@@ -287,6 +288,78 @@ export default function OrderingScreen({ products, categories, cart, actions, on
                 <span>FINALIZAR PEDIDO</span>
                 <ArrowRight className="h-4 w-4" />
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. MODAL DE DETALHES DO PRODUTO (TELA FLUTUANTE) */}
+      {selectedProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 lg:p-12">
+          {/* Overlay Escuro */}
+          <div 
+            className="absolute inset-0 bg-brand-dark/60 backdrop-blur-md animate-in fade-in duration-300" 
+            onClick={() => setSelectedProduct(null)} 
+          />
+          
+          {/* Card do Modal */}
+          <div className="relative bg-white w-full max-w-4xl max-h-[95vh] md:max-h-[90vh] rounded-[2rem] md:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-300">
+            
+            {/* Botão Fechar (X) */}
+            <button 
+              className="absolute top-4 right-4 md:top-6 md:right-6 z-20 bg-stone-100 md:bg-white/80 md:backdrop-blur-md p-2 rounded-full text-stone-400 hover:text-brand-dark transition-colors shadow-sm border border-stone-100"
+              onClick={() => setSelectedProduct(null)}
+            >
+              <X className="h-5 w-5 md:h-6 md:w-6" />
+            </button>
+
+            {/* Lado Esquerdo: Imagem (Topo em Mobile, Esquerda em Desktop) */}
+            <div className="w-full md:w-1/2 bg-stone-50 flex items-center justify-center p-8 md:p-16 border-b md:border-b-0 md:border-r border-stone-100 shrink-0">
+              <img 
+                src={selectedProduct.imageUrl || 'https://placehold.co/600x600?text=Sem+Imagem'} 
+                alt={selectedProduct.name}
+                className="max-w-full max-h-48 md:max-h-full object-contain drop-shadow-2xl"
+              />
+            </div>
+
+            {/* Lado Direito: Informações e Ação */}
+            <div className="w-full md:w-1/2 flex flex-col p-6 md:p-12 overflow-y-auto bg-white">
+              <div className="mb-6 md:mb-8">
+                <span className="inline-block px-3 py-1 bg-brand-accent/10 text-brand-dark text-[10px] font-black tracking-[0.2em] uppercase rounded-full mb-3 md:mb-4">
+                  {categories.find(c => c.id === selectedProduct.categoryId)?.name || 'Produto'}
+                </span>
+                <h2 className="text-2xl md:text-4xl font-black text-brand-dark leading-tight mb-2">
+                  {selectedProduct.name}
+                </h2>
+                <p className="text-xl md:text-2xl font-black text-brand-success">
+                  R$ {selectedProduct.price.toFixed(2)}
+                </p>
+              </div>
+
+              <div className="space-y-6 md:space-y-8 flex-1">
+                {selectedProduct.description && (
+                  <div>
+                    <h4 className="text-[10px] font-black text-brand-muted uppercase tracking-[0.2em] mb-2">Descrição</h4>
+                    <p className="text-stone-500 text-sm md:text-base leading-relaxed">
+                      {selectedProduct.description}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-8 md:mt-10 pt-6 md:pt-8 border-t border-stone-100 flex flex-col gap-3">
+                <button 
+                  className="w-full flex items-center justify-center gap-4 bg-brand-accent hover:bg-brand-accentHover text-brand-dark py-4 md:py-5 rounded-premium font-black text-base md:text-lg shadow-xl shadow-yellow-500/20 transition-all active:scale-95"
+                  onClick={() => {
+                    actions.addToCart(selectedProduct);
+                    setSelectedProduct(null);
+                  }}
+                >
+                  <Plus className="h-5 w-5 md:h-6 md:w-6" />
+                  <span>ADICIONAR AO CARRINHO</span>
+                </button>
+                <p className="hidden md:block text-center text-xs text-stone-400 font-bold mt-4 uppercase tracking-widest">Toque fora para cancelar</p>
+              </div>
             </div>
           </div>
         </div>
