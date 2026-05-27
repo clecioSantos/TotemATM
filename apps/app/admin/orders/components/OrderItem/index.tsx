@@ -78,10 +78,23 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
                   <td>
                     <strong>{item.name}</strong>
                     {item.observation && <p className="item-observation">"{item.observation}"</p>}
+                    {item.condiments && item.condiments.length > 0 && (
+                      <div className="item-condiments-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                        {item.condiments.map((c: any) => (
+                          <span key={c.id} style={{ fontSize: '10px', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', color: '#475569' }}>
+                            + {c.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </td>
                   <td style={{ textAlign: 'center' }}>{item.quantity}x</td>
-                  <td style={{ textAlign: 'right' }}>R$ {item.price.toFixed(2)}</td>
-                  <td style={{ textAlign: 'right' }}>R$ {(item.quantity * item.price).toFixed(2)}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    R$ {(item.price + (item.condiments?.reduce((s: number, c: any) => s + c.price, 0) || 0)).toFixed(2)}
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    R$ {(item.quantity * (item.price + (item.condiments?.reduce((s: number, c: any) => s + c.price, 0) || 0))).toFixed(2)}
+                  </td>
                 </tr>
               ))}
             </tbody>

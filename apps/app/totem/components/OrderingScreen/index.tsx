@@ -1,14 +1,15 @@
 "use client";
-import { useState } from "react";
-import { Product, Category, CartItem } from "@totem/shared/types";
-import { ShoppingBag, Trash2, Plus, Minus, X, RotateCcw, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Product, Category, CartItem, Condiment } from "@totem/shared/types";
+import { ShoppingBag, Trash2, Plus, Minus, X, RotateCcw, ArrowRight, Check } from "lucide-react";
 
 interface OrderingScreenProps {
   products: Product[];
   categories: Category[];
+  condiments: Condiment[];
   cart: CartItem[];
   actions: {
-    addToCart: (product: Product) => void;
+    addToCart: (product: Product, selectedCondiments?: Condiment[]) => void;
     removeFromCart: (id: string) => void;
     updateQuantity: (id: string, delta: number) => void;
     updateItemObservation: (id: string, obs: string) => void;
@@ -17,18 +18,47 @@ interface OrderingScreenProps {
   onFinish: () => void;
   onCancel: () => void;
 }
-
-export default function OrderingScreen({ products, categories, cart, actions, onFinish, onCancel }: OrderingScreenProps) {
+ 
+export default function OrderingScreen({ 
+  products = [], 
+  categories = [], 
+  condiments = [], 
+  cart = [], 
+  actions, 
+  onFinish, 
+  onCancel 
+}: OrderingScreenProps) {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [tempSelectedCondimentIds, setTempSelectedCondimentIds] = useState<string[]>([]);
 
   const filteredProducts = activeCategory === "all" 
     ? products 
     : products.filter(p => p.categoryId === activeCategory);
 
-  const cartTotal = cart.reduce((acc, i) => acc + (i.price * i.quantity), 0);
+  const cartTotal = cart.reduce((acc, i) => {
+    const condimentsPrice = i.condiments?.reduce((sum, c) => sum + c.price, 0) || 0;
+    return acc + ((i.price + condimentsPrice) * i.quantity);
+  }, 0);
   const cartItemsCount = cart.reduce((acc, i) => acc + i.quantity, 0);
+
+  const productCondiments = selectedProduct 
+    ? condiments.filter(c => c.enabled && c.categoryIds?.includes(selectedProduct.categoryId))
+    : [];
+
+  useEffect(() => {
+    if (selectedProduct) {
+      console.log("🛒 [Totem] Produto selecionado:", selectedProduct.name, "Categoria ID:", selectedProduct.categoryId);
+      console.log("🧂 [Totem] Adicionais disponíveis:", productCondiments.map(c => c.name));
+    }
+  }, [selectedProduct, productCondiments]);
+
+  const modalTotalPrice = selectedProduct 
+    ? selectedProduct.price + condiments
+        .filter(c => tempSelectedCondimentIds.includes(c.id))
+        .reduce((sum, c) => sum + c.price, 0)
+    : 0;
 
   // Componente de lista de itens do carrinho reutilizável
   const CartItemsList = () => (
@@ -45,6 +75,16 @@ export default function OrderingScreen({ products, categories, cart, actions, on
             </button>
           </div>
           
+          {item.condiments && item.condiments.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 -mt-1">
+              {item.condiments.map(c => (
+                <span key={c.id} className="text-[10px] bg-brand-accent/20 text-brand-dark px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
+                  + {c.name}
+                </span>
+              ))}
+            </div>
+          )}
+
           <div className="flex justify-between items-center mt-1">
             <div className="flex items-center gap-3 bg-stone-100 rounded-lg p-1">
               <button 
@@ -62,7 +102,9 @@ export default function OrderingScreen({ products, categories, cart, actions, on
                 <Plus className="h-3 w-3" />
               </button>
             </div>
-            <span className="font-black text-brand-success text-sm md:text-base">R$ {(item.price * item.quantity).toFixed(2)}</span>
+            <span className="font-black text-brand-success text-sm md:text-base">
+              R$ {((item.price + (item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0)) * item.quantity).toFixed(2)}
+            </span>
           </div>
 
           <input 
@@ -173,7 +215,10 @@ export default function OrderingScreen({ products, categories, cart, actions, on
                   <div 
                     key={product.id} 
                     className="bg-white rounded-premium border border-brand-border/60 p-3 md:p-4 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer flex flex-col"
-                    onClick={() => setSelectedProduct(product)}
+                    onClick={() => {
+                      setTempSelectedCondimentIds([]);
+                      setSelectedProduct(product);
+                    }}
                   >
                     <div className="w-full aspect-square rounded-xl overflow-hidden bg-stone-50 mb-3 border border-stone-100">
                       <img 
@@ -183,7 +228,7 @@ export default function OrderingScreen({ products, categories, cart, actions, on
                       />
                     </div>
                     <div className="flex-1 flex flex-col justify-between">
-                      <h3 className="font-extrabold text-sm md:text-base text-brand-dark line-clamp-2 leading-tight min-h-[2.5rem]">{product.name}</h3>
+                      <h3 className="font-extrabold text-sm md:text-base text-brand-dark line-clamp-2 leading-tight">{product.name}</h3>
                       <p className="text-brand-success font-black text-base md:text-lg mt-2">R$ {product.price.toFixed(2)}</p>
                     </div>
                   </div>
@@ -332,7 +377,7 @@ export default function OrderingScreen({ products, categories, cart, actions, on
                   {selectedProduct.name}
                 </h2>
                 <p className="text-xl md:text-2xl font-black text-brand-success">
-                  R$ {selectedProduct.price.toFixed(2)}
+                  R$ {modalTotalPrice.toFixed(2)}
                 </p>
               </div>
 
@@ -345,18 +390,51 @@ export default function OrderingScreen({ products, categories, cart, actions, on
                     </p>
                   </div>
                 )}
+
+                {productCondiments.length > 0 && (
+                  <div>
+                    <h4 className="text-[10px] font-black text-brand-muted uppercase tracking-[0.2em] mb-4">Turbine seu pedido</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {productCondiments.map(cond => (
+                        <button
+                          key={cond.id}
+                          onClick={() => {
+                            setTempSelectedCondimentIds(prev => 
+                              prev.includes(cond.id) ? prev.filter(id => id !== cond.id) : [...prev, cond.id]
+                            );
+                          }}
+                          className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${
+                            tempSelectedCondimentIds.includes(cond.id)
+                              ? 'border-brand-accent bg-brand-accent/5 shadow-inner'
+                              : 'border-stone-100 bg-stone-50 hover:bg-stone-100'
+                          }`}
+                        >
+                          <div className="flex flex-col items-start text-left">
+                            <span className="text-sm font-bold text-brand-dark">{cond.name}</span>
+                            <span className="text-xs text-brand-success font-black">+ R$ {cond.price.toFixed(2)}</span>
+                          </div>
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 transition-colors ${tempSelectedCondimentIds.includes(cond.id) ? 'bg-brand-accent border-brand-accent' : 'border-stone-200'}`}>
+                            {tempSelectedCondimentIds.includes(cond.id) && <Check className="h-3.5 w-3.5 text-brand-dark" strokeWidth={4} />}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="mt-8 md:mt-10 pt-6 md:pt-8 border-t border-stone-100 flex flex-col gap-3">
                 <button 
                   className="w-full flex items-center justify-center gap-4 bg-brand-accent hover:bg-brand-accentHover text-brand-dark py-4 md:py-5 rounded-premium font-black text-base md:text-lg shadow-xl shadow-yellow-500/20 transition-all active:scale-95"
                   onClick={() => {
-                    actions.addToCart(selectedProduct);
+                    const selected = condiments.filter(c => tempSelectedCondimentIds.includes(c.id));
+                    actions.addToCart(selectedProduct, selected);
                     setSelectedProduct(null);
+                    setTempSelectedCondimentIds([]);
                   }}
                 >
                   <Plus className="h-5 w-5 md:h-6 md:w-6" />
-                  <span>ADICIONAR AO CARRINHO</span>
+                  <span>ADICIONAR - R$ {modalTotalPrice.toFixed(2)}</span>
                 </button>
                 <p className="hidden md:block text-center text-xs text-stone-400 font-bold mt-4 uppercase tracking-widest">Toque fora para cancelar</p>
               </div>
