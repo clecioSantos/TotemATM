@@ -29,6 +29,7 @@ export interface Category {
 }
 
 export interface CartItem extends Product {
+  productId: string;
   quantity: number;
   observation?: string;
   condiments?: Condiment[];
