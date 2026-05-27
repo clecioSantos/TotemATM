@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import "./styles.css";
@@ -9,7 +8,7 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
-export default function Sidebar({ collapsed, onToggle }: SidebarProps) { // Removido o estado collapsed daqui
+export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
 
   const menuItems = [
@@ -17,53 +16,45 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) { // Remo
     { name: "Pedidos", path: "/admin/orders", icon: "📋" },
     { name: "Produtos", path: "/admin/products", icon: "📦" },
     { name: "Categorias", path: "/admin/categories", icon: "📁" },
+    { name: "Condimentos", path: "/admin/condiments", icon: "🧂" },
     { name: "Cupons", path: "/admin/coupons", icon: "🏷️" },
     { name: "Relatórios", path: "/admin/reports", icon: "📈" },
     { name: "Configurações", path: "/admin/settings", icon: "⚙️" },
   ];
 
   return (
-    <>
-      {collapsed && (
-        <button
-          className="mobile-sidebar-open-button"
-          onClick={onToggle}
-          aria-label="Abrir menu"
-        >
-          ☰
+    <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : ""}`}>
+      <div className="sidebar-top">
+        {!collapsed && (
+          <div className="sidebar-logo">
+            <h1 className="logo-title">NexOrder</h1>
+            <p className="logo-subtitle">Admin Panel</p>
+          </div>
+        )}
+        <button className="collapse-button" onClick={onToggle}>
+          {collapsed ? "→" : "←"}
         </button>
-      )}
-      <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : ""}`}> {/* Adicionado a classe sidebar-collapsed */}
-        <div className="sidebar-top"> {/* Adicionado um container para o topo da sidebar */}
-          {!collapsed && (
-            <div className="sidebar-logo">
-              <h1 className="logo-title">NexOrder</h1>
-              <p className="logo-subtitle">Painel Administrativo</p>
-            </div>
-          )}
-          <button className="collapse-button" onClick={onToggle}> {/* Botão para recolher/expandir */}
-            {collapsed ? "▶" : "◀"} {/* Ícones simples para indicar estado */}
-          </button>
-        </div>
+      </div>
 
-      <nav className="sidebar-menu"> {/* Menu de navegação */}
+      <nav className="sidebar-menu">
         {menuItems.map((item) => (
-          <Link
-            key={item.path}
+          <Link 
+            key={item.path} 
             href={item.path}
             className={`menu-item ${pathname === item.path ? "menu-item-active" : ""}`}
           >
-            <span className="menu-icon">{item.icon}</span>
-            {!collapsed && <span className="menu-text">{item.name}</span>}
+            <span>{item.icon}</span>
+            {!collapsed && <span>{item.name}</span>}
           </Link>
         ))}
       </nav>
 
-      <div className="sidebar-status"> {/* Indicador de status */}
-        <p className="status-label">{collapsed ? "●" : "Sistema Online"}</p>
-        {!collapsed && <div className="status-dot" />}
-      </div>
+      {!collapsed && (
+        <div className="sidebar-status">
+          <span className="status-dot"></span>
+          <span className="status-label">Operação Online</span>
+        </div>
+      )}
     </aside>
-    </>
   );
 }

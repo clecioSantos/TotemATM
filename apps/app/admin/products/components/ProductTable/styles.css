@@ -54,6 +54,30 @@
 .badge-active { background: #dcfce7; color: #166534; }
 .badge-inactive { background: #fee2e2; color: #991b1b; }
 
+.category-badge {
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 800;
+  display: inline-block;
+  color: white;
+  margin: 2px;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+.category-badge:hover {
+  transform: scale(1.1);
+  filter: brightness(1.1);
+}
+
+.category-badge:nth-child(6n+1) { background: #3b82f6; }
+.category-badge:nth-child(6n+2) { background: #10b981; }
+.category-badge:nth-child(6n+3) { background: #f59e0b; }
+.category-badge:nth-child(6n+4) { background: #ef4444; }
+.category-badge:nth-child(6n+5) { background: #8b5cf6; }
+.category-badge:nth-child(6n+6) { background: #06b6d4; }
+
 .actions-cell {
   display: flex;
   flex-direction: column;
