@@ -5,11 +5,13 @@ import OrderingScreen from "./components/OrderingScreen";
 import IdentificationScreen from "./components/IdentificationScreen";
 import FinishedScreen from "./components/FinishedScreen";
 import { useTotem } from "./hooks/useTotem";
+import { useCondiments } from "../admin/condiments/hooks/useCondiments";
 
 type TotemStep = 'WELCOME' | 'ORDERING' | 'IDENTIFICATION' | 'FINISHED';
 
 export default function TotemPage() {
   const [step, setStep] = useState<TotemStep>('WELCOME');
+  const { condiments, loading: condLoading } = useCondiments();
   const { 
     products, categories, cart, addToCart, removeFromCart, 
     updateQuantity, finishOrder, clearCart, updateItemObservation, loading 
@@ -27,7 +29,7 @@ export default function TotemPage() {
     }, 5000);
   };
 
-  if (loading) {
+  if (loading || condLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-brand-light">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-stone-200 border-t-brand-accent"></div>
@@ -44,6 +46,7 @@ export default function TotemPage() {
         <OrderingScreen 
           products={products}
           categories={categories}
+          condiments={condiments}
           cart={cart}
           actions={{ addToCart, removeFromCart, updateQuantity, updateItemObservation, clearCart }}
           onFinish={() => setStep('IDENTIFICATION')}

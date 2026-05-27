@@ -12,6 +12,17 @@ export interface Product {
   createdAt: Date | { seconds: number; nanoseconds: number };
 }
 
+export interface Condiment {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  price: number;
+  enabled: boolean;
+  categoryIds: string[];
+  createdAt: Date | { seconds: number; nanoseconds: number };
+}
+
 export interface Category {
   id: string;
   name: string;
@@ -20,6 +31,7 @@ export interface Category {
 export interface CartItem extends Product {
   quantity: number;
   observation?: string;
+  condiments?: Condiment[];
 }
 
 export interface OrderLineItem {
@@ -28,6 +40,7 @@ export interface OrderLineItem {
   price: number;
   quantity: number;
   observation?: string;
+  condiments?: Condiment[];
 }
 
 export interface Order {

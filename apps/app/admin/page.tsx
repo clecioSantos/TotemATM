@@ -16,7 +16,7 @@ export default function AdminPage() {
   ]);
 
   useEffect(() => {
-    const q = query(collection(firestore, "orders"), limit(10));
+    const q = query(collection(firestore, "orders"), orderBy("createdAt", "desc"), limit(10));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const loadedOrders = snapshot.docs.map(doc => {
@@ -24,11 +24,17 @@ export default function AdminPage() {
         return {
           id: `#${doc.id.slice(0, 4).toUpperCase()}`,
           customer: data.customerName || `Mesa ${data.tableNumber}`,
-          items: data.items?.map((i: any) => `${i.quantity}x ${i.name}`).join(", ") || "Sem itens",
+          items: data.items?.map((i: any) => {
+            const condimentList = i.condiments?.length > 0 
+              ? ` (+ ${i.condiments.map((c: any) => c.name).join(", ")})` 
+              : "";
+            return `${i.quantity}x ${i.name}${condimentList}`;
+          }).join(", ") || "Sem itens",
           total: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.total || 0),
           status: data.status === 'pending' ? 'Pendente' : 
                   data.status === 'preparing' ? 'Preparando' : 
-                  data.status === 'ready' ? 'Pronto' : 'Finalizado'
+                  data.status === 'ready' ? 'Pronto' : 
+                  data.status === 'canceled' ? 'Cancelado' : 'Finalizado'
         };
       });
 

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../services/firebase';
-import { Product, Category, CartItem } from '@totem/shared/types';
+import { Product, Category, CartItem, Condiment } from '@totem/shared/types';
 
 export const useTotem = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -46,25 +46,36 @@ export const useTotem = () => {
     };
   }, []);
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, selectedCondiments: Condiment[] = []) => {
     setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
+      // Cria uma chave única baseada no ID do produto e nos condimentos selecionados
+      const condimentsKey = selectedCondiments.map(c => c.id).sort().join(',');
+      const cartItemId = `${product.id}-${condimentsKey}`;
+
+      const existing = prev.find(item => item.id === cartItemId);
       if (existing) {
-        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+        return prev.map(item => item.id === cartItemId ? { ...item, quantity: item.quantity + 1 } : item);
       }
-      return [...prev, { ...product, quantity: 1 }];
+      
+      return [...prev, { 
+        ...product, 
+        id: cartItemId, // ID único para controle na listagem do carrinho
+        productId: product.id, // Preserva o ID original do produto para o banco de dados
+        quantity: 1, 
+        condiments: selectedCondiments 
+      } as CartItem];
     });
   };
 
-  const removeFromCart = (productId: string) => {
-    setCart(prev => prev.filter(item => item.id !== productId));
+  const removeFromCart = (itemId: string) => {
+    setCart(prev => prev.filter(item => item.id !== itemId));
   };
 
   const clearCart = () => setCart([]);
 
-  const updateQuantity = (productId: string, delta: number) => {
+  const updateQuantity = (itemId: string, delta: number) => {
     setCart(prev => prev.map(item => {
-      if (item.id === productId) {
+      if (item.id === itemId) {
         const newQuantity = Math.max(1, item.quantity + delta);
         return { ...item, quantity: newQuantity };
       }
@@ -72,25 +83,31 @@ export const useTotem = () => {
     }));
   };
 
-  const updateItemObservation = (productId: string, observation: string) => {
+  const updateItemObservation = (itemId: string, observation: string) => {
     setCart(prev => prev.map(item => 
-      item.id === productId ? { ...item, observation } : item
+      item.id === itemId ? { ...item, observation } : item
     ));
   };
 
   const finishOrder = async (customerName: string, tableNumber: string) => {
     if (cart.length === 0) return;
-    const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    
+    // Calcula o total considerando (preço base + soma dos condimentos) * quantidade
+    const total = cart.reduce((acc, item) => {
+      const condimentsTotal = item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0;
+      return acc + ((item.price + condimentsTotal) * item.quantity);
+    }, 0);
     
     const orderData = {
       customerName,
       tableNumber,
       items: cart.map(i => ({ 
-        productId: i.id, 
+        productId: i.productId || i.id, 
         name: i.name, 
         price: i.price, 
         quantity: i.quantity,
-        observation: i.observation || "" 
+        observation: i.observation || "",
+        condiments: i.condiments || [] // AGORA PERSISTE OS CONDIMENTOS NO FIREBASE
       })),
       total,
       status: 'pending',

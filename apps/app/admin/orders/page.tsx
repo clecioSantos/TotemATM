@@ -2,6 +2,7 @@
 
 import { useOrders } from "./hooks/useOrders";
 import { useProducts } from "../products/hooks/useProducts";
+import { useCondiments } from "../condiments/hooks/useCondiments";
 import OrderItem from "./components/OrderItem";
 import OrderForm from "./components/OrderForm";
 import Modal from "../components/Modal";
@@ -11,6 +12,7 @@ import "./page.css";
 export default function OrdersPage() {
   const { orders, loading, addOrder, updateOrderStatus, removeOrder } = useOrders();
   const { products } = useProducts();
+  const { condiments } = useCondiments();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -89,6 +91,7 @@ export default function OrdersPage() {
       >
         <OrderForm
           products={products}
+          condiments={condiments}
           onClose={() => setIsModalOpen(false)}
           onSubmit={async (data) => {
             await addOrder(data);
