@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { collection, onSnapshot, query, orderBy, limit, Timestamp, where } from "firebase/firestore";
-import { firestore } from "@/src/services/firebase";
+import { firestore } from "../../src/services/firebase";
 import { useAuth } from "@totem/shared/types/AuthProvider";
 import "./page.css";
 
@@ -53,7 +53,7 @@ export default function AdminPage() {
       // Cálculo dinâmico das estatísticas
       const totalRevenue = snapshot.docs.reduce((acc, doc) => acc + (doc.data().total || 0), 0);
       const inProd = snapshot.docs.filter(doc => doc.data().status === 'preparing').length;
-      const finished = snapshot.docs.filter(doc => doc.data().status === 'delivered' || doc.data().status === 'ready').length;
+      const finished = snapshot.docs.filter(doc => doc.data().status === 'finished' || doc.data().status === 'ready').length;
 
       setStats([
         {

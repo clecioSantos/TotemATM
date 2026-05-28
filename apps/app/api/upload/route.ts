@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { saveFile, deleteFile } from '@/src/services/file-manager';
+import { saveFile, deleteFile } from '../../../src/services/file-manager';
 
 export const runtime = 'nodejs';
 

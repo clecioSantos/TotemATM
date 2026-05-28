@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth } from "@services/firebase";
+import { auth } from "@/src/services/firebase";
 import Link from "next/link";
 import { userRepository } from "@totem/shared/types/user.repository";
 import { useSearchParams } from "next/navigation";
 import "./page.css";
 
-export default function RegisterPage() {
+function RegisterForm() {
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect");
 
@@ -34,7 +34,7 @@ export default function RegisterPage() {
       await userRepository.create({
         uid: userCredential.user.uid,
         email: email,
-        displayName: name,
+        name: name,
         role: "client", // Altere para "client" se este for o padrão para novos registros
         companyId: "default"
       });
@@ -97,3 +97,11 @@ export default function RegisterPage() {
     </div>
   );
 }
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterForm />
+    </Suspense>
+  );
+}

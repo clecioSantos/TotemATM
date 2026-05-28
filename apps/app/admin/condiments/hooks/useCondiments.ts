@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, doc, addDoc, updateDoc, deleteDoc, Timestamp, where } from 'firebase/firestore';
-import { firestore } from '@/src/services/firebase';
+import { firestore } from '../../../../src/services/firebase';
 import { useAuth } from '@totem/shared/types/AuthProvider';
 
 export interface Condiment {

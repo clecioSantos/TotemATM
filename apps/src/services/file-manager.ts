@@ -1,4 +1,4 @@
-import { cloudinary, CLOUDINARY_FOLDER } from '@/src/lib/cloudinary';
+import { cloudinary, CLOUDINARY_FOLDER } from '../lib/cloudinary';
 
 export const saveFile = async (file: {
   buffer: Buffer;

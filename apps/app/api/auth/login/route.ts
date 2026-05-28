@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { getAdminAuth, getAdminDb } from "@/src/services/firebase-admin";
+import { getAdminAuth, getAdminDb } from "../../../../src/services/firebase-admin";
 
 export async function POST(request: Request) {
   try {

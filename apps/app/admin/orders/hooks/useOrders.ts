@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, Timestamp, addDoc, doc, updateDoc, deleteDoc, where } from 'firebase/firestore';
 import { Order } from '../types';
-import { firestore } from '@/src/services/firebase';
+import { firestore } from '../../../../src/services/firebase';
 import { useAuth } from '@totem/shared/types/AuthProvider';
 
 export const useOrders = () => {

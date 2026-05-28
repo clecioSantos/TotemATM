@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../src/services/firebase";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import "./page.css";
 
-export default function LoginPage() {
+function LoginForm() {
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect");
 
@@ -31,7 +31,7 @@ export default function LoginPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ idToken }),
-      }); 
+      });
 
       if (res.ok) {
         // Redireciona para a página original (ex: totem/[id]) ou para o admin por padrão
@@ -71,8 +71,8 @@ export default function LoginPage() {
         </form>
         <p className="footer-text" style={{ marginTop: '24px', textAlign: 'center', fontSize: '14px', color: '#6b7280' }}>
           Ainda não tem conta?{" "}
-          <Link 
-            href={`/register${redirectPath ? `?redirect=${redirectPath}` : ""}`} 
+          <Link
+            href={`/register${redirectPath ? `?redirect=${redirectPath}` : ""}`}
             style={{ color: '#000', fontWeight: '600', textDecoration: 'none' }}
           >
             Crie uma agora
@@ -82,3 +82,11 @@ export default function LoginPage() {
     </div>
   );
 }
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}

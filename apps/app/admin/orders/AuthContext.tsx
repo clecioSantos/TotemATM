@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { auth } from "@/src/services/firebase";
+import { auth } from "../../../src/services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { UserProfile } from "@totem/shared/types/auth";
 
@@ -23,10 +23,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser({
           uid: firebaseUser.uid,
           email: firebaseUser.email!,
-          displayName: firebaseUser.displayName || undefined,
+          name: firebaseUser.displayName || "Administrador",
           role: 'admin', // Em produção, buscaríamos isso do custom claims ou Firestore
-          companyId: 'default'
-        });
+          companyId: 'default',
+          createdAt: new Date().toISOString()
+        } as unknown as UserProfile);
       } else {
         setUser(null);
       }
@@ -37,6 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    setUser(null);
     await auth.signOut();
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = "/login";

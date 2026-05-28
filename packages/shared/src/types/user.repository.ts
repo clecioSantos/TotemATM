@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { firestore } from "@/src/services/firebase";
+import { firestore } from "../../../../apps/src/services/firebase";
 import { UserProfile } from "@totem/shared/types/auth";
 
 export const userRepository = {

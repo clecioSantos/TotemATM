@@ -143,7 +143,7 @@ export const useTotem = (companyId: string) => {
     
     const orderData = {
       companyId: companyId,
-      customerName: user?.displayName || "Cliente",
+      customerName: user?.name || "Cliente",
       customerId: user?.uid || null,
       tableNumber: "", // Campo mantido vazio para compatibilidade com o schema
       address: identification.address || null,
