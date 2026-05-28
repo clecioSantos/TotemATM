@@ -1,17 +1,23 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, Timestamp, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, Timestamp, addDoc, doc, updateDoc, deleteDoc, where } from 'firebase/firestore';
 import { Order } from '../types';
 import { firestore } from '@/src/services/firebase';
+import { useAuth } from '@totem/shared/types/AuthProvider';
 
 export const useOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
-    // Removido orderBy da query para evitar erros de índice ausente no console do Firebase
-    const q = query(collection(firestore, 'orders'));
+    if (!user?.companyId) return;
+
+    const q = query(
+      collection(firestore, 'orders'),
+      where('companyId', '==', user.companyId)
+    );
     
     const unsubscribe = onSnapshot(q, 
       (snapshot) => {
@@ -40,12 +46,13 @@ export const useOrders = () => {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [user?.companyId]);
 
   const addOrder = async (orderData: Partial<Order>) => {
     try {
       await addDoc(collection(firestore, 'orders'), {
         ...orderData,
+        companyId: user?.companyId,
         total: Number(orderData.total) || 0,
         status: orderData.status || 'pending',
         createdAt: Timestamp.now(),

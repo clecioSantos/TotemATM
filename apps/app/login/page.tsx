@@ -4,9 +4,13 @@ import React, { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../src/services/firebase";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import "./page.css";
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get("redirect");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,7 +34,8 @@ export default function LoginPage() {
       }); 
 
       if (res.ok) {
-        window.location.href = "/admin";
+        // Redireciona para a página original (ex: totem/[id]) ou para o admin por padrão
+        window.location.href = redirectPath || "/admin";
       } else {
         setError("Erro ao criar sessão segura.");
       }
@@ -64,7 +69,15 @@ export default function LoginPage() {
             {loading ? "Entrando..." : "Acessar Sistema"}
           </button>
         </form>
-        <p className="footer-text" style={{ marginTop: '24px', textAlign: 'center', fontSize: '14px', color: '#6b7280' }}>Ainda não tem conta? <Link href="/register" style={{ color: '#000', fontWeight: '600', textDecoration: 'none' }}>Crie uma agora</Link></p>
+        <p className="footer-text" style={{ marginTop: '24px', textAlign: 'center', fontSize: '14px', color: '#6b7280' }}>
+          Ainda não tem conta?{" "}
+          <Link 
+            href={`/register${redirectPath ? `?redirect=${redirectPath}` : ""}`} 
+            style={{ color: '#000', fontWeight: '600', textDecoration: 'none' }}
+          >
+            Crie uma agora
+          </Link>
+        </p>
       </div>
     </div>
   );

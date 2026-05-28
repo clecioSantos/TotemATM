@@ -2,6 +2,7 @@ export type OrderStatus = "pending" | "preparing" | "ready" | "finished";
 
 export interface Product {
   id: string;
+  companyId: string;
   name: string;
   description: string;
   price: number;
@@ -14,6 +15,7 @@ export interface Product {
 
 export interface Condiment {
   id: string;
+  companyId: string;
   name: string;
   description: string;
   imageUrl: string;
@@ -25,6 +27,7 @@ export interface Condiment {
 
 export interface Category {
   id: string;
+  companyId: string;
   name: string;
 }
 
@@ -46,6 +49,7 @@ export interface OrderLineItem {
 
 export interface Order {
   id: string;
+  companyId: string;
   items: OrderLineItem[];
   total: number;
   status: OrderStatus;

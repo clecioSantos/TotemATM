@@ -1,75 +1,72 @@
 "use client";
-import { useState } from "react";
-import WelcomeScreen from "./components/WelcomeScreen";
-import OrderingScreen from "./components/OrderingScreen";
-import IdentificationScreen from "./components/IdentificationScreen";
-import FinishedScreen from "./components/FinishedScreen";
-import { useTotem } from "./hooks/useTotem";
-import { useCondiments } from "../admin/condiments/hooks/useCondiments";
 
-type TotemStep = 'WELCOME' | 'ORDERING' | 'IDENTIFICATION' | 'FINISHED';
+import { use } from "react";
 
-export default function TotemPage() {
-  const [step, setStep] = useState<TotemStep>('WELCOME');
-  const { condiments, loading: condLoading } = useCondiments();
+import { useTotem } from "@totem/hooks/useTotem";
+// Como page.css está na raiz de apps/, usamos o alias @/
+import "@/page.css";
+
+interface PageProps {
+  params: Promise<{ companyId: string }>;
+}
+
+export default function TotemPage({ params }: PageProps) {
+  // No Next.js 15, params é uma Promise que deve ser resolvida com 'use'
+  const { companyId } = use(params);
+
   const { 
-    products, categories, cart, addToCart, removeFromCart, 
-    updateQuantity, finishOrder, clearCart, updateItemObservation, loading 
-  } = useTotem();
-  const [customerName, setCustomerName] = useState("");
-  const [tableNumber, setTableNumber] = useState("");
+    products, 
+    categories, 
+    condiments,
+    cart, 
+    addToCart, 
+    removeFromCart, 
+    updateQuantity, 
+    finishOrder, 
+    loading 
+  } = useTotem(companyId);
 
-  const handleFinish = async () => {
-    await finishOrder(customerName, tableNumber);
-    setStep('FINISHED');
-    setCustomerName("");
-    setTableNumber("");
-    setTimeout(() => {
-      setStep('WELCOME');
-    }, 5000);
-  };
-
-  if (loading || condLoading) {
+  if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-brand-light">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-stone-200 border-t-brand-accent"></div>
+      <div className="loading-screen">
+        <div className="loader">Carregando cardápio...</div>
       </div>
     );
   }
 
-  switch (step) {
-    case 'WELCOME':
-      return <WelcomeScreen onStart={() => setStep('ORDERING')} />;
-    
-    case 'ORDERING':
-      return (
-        <OrderingScreen 
-          products={products}
-          categories={categories}
-          condiments={condiments}
-          cart={cart}
-          actions={{ addToCart, removeFromCart, updateQuantity, updateItemObservation, clearCart }}
-          onFinish={() => setStep('IDENTIFICATION')}
-          onCancel={() => setStep('WELCOME')}
-        />
-      );
+  return (
+    <main className="totem-container">
+      <header className="totem-header">
+        <h1>Cardápio Digital</h1>
+        <p>ID da Unidade: {companyId}</p>
+      </header>
 
-    case 'IDENTIFICATION':
-      return (
-        <IdentificationScreen 
-          customerName={customerName}
-          setCustomerName={setCustomerName}
-          tableNumber={tableNumber}
-          setTableNumber={setTableNumber}
-          onConfirm={handleFinish}
-          onBack={() => setStep('ORDERING')}
-        />
-      );
+      {/* Renderize aqui a sua UI de Categorias e Produtos filtrados */}
+      <section className="menu-section">
+        {categories.map(category => (
+          <div key={category.id}>
+            <h2>{category.name}</h2>
+            <div className="products-grid">
+              {products
+                .filter(p => p.categoryId === category.id)
+                .map(product => (
+                  <button key={product.id} onClick={() => addToCart(product)}>
+                    {product.name} - R$ {product.price}
+                  </button>
+                ))}
+            </div>
+          </div>
+        ))}
+      </section>
 
-    case 'FINISHED':
-      return <FinishedScreen />;
-
-    default:
-      return <WelcomeScreen onStart={() => setStep('ORDERING')} />;
-  }
+      {/* Exemplo de rodapé com carrinho */}
+      {cart.length > 0 && (
+        <footer className="totem-footer">
+          <button onClick={() => finishOrder({})}>
+            Finalizar Pedido ({cart.length} itens)
+          </button>
+        </footer>
+      )}
+    </main>
+  );
 }

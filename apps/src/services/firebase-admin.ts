@@ -34,6 +34,11 @@ export function getAdminAuth() {
   return admin.auth();
 }
 
+export async function setUserClaims(uid: string, role: string) {
+  const auth = getAdminAuth();
+  await auth.setCustomUserClaims(uid, { role });
+}
+
 export function getAdminDb() {
   initializeFirebaseAdmin();
   return admin.firestore();

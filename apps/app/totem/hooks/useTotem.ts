@@ -1,21 +1,28 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../services/firebase';
+import { firestore as db } from '@/src/services/firebase';
 import { Product, Category, CartItem, Condiment } from '@totem/shared/types';
+import { useAuth } from '@totem/shared/types/AuthProvider';
+import { authService } from '@totem/shared/types/auth.service';
 
-export const useTotem = () => {
+export const useTotem = (companyId: string) => {
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [condiments, setCondiments] = useState<Condiment[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!db.app.options.projectId) return;
+    if (!db.app.options.projectId || !companyId) return;
+    setLoading(true);
 
-    // Padrão modular: Escuta de categorias (Idêntico ao que o Admin deve fazer)
+    // Escuta apenas categorias da empresa atual
     const categoryRef = collection(db, 'categories');
-    const unsubCat = onSnapshot(categoryRef, (snapshot) => {
+    const qCat = query(categoryRef, where('companyId', '==', companyId));
+    
+    const unsubCat = onSnapshot(qCat, (snapshot) => {
       const catData = snapshot.docs.map(doc => ({ 
         id: doc.id, 
         ...doc.data() 
@@ -23,11 +30,18 @@ export const useTotem = () => {
       
       console.log(`[Firebase] ${catData.length} categorias carregadas`);
       setCategories(catData);
+    }, (error) => {
+      console.error("❌ Erro ao carregar categorias:", error);
+      setLoading(false);
     });
 
-    // Padrão modular: Escuta de produtos ativos
+    // Escuta apenas produtos ativos da empresa atual
     const productRef = collection(db, 'products');
-    const q = query(productRef, where('active', '==', true));
+    const q = query(
+      productRef, 
+      where('active', '==', true),
+      where('companyId', '==', companyId)
+    );
     
     const unsubProd = onSnapshot(q, (snapshot) => {
       const prodData = snapshot.docs.map(doc => ({ 
@@ -38,13 +52,33 @@ export const useTotem = () => {
       console.log(`[Firebase] ${prodData.length} produtos ativos carregados`);
       setProducts(prodData);
       setLoading(false);
+    }, (error) => {
+      console.error("❌ Erro ao carregar produtos:", error);
+      setLoading(false);
+    });
+
+    // Escuta apenas condimentos da empresa atual
+    const condimentRef = collection(db, 'condiments');
+    const qCond = query(condimentRef, where('companyId', '==', companyId));
+
+    const unsubCond = onSnapshot(qCond, (snapshot) => {
+      const condData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Condiment[];
+      console.log(`[Firebase] ${condData.length} condimentos carregados`);
+      setCondiments(condData);
+    }, (error) => {
+      console.error("❌ Erro ao carregar adicionais:", error);
+      setLoading(false);
     });
 
     return () => {
       unsubCat();
       unsubProd();
+      unsubCond();
     };
-  }, []);
+  }, [companyId]);
 
   const addToCart = (product: Product, selectedCondiments: Condiment[] = []) => {
     setCart(prev => {
@@ -84,13 +118,22 @@ export const useTotem = () => {
   };
 
   const updateItemObservation = (itemId: string, observation: string) => {
-    setCart(prev => prev.map(item => 
+    setCart(prev => prev.map(item =>
       item.id === itemId ? { ...item, observation } : item
     ));
   };
 
-  const finishOrder = async (customerName: string, tableNumber: string) => {
-    if (cart.length === 0) return;
+  interface OrderIdentification {
+    address?: {
+      street: string;
+      number: string;
+      neighborhood: string;
+      complement?: string;
+    };
+  }
+
+  const finishOrder = async (identification: OrderIdentification) => {
+    if (cart.length === 0 || !companyId) return;
     
     // Calcula o total considerando (preço base + soma dos condimentos) * quantidade
     const total = cart.reduce((acc, item) => {
@@ -99,8 +142,11 @@ export const useTotem = () => {
     }, 0);
     
     const orderData = {
-      customerName,
-      tableNumber,
+      companyId: companyId,
+      customerName: user?.displayName || "Cliente",
+      customerId: user?.uid || null,
+      tableNumber: "", // Campo mantido vazio para compatibilidade com o schema
+      address: identification.address || null,
       items: cart.map(i => ({ 
         productId: i.productId || i.id, 
         name: i.name, 
@@ -119,5 +165,22 @@ export const useTotem = () => {
     clearCart();
   };
 
-  return { products, categories, cart, addToCart, removeFromCart, updateQuantity, updateItemObservation, finishOrder, clearCart, loading };
+  const logout = async () => {
+    await authService.signOut();
+  };
+
+  return { 
+    products, 
+    categories, 
+    condiments, 
+    cart, 
+    addToCart, 
+    removeFromCart, 
+    updateQuantity, 
+    updateItemObservation, 
+    finishOrder, 
+    clearCart, 
+    loading, 
+    logout 
+  };
 };

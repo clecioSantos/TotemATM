@@ -2,11 +2,16 @@
 
 import React, { useState } from "react";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth } from "@/src/services/firebase";
+import { auth } from "@services/firebase";
 import Link from "next/link";
+import { userRepository } from "@totem/shared/types/user.repository";
+import { useSearchParams } from "next/navigation";
 import "./page.css";
 
 export default function RegisterPage() {
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get("redirect");
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,6 +30,15 @@ export default function RegisterPage() {
         displayName: name,
       });
 
+      // SALVAR NO FIRESTORE
+      await userRepository.create({
+        uid: userCredential.user.uid,
+        email: email,
+        displayName: name,
+        role: "client", // Altere para "client" se este for o padrão para novos registros
+        companyId: "default"
+      });
+
       const idToken = await userCredential.user.getIdToken();
 
       // Esta é a chamada que estava retornando 404
@@ -35,7 +49,7 @@ export default function RegisterPage() {
       });
 
       if (res.ok) {
-        window.location.href = "/";
+        window.location.href = redirectPath || "/";
       } else {
         setError("Conta criada, mas houve um erro ao iniciar sessão.");
       }
