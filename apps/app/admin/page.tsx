@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, onSnapshot, query, orderBy, limit, Timestamp } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, limit, Timestamp, where } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
+import { useAuth } from "@totem/shared/types/AuthProvider";
 import "./page.css";
 
 export default function AdminPage() {
+  const { user } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState([
@@ -16,14 +18,22 @@ export default function AdminPage() {
   ]);
 
   useEffect(() => {
-    const q = query(collection(firestore, "orders"), orderBy("createdAt", "desc"), limit(10));
+    if (!user?.companyId) return;
+
+    const q = query(
+      collection(firestore, "orders"), 
+      where("companyId", "==", user.companyId),
+      orderBy("createdAt", "desc"), 
+      limit(10)
+    );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const loadedOrders = snapshot.docs.map(doc => {
         const data = doc.data();
+        const addressSummary = data.address ? ` | 📍 ${data.address.neighborhood}` : "";
         return {
           id: `#${doc.id.slice(0, 4).toUpperCase()}`,
-          customer: data.customerName || `Mesa ${data.tableNumber}`,
+          customer: `${data.customerName || 'Cliente'}${data.tableNumber ? ` (Mesa ${data.tableNumber})` : ""}${addressSummary}`,
           items: data.items?.map((i: any) => {
             const condimentList = i.condiments?.length > 0 
               ? ` (+ ${i.condiments.map((c: any) => c.name).join(", ")})` 

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, doc, addDoc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, addDoc, updateDoc, deleteDoc, Timestamp, where } from 'firebase/firestore';
 import { Product } from '@totem/shared/types';
 import { firestore } from '@/src/services/firebase';
+import { useAuth } from '@totem/shared/types/AuthProvider';
 
 // Usar a mesma aplicação Next.js para upload
 const API_BASE_URL = '';
@@ -12,10 +13,15 @@ export const useProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
-    // Removido orderBy temporariamente para evitar falhas por falta de índice no Firestore
-    const q = query(collection(firestore, 'products'));
+    if (!user?.companyId) return;
+
+    const q = query(
+      collection(firestore, 'products'),
+      where('companyId', '==', user.companyId)
+    );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map(doc => {
@@ -47,7 +53,7 @@ export const useProducts = () => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user?.companyId]);
 
   const saveProduct = async (data: Partial<Product>, file?: File) => {
     let imageUrl = data.imageUrl || "";
@@ -90,6 +96,7 @@ export const useProducts = () => {
     } else {
       await addDoc(collection(firestore, 'products'), {
         ...data,
+        companyId: user?.companyId,
         imageUrl,
         active: data.active ?? true,
         featured: data.featured ?? false,

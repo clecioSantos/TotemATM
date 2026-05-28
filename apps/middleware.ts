@@ -6,9 +6,9 @@ const PUBLIC_ROUTES = ["/login", "/register"];
 
 export async function middleware(request: NextRequest) {
   const session = request.cookies.get("session")?.value;
+  const userRole = request.cookies.get("user-role")?.value;
   const { pathname } = request.nextUrl;
 
-  // Permite acesso a recursos estáticos e APIs de autenticação
   if (
     pathname.startsWith('/_next') || 
     pathname.startsWith('/api/auth') || 
@@ -18,17 +18,34 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Verifica se a rota atual é pública (ex: /login)
   const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname === route);
   
-  // Se não houver sessão e a rota não for pública, redireciona para login
   if (!session && !isPublicRoute) {
+    const loginUrl = new URL("/login", request.url);
+    // Salva a rota original para redirecionar o usuário após ele logar ou se registrar
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  if (session && isPublicRoute) {
+    // Redireciona usuários logados para suas respectivas homes se tentarem acessar login
+    if (userRole === 'admin') {
+      return NextResponse.redirect(new URL('/admin', request.url));
+    }
+    // Para clientes, talvez seja necessário um ID padrão ou uma página de seleção de unidade
+    return NextResponse.next(); 
+  }
+
+  // Impede que clientes acessem rotas de Admin
+  if (userRole === "client" && pathname.startsWith("/admin")) {
+    // Como o totem agora precisa de ID, se o cliente tentar entrar no Admin, 
+    // mandamos ele para o login ou uma home de seleção de totem
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Se o usuário já está logado e tenta ir para o login, vai para a home
-  if (session && isPublicRoute) {
-    return NextResponse.redirect(new URL("/", request.url));
+  // Impede acesso de clients a rotas admin (fallback de segurança)
+  if (pathname.startsWith("/admin") && userRole !== "admin") {
+    return NextResponse.redirect(new URL("/totem", request.url));
   }
 
   return NextResponse.next();

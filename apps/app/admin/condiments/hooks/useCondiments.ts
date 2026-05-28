@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, doc, addDoc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, doc, addDoc, updateDoc, deleteDoc, Timestamp, where } from 'firebase/firestore';
 import { firestore } from '@/src/services/firebase';
+import { useAuth } from '@totem/shared/types/AuthProvider';
 
 export interface Condiment {
   id: string;
+  companyId: string;
   name: string;
   description: string;
   imageUrl: string;
@@ -19,9 +21,15 @@ export const useCondiments = () => {
   const [condiments, setCondiments] = useState<Condiment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
-    const q = query(collection(firestore, 'condiments'));
+    if (!user?.companyId) return;
+
+    const q = query(
+      collection(firestore, 'condiments'),
+      where('companyId', '==', user.companyId)
+    );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map(doc => {
@@ -43,7 +51,7 @@ export const useCondiments = () => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user?.companyId]);
 
   const saveCondiment = async (data: Partial<Condiment>, file?: File) => {
     let imageUrl = data.imageUrl || "";
@@ -77,6 +85,7 @@ export const useCondiments = () => {
     } else {
       await addDoc(collection(firestore, 'condiments'), {
         ...condimentData,
+        companyId: user?.companyId,
         createdAt: Timestamp.now(),
       });
     }

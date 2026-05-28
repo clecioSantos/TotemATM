@@ -8,7 +8,10 @@
     ], 
     "paths": {
       "@/*": ["./*"], 
-      "@totem/shared/*": ["../packages/shared/src/*"]
+      "@totem/shared/*": ["../packages/shared/src/*"],
+      "@totem/hooks/*": ["app/totem/hooks/*"],
+      "@services/*": ["src/services/*"],
+      "@styles/*": ["src/styles/*"]
     },
     "allowJs": true,
     "skipLibCheck": true,
