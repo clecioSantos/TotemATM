@@ -45,3 +45,26 @@ body {
     padding: 24px;
   }
 }
+
+/* Estilos para o Overlay da Sidebar no Mobile */
+.sidebar-mobile-overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .sidebar-mobile-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+    z-index: 90; /* Abaixo da sidebar (100) mas acima do conteúdo */
+    cursor: pointer;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}

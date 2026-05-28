@@ -32,15 +32,14 @@ export async function middleware(request: NextRequest) {
     if (userRole === 'admin') {
       return NextResponse.redirect(new URL('/admin', request.url));
     }
-    // Para clientes, talvez seja necessário um ID padrão ou uma página de seleção de unidade
-    return NextResponse.next(); 
+    // Para clientes, redireciona para a tela de seleção de unidade
+    return NextResponse.redirect(new URL('/totem', request.url));
   }
 
   // Impede que clientes acessem rotas de Admin
   if (userRole === "client" && pathname.startsWith("/admin")) {
-    // Como o totem agora precisa de ID, se o cliente tentar entrar no Admin, 
-    // mandamos ele para o login ou uma home de seleção de totem
-    return NextResponse.redirect(new URL("/login", request.url));
+    // Redireciona clientes para a tela de seleção de unidade
+    return NextResponse.redirect(new URL("/totem", request.url));
   }
 
   // Impede acesso de clients a rotas admin (fallback de segurança)

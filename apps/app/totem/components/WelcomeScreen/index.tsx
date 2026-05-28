@@ -3,7 +3,7 @@ import { useState } from "react";
 import { LogOut, User, Building2, X, Check, LayoutDashboard } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@totem/shared/types/AuthProvider";
-import { firestore } from "../../../../src/services/firebase";
+import { firestore, auth } from "@/src/services/firebase";
 import { collection, addDoc, updateDoc, doc, serverTimestamp } from "firebase/firestore";
 
 interface WelcomeScreenProps {
@@ -39,10 +39,22 @@ export default function WelcomeScreen({ onStart, onLogout }: WelcomeScreenProps)
         companyId: companyRef.id,
       });
 
+      // 3. Atualizar a sessão (cookies) para refletir o novo cargo (Admin)
+      // Isso garante que o middleware reconheça as novas permissões imediatamente
+      if (auth.currentUser) {
+        const idToken = await auth.currentUser.getIdToken(true); // Força refresh para carregar novos claims
+        await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken }),
+        });
+      }
+
       await refreshProfile();
       setIsModalOpen(false);
       setIsMenuOpen(false);
-      alert("Empresa cadastrada! Você agora é administrador.");
+      alert("Empresa cadastrada com sucesso! Redirecionando para o seu painel...");
+      router.push("/admin");
     } catch (error) {
       console.error("Erro ao cadastrar empresa:", error);
       alert("Falha ao registrar empresa. Tente novamente.");
