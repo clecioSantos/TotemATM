@@ -34,8 +34,18 @@ function LoginForm() {
       });
 
       if (res.ok) {
-        // Redireciona para a página original (ex: totem/[id]) ou para o admin por padrão
-        window.location.href = redirectPath || "/admin";
+        const data = await res.json();
+        const userRole = data.role || "client";
+
+        if (redirectPath) {
+          // Se há um redirect salvo (ex: veio do middleware), usa ele
+          window.location.href = redirectPath;
+        } else if (userRole === "admin") {
+          window.location.href = "/admin";
+        } else {
+          // Clientes vão para a tela de seleção de unidade
+          window.location.href = "/totem";
+        }
       } else {
         setError("Erro ao criar sessão segura.");
       }

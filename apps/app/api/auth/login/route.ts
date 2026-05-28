@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       sameSite: "lax",
     });
 
-    return NextResponse.json({ status: "success" });
+    return NextResponse.json({ status: "success", role });
   } catch (error) {
     console.error("❌ Erro na API de Login:", JSON.stringify(error, null, 2));
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

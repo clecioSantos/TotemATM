@@ -15,6 +15,14 @@ export default function AdminLayout({
   return (
     <AuthProvider>
       <div className="admin-layout">
+        {/* Overlay para fechar sidebar ao clicar fora no mobile */}
+        {!collapsed && (
+          <div 
+            className="sidebar-mobile-overlay" 
+            onClick={() => setCollapsed(true)} 
+          />
+        )}
+
         <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
         <main className={`admin-content ${collapsed ? "content-expanded" : ""}`}>
           {children}
