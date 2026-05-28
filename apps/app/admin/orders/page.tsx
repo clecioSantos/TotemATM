@@ -1,11 +1,11 @@
 "use client";
 
-import { useOrders } from "./hooks/useOrders";
-import { useProducts } from "../products/hooks/useProducts";
-import { useCondiments } from "../condiments/hooks/useCondiments";
-import OrderItem from "./components/OrderItem";
-import OrderForm from "./components/OrderForm";
-import Modal from "../components/Modal";
+import { useOrders } from "@/app/admin/orders/hooks/useOrders";
+import { useProducts } from "@/app/admin/products/hooks/useProducts";
+import { useCondiments } from "@/app/admin/condiments/hooks/useCondiments";
+import OrderItem from "@/app/admin/orders/components/OrderItem";
+import OrderForm from "@/app/admin/orders/components/OrderForm";
+import Modal from "@/app/admin/components/Modal";
 import { useState } from "react";
 import "./page.css";
 
@@ -77,7 +77,7 @@ export default function OrdersPage() {
                 key={order.id} 
                 order={order} 
                 onStatusUpdate={(id, next) => updateOrderStatus(id, next)}
-                onCancel={(id) => updateOrderStatus(id, 'canceled' as any)}
+                onCancel={(id) => updateOrderStatus(id, 'canceled')}
               />
             ))}
           </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, doc, addDoc, updateDoc, deleteDoc, Timestamp, where } from 'firebase/firestore'; 
-import { firestore as db } from '@/src/services/firebase';
+import { firestore as db } from '../../../../src/services/firebase';
 import { useAuth } from '@totem/shared/types/AuthProvider';
 
 export interface Category {

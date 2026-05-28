@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, doc, addDoc, updateDoc, deleteDoc, Timestamp, where } from 'firebase/firestore';
 import { Product } from '@totem/shared/types';
-import { firestore } from '@/src/services/firebase';
+import { firestore } from '../../../../src/services/firebase';
 import { useAuth } from '@totem/shared/types/AuthProvider';
 
 // Usar a mesma aplicação Next.js para upload

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useCategoriesStore } from "./hooks/useCategories";
+import { Category } from "@totem/shared/types";
 import CategoryTable from "./components/CategoryTable";
 import CategoryModal from "./components/CategoryModal";
 import CategoryForm from "./components/CategoryForm";
@@ -10,9 +11,9 @@ import "./page.css";
 export default function CategoriesPage() {
   const { categories, loading, saveCategory, removeCategory } = useCategoriesStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
-  const handleEdit = (category) => {
+  const handleEdit = (category: Category) => {
     setEditingCategory(category);
     setIsModalOpen(true);
   };

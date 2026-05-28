@@ -1,9 +1,9 @@
 "use client";
 import { useState } from "react";
-import { LogOut, User, Building2, X, Check } from "lucide-react";
+import { LogOut, User, Building2, X, Check, LayoutDashboard } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@totem/shared/types/AuthProvider";
-import { firestore } from "@/src/services/firebase";
+import { firestore } from "../../../../src/services/firebase";
 import { collection, addDoc, updateDoc, doc, serverTimestamp } from "firebase/firestore";
 
 interface WelcomeScreenProps {
@@ -74,27 +74,39 @@ export default function WelcomeScreen({ onStart, onLogout }: WelcomeScreenProps)
         {isMenuOpen && (
           <div className="absolute right-0 mt-3 w-72 origin-top-right rounded-2xl bg-white shadow-2xl border border-stone-100 p-2 animate-in fade-in zoom-in-95 duration-200">
             <div className="p-4 border-b border-stone-50">
-              <p className="text-sm font-bold truncate">{user?.displayName || "Usuário"}</p>
+              <p className="text-sm font-bold truncate">{user?.name || "Usuário"}</p>
               <p className="text-[10px] text-stone-400 truncate">{user?.email}</p>
               {user?.role === 'admin' && (
                 <span className="inline-block mt-2 px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full uppercase">Administrador</span>
               )}
             </div>
             
-            <button 
-              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold text-stone-600 transition-colors hover:bg-stone-50"
-              onClick={() => setIsModalOpen(true)}
-            >
-              <Building2 className="h-4 w-4 text-brand-accent" />
-              <span>Traga sua empresa para o NexOrder</span>
-            </button>
+            {user?.role !== "admin" && (
+              <button 
+                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold text-stone-600 transition-colors hover:bg-stone-50"
+                onClick={() => setIsModalOpen(true)}
+              >
+                <Building2 className="h-4 w-4 text-brand-accent" />
+                <span>Traga sua empresa para o NexOrder</span>
+              </button>
+            )}
+
+            {user?.role === "admin" && (
+              <button
+                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold text-stone-600 transition-colors hover:bg-stone-50"
+                onClick={() => router.push("/admin")}
+              >
+                <LayoutDashboard className="h-4 w-4 text-brand-accent" />
+                <span>Painel Administrativo</span>
+              </button>
+            )}
 
             <button 
               className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold text-red-500 transition-colors hover:bg-red-50"
               onClick={() => signOut()}
             >
               <LogOut className="h-4 w-4" />
-              <span>Sair do Totem</span>
+              <span>Sair</span>
             </button>
           </div>
         )}

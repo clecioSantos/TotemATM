@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 import { Category } from '@totem/shared/types';
-import { firestore } from '@/src/services/firebase';
+import { firestore } from '../../../../src/services/firebase';
 import { useAuth } from '@totem/shared/types/AuthProvider';
 
 export const useCategories = () => {
