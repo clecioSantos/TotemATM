@@ -1,0 +1,17 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Regras de acesso para a coleção de endereços (addresses)
+    match /addresses/{addressId} {
+      // O usuário precisa estar autenticado para ler, criar, atualizar ou excluir endereços
+      allow read, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update: if request.auth != null 
+                    && request.auth.uid == resource.data.userId 
+                    && request.auth.uid == request.resource.data.userId;
+    }
+
+  }
+}
