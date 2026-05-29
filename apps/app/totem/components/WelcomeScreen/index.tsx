@@ -1,10 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
-import { LogOut, User, Building2, X, Check, LayoutDashboard, ClipboardList, Clock, CheckCircle2, ShoppingBag } from "lucide-react";
+import { LogOut, User, Building2, X, Check, LayoutDashboard, ClipboardList, Clock, CheckCircle2, ShoppingBag, MapPin, Plus, Trash2, Home } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@totem/shared/types/AuthProvider";
 import { firestore, auth } from "@/src/services/firebase";
-import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, orderBy, onSnapshot } from "firebase/firestore";
+import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, orderBy, onSnapshot, deleteDoc, writeBatch, getDocs } from "firebase/firestore";
 
 interface WelcomeScreenProps {
   onStart: () => void;
@@ -21,6 +21,16 @@ export default function WelcomeScreen({ onStart, onLogout }: WelcomeScreenProps)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [companyName, setCompanyName] = useState("");
   const [registering, setRegistering] = useState(false);
+
+  // Estados do Gerenciamento de Endereços
+  const [isAddressesOpen, setIsAddressesOpen] = useState(false);
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
+  const [addressStreet, setAddressStreet] = useState("");
+  const [addressNumber, setAddressNumber] = useState("");
+  const [addressNeighborhood, setAddressNeighborhood] = useState("");
+  const [addressComplement, setAddressComplement] = useState("");
+  const [savingAddress, setSavingAddress] = useState(false);
 
   // Estados do Acompanhamento de Pedidos
   const [isTrackingOpen, setIsTrackingOpen] = useState(false);
@@ -54,6 +64,90 @@ export default function WelcomeScreen({ onStart, onLogout }: WelcomeScreenProps)
 
     return () => unsubscribe();
   }, [isTrackingOpen, user, companyId]);
+
+  useEffect(() => {
+    if (!isAddressesOpen || !user) return;
+
+    setLoadingAddresses(true);
+    const addressesRef = collection(firestore, "addresses");
+    const q = query(
+      addressesRef,
+      where("userId", "==", user.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const addressesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      // Ordenar em memória: primeiro os habilitados, depois os mais recentes
+      addressesData.sort((a: any, b: any) => {
+        if (a.enabled && !b.enabled) return -1;
+        if (!a.enabled && b.enabled) return 1;
+
+        const dateA = a.createdAt?.seconds || (a.createdAt instanceof Date ? a.createdAt.getTime() / 1000 : Date.now() / 1000);
+        const dateB = b.createdAt?.seconds || (b.createdAt instanceof Date ? b.createdAt.getTime() / 1000 : Date.now() / 1000);
+        return dateB - dateA;
+      });
+      setAddresses(addressesData);
+      setLoadingAddresses(false);
+    }, (error) => {
+      console.error("Erro ao escutar endereços:", error);
+      setLoadingAddresses(false);
+    });
+
+    return () => unsubscribe();
+  }, [isAddressesOpen, user]);
+
+  const handleAddAddress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !addressStreet || !addressNumber || !addressNeighborhood) return;
+    setSavingAddress(true);
+
+    try {
+      // 1. Desabilitar qualquer outro endereço ativo desse usuário
+      const addressesRef = collection(firestore, "addresses");
+      const qEnabled = query(addressesRef, where("userId", "==", user.uid), where("enabled", "==", true));
+      const snapshot = await getDocs(qEnabled);
+      const batch = writeBatch(firestore);
+      snapshot.docs.forEach((doc) => {
+        batch.update(doc.ref, { enabled: false });
+      });
+      await batch.commit();
+
+      // 2. Criar o novo endereço marcado como habilitado
+      await addDoc(collection(firestore, "addresses"), {
+        userId: user.uid,
+        street: addressStreet,
+        number: addressNumber,
+        neighborhood: addressNeighborhood,
+        complement: addressComplement,
+        enabled: true,
+        createdAt: serverTimestamp(),
+      });
+
+      setAddressStreet("");
+      setAddressNumber("");
+      setAddressNeighborhood("");
+      setAddressComplement("");
+      alert("Endereço adicionado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao adicionar endereço:", error);
+      alert("Falha ao salvar endereço. Tente novamente.");
+    } finally {
+      setSavingAddress(false);
+    }
+  };
+
+  const handleDeleteAddress = async (addressId: string) => {
+    if (!confirm("Tem certeza que deseja excluir este endereço?")) return;
+    try {
+      await deleteDoc(doc(firestore, "addresses", addressId));
+    } catch (error) {
+      console.error("Erro ao excluir endereço:", error);
+      alert("Falha ao excluir endereço.");
+    }
+  };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -176,6 +270,19 @@ export default function WelcomeScreen({ onStart, onLogout }: WelcomeScreenProps)
               >
                 <ClipboardList className="h-4 w-4 text-brand-accent" />
                 <span>Acompanhar Pedidos</span>
+              </button>
+            )}
+
+            {user && (
+              <button 
+                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold text-stone-600 transition-colors hover:bg-stone-50"
+                onClick={() => {
+                  setIsAddressesOpen(true);
+                  setIsMenuOpen(false);
+                }}
+              >
+                <MapPin className="h-4 w-4 text-brand-accent" />
+                <span>Gerenciar Endereços</span>
               </button>
             )}
 
@@ -363,6 +470,135 @@ export default function WelcomeScreen({ onStart, onLogout }: WelcomeScreenProps)
                       </div>
                     );
                   });
+                })()
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Gerenciar Endereços */}
+      {isAddressesOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/60 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-[2rem] p-8 w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col max-h-[85vh]">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-6 w-6 text-brand-accent" />
+                <h2 className="text-2xl font-black text-brand-dark">Meus Endereços</h2>
+              </div>
+              <button 
+                onClick={() => setIsAddressesOpen(false)} 
+                className="p-2 rounded-full hover:bg-stone-100 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Novo Endereço Form */}
+            <form onSubmit={handleAddAddress} className="space-y-4 mb-6 p-5 rounded-2xl bg-stone-50 border border-stone-100">
+              <span className="text-[10px] font-black tracking-widest text-brand-muted uppercase">Cadastrar Novo Endereço</span>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="flex flex-col">
+                  <input 
+                    type="text" 
+                    placeholder="Rua / Logradouro" 
+                    value={addressStreet}
+                    onChange={(e) => setAddressStreet(e.target.value)}
+                    className="w-full bg-white border border-stone-200 focus:border-brand-accent px-4 py-3 rounded-xl text-sm font-semibold text-brand-dark focus:outline-none transition-all duration-200"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="Nº" 
+                    value={addressNumber}
+                    onChange={(e) => setAddressNumber(e.target.value)}
+                    className="col-span-1 bg-white border border-stone-200 focus:border-brand-accent px-3 py-3 rounded-xl text-sm font-semibold text-brand-dark focus:outline-none transition-all duration-200"
+                    required
+                  />
+                  <input 
+                    type="text" 
+                    placeholder="Bairro" 
+                    value={addressNeighborhood}
+                    onChange={(e) => setAddressNeighborhood(e.target.value)}
+                    className="col-span-2 bg-white border border-stone-200 focus:border-brand-accent px-3 py-3 rounded-xl text-sm font-semibold text-brand-dark focus:outline-none transition-all duration-200"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Complemento (Apto, bloco...)" 
+                  value={addressComplement}
+                  onChange={(e) => setAddressComplement(e.target.value)}
+                  className="flex-1 bg-white border border-stone-200 px-4 py-3 rounded-xl text-sm font-semibold text-brand-dark focus:outline-none transition-all duration-200"
+                />
+                <button 
+                  type="submit"
+                  disabled={savingAddress}
+                  className="bg-brand-accent text-brand-dark px-6 rounded-xl font-black text-sm flex items-center gap-1.5 hover:bg-brand-accentHover transition-all disabled:opacity-50"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>SALVAR</span>
+                </button>
+              </div>
+            </form>
+
+            {/* Lista de Endereços */}
+            <div className="flex-1 overflow-y-auto pr-2 space-y-3 min-h-[200px]">
+              {loadingAddresses ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-accent border-t-transparent" />
+                  <p className="mt-4 text-sm font-medium text-stone-500">Buscando endereços...</p>
+                </div>
+              ) : (
+                (() => {
+                  if (addresses.length === 0) {
+                    return (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <MapPin className="h-12 w-12 text-stone-300 mb-3" />
+                        <p className="text-stone-500 font-medium">Nenhum endereço salvo.</p>
+                      </div>
+                    );
+                  }
+
+                  return addresses.map((addr) => (
+                    <div 
+                      key={addr.id}
+                      className="p-4 rounded-xl border border-stone-100 bg-stone-50/30 flex justify-between items-center hover:border-brand-accent/30 transition-all"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 bg-brand-light p-2 rounded-lg text-brand-accent flex-shrink-0">
+                          <Home className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-brand-dark text-sm flex items-center gap-2">
+                            {addr.street}, {addr.number}
+                            {addr.enabled && (
+                              <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[9px] font-black rounded-full uppercase tracking-wider">
+                                Ativo
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-xs text-stone-400 font-semibold">
+                            {addr.neighborhood} {addr.complement && `• ${addr.complement}`}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <button 
+                        onClick={() => handleDeleteAddress(addr.id)}
+                        className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all flex-shrink-0"
+                        title="Excluir endereço"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ));
                 })()
               )}
             </div>
