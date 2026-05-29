@@ -62,7 +62,7 @@ function LoginForm() {
       <div className="login-card">
         <header className="login-header">
           <h1>NexOrder</h1>
-          <p>Painel Administrativo</p>
+          <p>Faça seu login</p>
         </header>
 
         <form className="login-form" onSubmit={handleLogin}>
@@ -99,4 +99,4 @@ export default function LoginPage() {
       <LoginForm />
     </Suspense>
   );
-}
+}
