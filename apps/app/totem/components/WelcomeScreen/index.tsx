@@ -1,10 +1,10 @@
 "use client";
-import { useState } from "react";
-import { LogOut, User, Building2, X, Check, LayoutDashboard } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { LogOut, User, Building2, X, Check, LayoutDashboard, ClipboardList, Clock, CheckCircle2, ShoppingBag } from "lucide-react";
+import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@totem/shared/types/AuthProvider";
 import { firestore, auth } from "@/src/services/firebase";
-import { collection, addDoc, updateDoc, doc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, orderBy, onSnapshot } from "firebase/firestore";
 
 interface WelcomeScreenProps {
   onStart: () => void;
@@ -13,11 +13,64 @@ interface WelcomeScreenProps {
 
 export default function WelcomeScreen({ onStart, onLogout }: WelcomeScreenProps) {
   const router = useRouter();
+  const params = useParams();
+  const companyId = params?.companyId as string;
+  
   const { user, refreshProfile, signOut } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [companyName, setCompanyName] = useState("");
   const [registering, setRegistering] = useState(false);
+
+  // Estados do Acompanhamento de Pedidos
+  const [isTrackingOpen, setIsTrackingOpen] = useState(false);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [trackingFilter, setTrackingFilter] = useState<"preparing" | "ready">("preparing");
+  const [loadingOrders, setLoadingOrders] = useState(false);
+
+  useEffect(() => {
+    if (!isTrackingOpen || !user || !companyId) return;
+
+    setLoadingOrders(true);
+    const ordersRef = collection(firestore, "orders");
+    const q = query(
+      ordersRef,
+      where("customerId", "==", user.uid),
+      where("companyId", "==", companyId),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const ordersData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setOrders(ordersData);
+      setLoadingOrders(false);
+    }, (error) => {
+      console.error("Erro ao escutar pedidos:", error);
+      setLoadingOrders(false);
+    });
+
+    return () => unsubscribe();
+  }, [isTrackingOpen, user, companyId]);
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "Pendente";
+      case "preparing":
+        return "Em Preparo";
+      case "ready":
+        return "Pronto";
+      case "delivered":
+        return "Entregue";
+      case "cancelled":
+        return "Cancelado";
+      default:
+        return status;
+    }
+  };
 
   const handleRegisterCompany = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,6 +166,19 @@ export default function WelcomeScreen({ onStart, onLogout }: WelcomeScreenProps)
               </button>
             )}
 
+            {user && (
+              <button 
+                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold text-stone-600 transition-colors hover:bg-stone-50"
+                onClick={() => {
+                  setIsTrackingOpen(true);
+                  setIsMenuOpen(false);
+                }}
+              >
+                <ClipboardList className="h-4 w-4 text-brand-accent" />
+                <span>Acompanhar Pedidos</span>
+              </button>
+            )}
+
             <button 
               className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold text-red-500 transition-colors hover:bg-red-50"
               onClick={() => signOut()}
@@ -159,6 +225,151 @@ export default function WelcomeScreen({ onStart, onLogout }: WelcomeScreenProps)
         </div>
       )}
 
+      {/* Modal de Acompanhar Pedidos */}
+      {isTrackingOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/60 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-[2rem] p-8 w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col max-h-[85vh]">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2">
+                <ClipboardList className="h-6 w-6 text-brand-accent" />
+                <h2 className="text-2xl font-black text-brand-dark">Acompanhar Meus Pedidos</h2>
+              </div>
+              <button 
+                onClick={() => setIsTrackingOpen(false)} 
+                className="p-2 rounded-full hover:bg-stone-100 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Abas de Filtro */}
+            <div className="flex gap-2 p-1 bg-stone-100 rounded-xl mb-6">
+              <button
+                className={`flex-1 py-3 text-center text-sm font-bold rounded-lg transition-all ${
+                  trackingFilter === "preparing"
+                    ? "bg-white text-brand-dark shadow-sm"
+                    : "text-stone-500 hover:text-stone-800"
+                }`}
+                onClick={() => setTrackingFilter("preparing")}
+              >
+                Em Preparo
+              </button>
+              <button
+                className={`flex-1 py-3 text-center text-sm font-bold rounded-lg transition-all ${
+                  trackingFilter === "ready"
+                    ? "bg-white text-brand-dark shadow-sm"
+                    : "text-stone-500 hover:text-stone-800"
+                }`}
+                onClick={() => setTrackingFilter("ready")}
+              >
+                Prontos
+              </button>
+            </div>
+
+            {/* Lista de Pedidos */}
+            <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-[300px]">
+              {loadingOrders ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-accent border-t-transparent" />
+                  <p className="mt-4 text-sm font-medium text-stone-500">Buscando seus pedidos...</p>
+                </div>
+              ) : (
+                (() => {
+                  const filteredOrders = orders.filter((order) => {
+                    if (trackingFilter === "ready") {
+                      return order.status === "ready";
+                    } else {
+                      return order.status !== "ready";
+                    }
+                  });
+
+                  if (filteredOrders.length === 0) {
+                    return (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <ShoppingBag className="h-12 w-12 text-stone-300 mb-3" />
+                        <p className="text-stone-500 font-medium">Nenhum pedido encontrado nesta seção.</p>
+                      </div>
+                    );
+                  }
+
+                  return filteredOrders.map((order) => {
+                    const isReady = order.status === "ready";
+                    const isPreparing = order.status === "preparing";
+                    const isPending = order.status === "pending";
+                    const isCancelled = order.status === "cancelled";
+
+                    return (
+                      <div 
+                        key={order.id}
+                        className={`p-5 rounded-2xl border-2 transition-all duration-300 ${
+                          isReady 
+                            ? "border-green-100 bg-green-50/30" 
+                            : isCancelled 
+                            ? "border-red-100 bg-red-50/20"
+                            : "border-stone-100 bg-stone-50/10 hover:border-brand-accent/30"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <span className="text-xs font-bold text-stone-400">PEDIDO</span>
+                            <h3 className="text-lg font-black text-brand-dark">
+                              #{order.orderNumber || order.id.slice(-4).toUpperCase()}
+                            </h3>
+                          </div>
+                          
+                          <div className="flex flex-col items-end">
+                            <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase ${
+                              isReady 
+                                ? "bg-green-100 text-green-700" 
+                                : isPreparing
+                                ? "bg-blue-100 text-blue-700 animate-pulse"
+                                : isPending
+                                ? "bg-yellow-100 text-yellow-700"
+                                : isCancelled
+                                ? "bg-red-100 text-red-700"
+                                : "bg-stone-200 text-stone-700"
+                            }`}>
+                              {isPreparing && <Clock className="h-3 w-3" />}
+                              {isReady && <CheckCircle2 className="h-3 w-3" />}
+                              {getStatusLabel(order.status)}
+                            </span>
+                            <span className="text-[10px] text-stone-400 mt-1">
+                              {order.createdAt?.seconds 
+                                ? new Date(order.createdAt.seconds * 1000).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+                                : "Agora"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-stone-100 pt-3 mt-3">
+                          <div className="space-y-1.5">
+                            {order.items?.map((item: any, idx: number) => (
+                              <div key={idx} className="flex justify-between text-sm text-stone-600 font-medium">
+                                <span>{item.quantity}x {item.name}</span>
+                                <span className="font-bold">
+                                  {((item.price || 0) * (item.quantity || 1)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <div className="flex justify-between items-center border-t border-dashed border-stone-200 pt-3 mt-3">
+                            <span className="text-xs font-bold text-stone-400">TOTAL</span>
+                            <span className="text-base font-black text-brand-dark">
+                              {(order.total || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top Section: Logo */}
       <div className="relative z-10 flex flex-col items-center mt-12">
         <span className="text-xs font-bold tracking-widest text-brand-muted uppercase">Bem-vindo ao</span>
@@ -193,3 +404,4 @@ export default function WelcomeScreen({ onStart, onLogout }: WelcomeScreenProps)
     </div>
   );
 }
+
