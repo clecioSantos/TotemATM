@@ -14,7 +14,7 @@ import {
   ChevronLeft, 
   Menu 
 } from "lucide-react";
-import "./styles.css";
+import "./page.css";
 
 interface SidebarProps {
   collapsed: boolean;
