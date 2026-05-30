@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { auth } from "../../../src/services/firebase";
+import { firestore } from "../../../src/services/firebase";
+import { doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { UserProfile } from "@totem/shared/types/auth";
 
@@ -18,16 +20,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        setUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email!,
-          name: firebaseUser.displayName || "Administrador",
-          role: 'admin', // Em produção, buscaríamos isso do custom claims ou Firestore
-          companyId: 'default',
-          createdAt: new Date().toISOString()
-        } as unknown as UserProfile);
+        const userDoc = await getDoc(doc(firestore, "users", firebaseUser.uid));
+        if (userDoc.exists()) {
+          setUser(userDoc.data() as UserProfile);
+        } else {
+          setUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email!,
+            name: firebaseUser.displayName || "Administrador",
+            role: 'admin', // Fallback apenas se não houver doc no Firestore
+            companyId: 'default',
+            createdAt: new Date().toISOString()
+          } as unknown as UserProfile);
+        }
       } else {
         setUser(null);
       }

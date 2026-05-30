@@ -40,7 +40,7 @@ function LoginForm() {
         if (redirectPath) {
           // Se há um redirect salvo (ex: veio do middleware), usa ele
           window.location.href = redirectPath;
-        } else if (userRole === "admin") {
+        } else if (userRole === "admin" || userRole === "owner") {
           window.location.href = "/admin";
         } else {
           // Clientes vão para a tela de seleção de unidade

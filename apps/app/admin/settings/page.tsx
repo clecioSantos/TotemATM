@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@totem/shared/types/AuthProvider";
+import { useAuth } from "@/app/admin/orders/AuthContext";
 import { Copy, Check, QrCode, ExternalLink, LogOut } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
+import { firestore } from "@/src/services/firebase";
 import "./page.css";
 
 export default function ConfigurationsPage() {

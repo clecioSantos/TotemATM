@@ -20,6 +20,7 @@ export default function TotemPage({ params }: PageProps) {
   const { companyId } = use(params);
   const [step, setStep] = useState<TotemStep>('WELCOME');
   const [addressStreet, setAddressStreet] = useState("");
+  const [addressCity, setAddressCity] = useState("");
   const [addressNumber, setAddressNumber] = useState("");
   const [addressNeighborhood, setAddressNeighborhood] = useState("");
   const [addressComplement, setAddressComplement] = useState("");
@@ -39,18 +40,21 @@ export default function TotemPage({ params }: PageProps) {
     logout
   } = useTotem(companyId);
 
-  const handleFinish = async () => {
+  const handleFinish = async (deliveryFee: number) => {
     await finishOrder({
       address: {
         street: addressStreet,
+        cityId: addressCity,
         number: addressNumber,
         neighborhood: addressNeighborhood,
         complement: addressComplement
-      }
+      },
+      deliveryFee
     });
     setStep('FINISHED');
     setAddressStreet("");
     setAddressNumber("");
+    setAddressCity("");
     setAddressNeighborhood("");
     setAddressComplement("");
     setTimeout(() => {
@@ -94,6 +98,8 @@ export default function TotemPage({ params }: PageProps) {
         <IdentificationScreen 
           addressStreet={addressStreet}
           setAddressStreet={setAddressStreet}
+          addressCity={addressCity}
+          setAddressCity={setAddressCity}
           addressNumber={addressNumber}
           setAddressNumber={setAddressNumber}
           addressNeighborhood={addressNeighborhood}
