@@ -5,7 +5,7 @@ import { useAuth } from "@/app/admin/orders/AuthContext";
 import { MapPin, Plus, Trash2, ShieldAlert } from "lucide-react";
 import { collection, addDoc, onSnapshot, query, where, deleteDoc, doc } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
-import "./styles.css";
+import "./page.css";
 
 export default function AddressesManagementPage() {
   const { user } = useAuth();
