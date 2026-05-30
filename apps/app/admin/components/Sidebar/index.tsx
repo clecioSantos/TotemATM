@@ -9,7 +9,8 @@ import {
   ChefHat, 
   Ticket, 
   BarChart3, 
-  Settings, 
+  Settings,
+  MapPin, 
   ChevronLeft, 
   Menu 
 } from "lucide-react";
@@ -31,6 +32,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     { name: "Condimentos", path: "/admin/condiments", icon: <ChefHat size={20} /> },
     { name: "Cupons", path: "/admin/coupons", icon: <Ticket size={20} /> },
     { name: "Relatórios", path: "/admin/reports", icon: <BarChart3 size={20} /> },
+    { name: "Endereços", path: "/admin/addresses", icon: <MapPin size={20} /> },
     { name: "Configurações", path: "/admin/settings", icon: <Settings size={20} /> },
   ];
 

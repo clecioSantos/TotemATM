@@ -1,32 +1,56 @@
 "use client";
 import { useState, useEffect } from "react";
-import { ArrowRight, ArrowLeft, MapPin, Home, PlusCircle, Check } from "lucide-react";
+import { ArrowRight, ArrowLeft, MapPin, Home, PlusCircle, Check, ShieldAlert } from "lucide-react";
 import { useAuth } from "@totem/shared/types/AuthProvider";
 import { firestore } from "@/src/services/firebase";
 import { collection, addDoc, query, where, onSnapshot, serverTimestamp, updateDoc, doc, writeBatch, getDocs } from "firebase/firestore";
+import { useParams } from "next/navigation";
 
 interface IdentificationScreenProps {
   addressStreet: string;
   setAddressStreet: (val: string) => void;
+  addressCity: string;
+  setAddressCity: (val: string) => void;
   addressNumber: string;
   setAddressNumber: (val: string) => void;
   addressNeighborhood: string;
   setAddressNeighborhood: (val: string) => void;
   addressComplement: string;
   setAddressComplement: (val: string) => void;
-  onConfirm: () => void;
+  onConfirm: (deliveryFee: number) => void;
   onBack: () => void;
 }
 
 export default function IdentificationScreen({
-  addressStreet, setAddressStreet, addressNumber, setAddressNumber, addressNeighborhood, setAddressNeighborhood, addressComplement, setAddressComplement, onConfirm, onBack
+  addressStreet, setAddressStreet, addressCity, setAddressCity, addressNumber, setAddressNumber, addressNeighborhood, setAddressNeighborhood, addressComplement, setAddressComplement, onConfirm, onBack
 }: IdentificationScreenProps) {
   const { user } = useAuth();
+  const params = useParams();
+  const companyId = params?.companyId as string;
+
   const [addresses, setAddresses] = useState<any[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("new");
   const [saveForFuture, setSaveForFuture] = useState(false);
   const [loading, setLoading] = useState(false);
   const [hasPreselected, setHasPreselected] = useState(false);
+  const [availableCities, setAvailableCities] = useState<any[]>([]);
+  const [availableNeighborhoods, setAvailableNeighborhoods] = useState<any[]>([]);
+  const [citySettings, setCitySettings] = useState<any[]>([]);
+  const [deliveryCosts, setDeliveryCosts] = useState<any[]>([]);
+
+  // Cálculo do Custo de Entrega e Validação de Região
+  const currentNbId = availableNeighborhoods.find(n => 
+    n.name.trim().toLowerCase() === addressNeighborhood.trim().toLowerCase()
+  )?.id;
+
+  const costSetting = deliveryCosts.find(c => c.neighborhoodId === currentNbId);
+  const deliveryPrice = Number(costSetting?.deliveryPrice ?? 0);
+
+  // O bairro é suportado apenas se a flag enabled for true
+  const isNeighborhoodSupported = costSetting?.enabled === true;
+
+  // A cidade deve estar habilitada nas configurações da loja
+  const isCityDeliveryEnabled = citySettings.find(s => s.cityId === addressCity)?.enabled === true;
 
   useEffect(() => {
     if (!user) return;
@@ -61,6 +85,7 @@ export default function IdentificationScreen({
         setSelectedAddressId(targetAddress.id);
         setAddressStreet(targetAddress.street);
         setAddressNumber(targetAddress.number);
+        setAddressCity(targetAddress.cityId);
         setAddressNeighborhood(targetAddress.neighborhood);
         setAddressComplement(targetAddress.complement || "");
         setHasPreselected(true);
@@ -73,10 +98,52 @@ export default function IdentificationScreen({
     return () => unsubscribe();
   }, [user, hasPreselected]);
 
+  // Carregar Cidades do sistema
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(firestore, "cities"), (snapshot) => {
+      setAvailableCities(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Carregar Configurações de Entrega das Cidades
+  useEffect(() => {
+    if (!companyId) return;
+    const q = query(collection(firestore, "storeCitySettings"), where("companyId", "==", companyId));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setCitySettings(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsubscribe();
+  }, [companyId]);
+
+  // Carregar Custos de Entrega dos Bairros por Empresa
+  useEffect(() => {
+    if (!companyId) return;
+    const q = query(collection(firestore, "deliveryCosts"), where("companyId", "==", companyId));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setDeliveryCosts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsubscribe();
+  }, [companyId]);
+
+  // Carregar Bairros da Cidade selecionada
+  useEffect(() => {
+    if (addressCity) {
+      const q = query(collection(firestore, "neighborhoods"), where("cityId", "==", addressCity));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        setAvailableNeighborhoods(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      });
+      return () => unsubscribe();
+    } else {
+      setAvailableNeighborhoods([]);
+    }
+  }, [addressCity]);
+
   const handleSelectAddress = (addr: any) => {
     setSelectedAddressId(addr.id);
     setAddressStreet(addr.street);
     setAddressNumber(addr.number);
+    setAddressCity(addr.cityId);
     setAddressNeighborhood(addr.neighborhood);
     setAddressComplement(addr.complement || "");
   };
@@ -85,19 +152,20 @@ export default function IdentificationScreen({
     setSelectedAddressId("new");
     setAddressStreet("");
     setAddressNumber("");
+    setAddressCity("");
     setAddressNeighborhood("");
     setAddressComplement("");
   };
 
   const handleConfirmAndSave = async () => {
     if (!user) {
-      onConfirm();
+      onConfirm(deliveryPrice);
       return;
     }
 
     try {
       if (selectedAddressId === "new") {
-        if (saveForFuture && addressStreet && addressNumber && addressNeighborhood) {
+        if (saveForFuture && addressStreet && addressNumber && addressNeighborhood && addressCity) {
           // 1. Desabilitar qualquer outro endereço ativo
           const addressesRef = collection(firestore, "addresses");
           const qEnabled = query(addressesRef, where("userId", "==", user.uid), where("enabled", "==", true));
@@ -112,6 +180,7 @@ export default function IdentificationScreen({
           await addDoc(collection(firestore, "addresses"), {
             userId: user.uid,
             street: addressStreet,
+            cityId: addressCity,
             number: addressNumber,
             neighborhood: addressNeighborhood,
             complement: addressComplement,
@@ -137,7 +206,7 @@ export default function IdentificationScreen({
     } catch (e) {
       console.error("Erro ao atualizar regras de habilitar endereço no envio:", e);
     }
-    onConfirm();
+    onConfirm(deliveryPrice);
   };
 
   return (
@@ -191,8 +260,8 @@ export default function IdentificationScreen({
                         : "border-stone-100 bg-stone-50/50 hover:border-stone-200"
                     }`}
                   >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Home className="h-3.5 w-3.5 text-brand-accent" />
+                    <div className="flex items-center gap-1.5 mb-1 w-full overflow-hidden">
+                      <Home className="h-3.5 w-3.5 text-brand-accent flex-shrink-0" />
                       <span className="text-[10px] font-black text-brand-muted uppercase truncate">
                         {addr.neighborhood}
                       </span>
@@ -234,33 +303,46 @@ export default function IdentificationScreen({
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col">
+                  <label className="text-[10px] font-black tracking-widest text-brand-muted uppercase mb-2 ml-1">Cidade</label>
+                  <select 
+                    value={addressCity} 
+                    onChange={(e) => { setAddressCity(e.target.value); setAddressNeighborhood(""); }}
+                    className="w-full bg-stone-50 border border-stone-200 px-4 py-4 rounded-xl text-sm font-semibold"
+                  >
+                    <option value="">Selecione...</option>
+                    {availableCities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-[10px] font-black tracking-widest text-brand-muted uppercase mb-2 ml-1">Bairro</label>
+                  <select 
+                    value={availableNeighborhoods.find(n => n.name === addressNeighborhood)?.id || ""} 
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      const name = availableNeighborhoods.find(n => n.id === id)?.name || "";
+                      setAddressNeighborhood(name);
+                    }}
+                    disabled={!addressCity}
+                    className="w-full bg-stone-50 border border-stone-200 px-4 py-4 rounded-xl text-sm font-semibold"
+                  >
+                    <option value="">Selecione...</option>
+                    {availableNeighborhoods.map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-col">
                 {/* Número */}
-                <div className="flex flex-col col-span-1">
-                  <label className="text-[10px] font-black tracking-widest text-brand-muted uppercase mb-2 ml-1">
-                    Nº
-                  </label>
-                  <input 
-                    type="text" 
-                    placeholder="123" 
-                    value={addressNumber}
-                    onChange={(e) => setAddressNumber(e.target.value)}
-                    className="w-full bg-stone-50 border border-stone-200 focus:border-brand-accent px-4 py-4 rounded-xl text-base font-semibold text-brand-dark focus:outline-none transition-all duration-200"
-                  />
-                </div>
-                {/* Bairro */}
-                <div className="flex flex-col col-span-2">
-                  <label className="text-[10px] font-black tracking-widest text-brand-muted uppercase mb-2 ml-1">
-                    Bairro
-                  </label>
-                  <input 
-                    type="text" 
-                    placeholder="Centro" 
-                    value={addressNeighborhood}
-                    onChange={(e) => setAddressNeighborhood(e.target.value)}
-                    className="w-full bg-stone-50 border border-stone-200 focus:border-brand-accent px-4 py-4 rounded-xl text-base font-semibold text-brand-dark focus:outline-none transition-all duration-200"
-                  />
-                </div>
+                <label className="text-[10px] font-black tracking-widest text-brand-muted uppercase mb-2 ml-1">Nº</label>
+                <input 
+                  type="text" 
+                  placeholder="123" 
+                  value={addressNumber}
+                  onChange={(e) => setAddressNumber(e.target.value)}
+                  className="w-full bg-stone-50 border border-stone-200 px-4 py-4 rounded-xl text-base font-semibold"
+                />
               </div>
 
               {/* Complemento */}
@@ -292,16 +374,42 @@ export default function IdentificationScreen({
               <div className="absolute top-0 right-0 bg-brand-accent text-brand-dark px-3 py-1 rounded-bl-xl text-[9px] font-black uppercase tracking-widest">
                 Salvo
               </div>
-              <div className="flex items-start gap-3 mt-1">
+              <div className="flex items-start gap-3 mt-1 min-w-0">
                 <MapPin className="h-5 w-5 text-brand-accent flex-shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="font-black text-brand-dark text-base">{addressStreet}, {addressNumber}</h3>
-                  <p className="text-sm text-stone-500 font-bold">{addressNeighborhood}</p>
+                <div className="min-w-0">
+                  <h3 className="font-black text-brand-dark text-base truncate">{addressStreet}, {addressNumber}</h3>
+                  <p className="text-sm text-stone-500 font-bold truncate">{addressNeighborhood}</p>
                   {addressComplement && (
-                    <p className="text-xs text-stone-400 font-semibold mt-0.5">{addressComplement}</p>
+                    <p className="text-[10px] text-stone-400 font-semibold mt-0.5">{addressComplement}</p>
                   )}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Feedback de Entrega e Preço */}
+          {addressCity && (
+            <div className="mt-2 space-y-3">
+              {!isCityDeliveryEnabled ? (
+                <div className="p-4 bg-red-50 text-red-700 rounded-xl border border-red-200 text-xs font-bold flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4 shrink-0" />
+                  <span>Infelizmente, não realizamos entregas nesta cidade no momento.</span>
+                </div>
+              ) : addressNeighborhood && (
+                !isNeighborhoodSupported ? (
+                  <div className="p-4 bg-amber-50 text-amber-700 rounded-xl border border-amber-200 text-xs font-bold flex items-center gap-2">
+                    <ShieldAlert className="h-4 w-4 shrink-0" />
+                    <span>Ops! Ainda não atendemos este bairro para entrega.</span>
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-center p-4 bg-brand-light/30 rounded-xl border border-brand-accent/20">
+                    <span className="text-xs font-bold text-brand-muted uppercase">Taxa de Entrega</span>
+                    <span className="text-base font-black text-brand-success">
+                      {deliveryPrice === 0 ? "GRÁTIS" : `R$ ${deliveryPrice.toFixed(2)}`}
+                    </span>
+                  </div>
+                )
+              )}
             </div>
           )}
         </div>
@@ -310,7 +418,7 @@ export default function IdentificationScreen({
         <div className="flex flex-col gap-2">
           <button 
             className="w-full bg-brand-success hover:bg-green-700 text-white font-black text-base py-4 rounded-premium shadow-lg shadow-green-600/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" 
-            disabled={!addressStreet || !addressNumber || !addressNeighborhood} 
+            disabled={!addressStreet || !addressNumber || !addressNeighborhood || !isCityDeliveryEnabled || !isNeighborhoodSupported} 
             onClick={handleConfirmAndSave}
           >
             <span>CONFIRMAR E ENVIAR</span>

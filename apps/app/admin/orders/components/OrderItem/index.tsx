@@ -117,6 +117,14 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
               ))}
             </tbody>
           </table>
+
+          {order.deliveryFee !== undefined && order.deliveryFee > 0 && (
+            <div className="order-delivery-fee-summary" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', padding: '1rem 0', borderTop: '1px solid #f1f5f9' }}>
+              <span style={{ fontSize: '13px', color: '#64748b' }}>Taxa de Entrega:</span>
+              <strong style={{ fontSize: '13px', color: '#166534' }}>R$ {order.deliveryFee.toFixed(2)}</strong>
+            </div>
+          )}
+
           {nextStatus && (
             <div className="order-actions-footer">
               <button 
