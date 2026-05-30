@@ -1,0 +1,287 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/app/admin/orders/AuthContext";
+import { ShieldAlert } from "lucide-react";
+import { collection, onSnapshot, query, where, deleteDoc, doc, addDoc, updateDoc, getDocs, writeBatch } from "firebase/firestore";
+import { firestore } from "@/src/services/firebase";
+
+import CityTable from "./CityTable";
+import NeighborhoodTable from "./NeighborhoodTable";
+import Modal from "../components/Modal";
+import CityForm from "./CityForm";
+import NeighborhoodForm from "./NeighborhoodForm";
+import PriceForm from "./PriceForm";
+
+import "./page.css";
+
+export default function AddressesManagementPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const isOwner = user?.role === 'owner';
+
+  const [cities, setCities] = useState<any[]>([]);
+  const [neighborhoods, setNeighborhoods] = useState<any[]>([]);
+  const [citySettings, setCitySettings] = useState<any[]>([]);
+  const [deliveryCosts, setDeliveryCosts] = useState<any[]>([]);
+  const [selectedCityId, setSelectedCityId] = useState<string>("");
+  
+  const [modalConfig, setModalConfig] = useState<{ type: 'city' | 'nb' | 'price' | 'city_price' | null, data?: any }>({ type: null, data: null });
+
+  // Carregar Cidades
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(firestore, "cities"), (snapshot) => {
+      setCities(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Carregar Bairros da Cidade Selecionada
+  useEffect(() => {
+    if (selectedCityId) {
+      const unsubscribe = onSnapshot(
+        query(collection(firestore, "neighborhoods"), where("cityId", "==", selectedCityId)),
+        (snapshot) => {
+        setNeighborhoods(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      });
+      return () => unsubscribe();
+    }
+    setNeighborhoods([]);
+  }, [selectedCityId]);
+
+  // Carregar Configurações de Cidade
+  useEffect(() => {
+    if (!user?.companyId) return;
+    const q = query(collection(firestore, "storeCitySettings"), where("companyId", "==", user.companyId));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setCitySettings(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsubscribe();
+  }, [user?.companyId]);
+
+  // Carregar Custos de Entrega (Bairros) por Empresa
+  useEffect(() => {
+    if (!user?.companyId) return;
+    const q = query(collection(firestore, "deliveryCosts"), where("companyId", "==", user.companyId));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setDeliveryCosts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsubscribe();
+  }, [user?.companyId]);
+
+  // Ações de Cidade
+  const handleDeleteCity = async (id: string) => {
+    await deleteDoc(doc(firestore, "cities", id));
+    if (selectedCityId === id) setSelectedCityId("");
+  }
+
+  const handleToggleDelivery = async (cityId: string, enabled: boolean) => {
+    if (!user?.companyId) {
+      alert("Erro: ID da empresa não encontrado no seu perfil.");
+      return;
+    }
+
+    try {
+      // Procura se já existe uma configuração para esta cidade e empresa
+      const settingDoc = citySettings.find(s => s.cityId === cityId && s.companyId === user.companyId);
+      
+      if (settingDoc) {
+        await updateDoc(doc(firestore, "storeCitySettings", settingDoc.id), { enabled });
+      } else {
+        await addDoc(collection(firestore, "storeCitySettings"), { cityId, enabled, companyId: user.companyId });
+      }
+    } catch (error) {
+      console.error("Erro ao alternar entrega:", error);
+      alert("Falha ao atualizar configuração de entrega. Verifique suas permissões.");
+    }
+  }
+
+  const handleSetDefaultPrice = async (cityId: string, price: number) => {
+    if (!user?.companyId) return;
+    try {
+      const q = query(collection(firestore, "neighborhoods"), where("cityId", "==", cityId));
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        alert("Nenhum bairro encontrado para esta cidade.");
+        return;
+      }
+
+      const batch = writeBatch(firestore);
+      snapshot.docs.forEach(d => {
+        const nbId = d.id;
+        const costSetting = deliveryCosts.find(c => c.neighborhoodId === nbId);
+        
+        const updates: any = { 
+          deliveryPrice: price,
+          neighborhoodId: nbId,
+          companyId: user.companyId
+        };
+        if (price > 0) updates.enabled = true;
+
+        if (costSetting) {
+          batch.update(doc(firestore, "deliveryCosts", costSetting.id), updates);
+        } else {
+          batch.set(doc(collection(firestore, "deliveryCosts")), updates);
+        }
+      });
+      await batch.commit();
+      alert("Preços atualizados com sucesso em todos os bairros!");
+    } catch (error) {
+      console.error("Erro ao definir preço padrão:", error);
+      alert("Falha ao atualizar preços. Apenas proprietários podem realizar esta ação.");
+    }
+  };
+
+  const handleToggleNb = async (nbId: string, enabled: boolean) => {
+    if (!user?.companyId) return;
+    const costSetting = deliveryCosts.find(c => c.neighborhoodId === nbId);
+    if (costSetting) {
+      await updateDoc(doc(firestore, "deliveryCosts", costSetting.id), { enabled });
+    } else {
+      await addDoc(collection(firestore, "deliveryCosts"), { 
+        neighborhoodId: nbId, 
+        companyId: user.companyId, 
+        enabled,
+        deliveryPrice: 0 
+      });
+    }
+  };
+
+  // Mesclar bairros com configurações da loja para exibição na tabela
+  const enrichedNeighborhoods = neighborhoods.map(nb => {
+    const cost = deliveryCosts.find(c => c.neighborhoodId === nb.id);
+
+    return {
+      ...nb,
+      deliveryPrice: cost?.deliveryPrice ?? 0,
+      enabled: cost?.enabled ?? false
+    };
+  });
+
+  return (
+    <div className="addresses-page-view">
+      <header className="page-header">
+        <div className="page-title-area">
+          <h1 className="page-title">Regiões Atendidas</h1>
+          <p className="page-subtitle">Gerencie as cidades e bairros onde o sistema opera</p>
+        </div>
+      </header>
+
+      {!isOwner && (
+        <div className="info-banner">
+          <ShieldAlert size={18} />
+          Apenas proprietários podem alterar os dados desta página.
+        </div>
+      )}
+
+      <div className="addresses-vertical-list">
+        <CityTable 
+          cities={cities}
+          selectedCityId={selectedCityId}
+          onSelectCity={setSelectedCityId}
+          isOwner={isOwner}
+          isAdmin={isAdmin}
+          citySettings={citySettings}
+          onAddCity={() => setModalConfig({ type: 'city' })}
+          onEditCity={(city) => setModalConfig({ type: 'city', data: city })}
+          onDeleteCity={handleDeleteCity}
+          onToggleDelivery={handleToggleDelivery}
+          onSetDefaultPrice={(id) => setModalConfig({ type: 'city_price', data: { cityId: id } })}
+        />
+
+        <NeighborhoodTable 
+          neighborhoods={enrichedNeighborhoods}
+          selectedCityId={selectedCityId}
+          isOwner={isOwner}
+          isAdmin={isAdmin}
+          onAddNb={() => setModalConfig({ type: 'nb' })}
+          onEditNb={(nb) => setModalConfig({ type: 'nb', data: nb })}
+          onDeleteNb={async (id) => await deleteDoc(doc(firestore, "neighborhoods", id))}
+          onEditPrice={(nb) => setModalConfig({ type: 'price', data: nb })}
+          onToggleNb={handleToggleNb}
+        />
+      </div>
+
+      <Modal 
+        isOpen={modalConfig.type !== null} 
+        onClose={() => setModalConfig({ type: null })}
+        title={modalConfig.type === 'city' ? 'Cidade' : modalConfig.type === 'nb' ? 'Bairro' : modalConfig.type === 'city_price' ? 'Preço Padrão (Cidade)' : 'Preço de Entrega'}
+      >
+        {modalConfig.type === 'city' && (
+          <CityForm 
+            initialData={modalConfig.data}
+            onClose={() => setModalConfig({ type: null })}
+            onSubmit={async (name) => {
+              if (modalConfig.data?.id) {
+                await updateDoc(doc(firestore, "cities", modalConfig.data.id), { name });
+              } else {
+                await addDoc(collection(firestore, "cities"), { name });
+              }
+            }}
+          />
+        )}
+
+        {modalConfig.type === 'nb' && (
+          <NeighborhoodForm 
+            initialData={modalConfig.data}
+            selectedCityId={selectedCityId}
+            onClose={() => setModalConfig({ type: null })}
+            onSubmit={async (name, cityId, deliveryPrice, enabled) => {
+              let nbId = modalConfig.data?.id;
+              if (modalConfig.data?.id) {
+                await updateDoc(doc(firestore, "neighborhoods", nbId), { name });
+              } else {
+                const docRef = await addDoc(collection(firestore, "neighborhoods"), { name, cityId });
+                nbId = docRef.id;
+              }
+
+              if (!user?.companyId) return;
+              const costSetting = deliveryCosts.find(c => c.neighborhoodId === nbId);
+              const costData = { 
+                deliveryPrice, 
+                enabled, 
+                neighborhoodId: nbId, 
+                companyId: user.companyId 
+              };
+              
+              if (costSetting) {
+                await updateDoc(doc(firestore, "deliveryCosts", costSetting.id), { deliveryPrice, enabled });
+              } else {
+                await addDoc(collection(firestore, "deliveryCosts"), costData);
+              }
+            }}
+          />
+        )}
+
+        {modalConfig.type === 'price' && (
+          <PriceForm 
+            initialPrice={modalConfig.data?.deliveryPrice}
+            onClose={() => setModalConfig({ type: null })}
+            onSubmit={async (price) => {
+              if (!user?.companyId) return;
+              const nbId = modalConfig.data.id;
+              const costSetting = deliveryCosts.find(c => c.neighborhoodId === nbId);
+              const updates: any = { deliveryPrice: price };
+              if (price > 0) updates.enabled = true;
+              if (costSetting) {
+                await updateDoc(doc(firestore, "deliveryCosts", costSetting.id), updates);
+              } else {
+                await addDoc(collection(firestore, "deliveryCosts"), { ...updates, neighborhoodId: nbId, companyId: user.companyId });
+              }
+            }}
+          />
+        )}
+
+        {modalConfig.type === 'city_price' && (
+          <PriceForm 
+            onClose={() => setModalConfig({ type: null })}
+            onSubmit={async (price) => {
+              await handleSetDefaultPrice(modalConfig.data.cityId, price);
+            }}
+          />
+        )}
+      </Modal>
+    </div>
+  );
+}

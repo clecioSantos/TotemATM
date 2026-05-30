@@ -130,16 +130,20 @@ export const useTotem = (companyId: string) => {
       neighborhood: string;
       complement?: string;
     };
+    deliveryFee?: number;
   }
 
   const finishOrder = async (identification: OrderIdentification) => {
     if (cart.length === 0 || !companyId) return;
     
     // Calcula o total considerando (preço base + soma dos condimentos) * quantidade
-    const total = cart.reduce((acc, item) => {
+    const itemsTotal = cart.reduce((acc, item) => {
       const condimentsTotal = item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0;
       return acc + ((item.price + condimentsTotal) * item.quantity);
     }, 0);
+
+    const deliveryFee = identification.deliveryFee || 0;
+    const total = itemsTotal + deliveryFee;
     
     const orderData = {
       companyId: companyId,
@@ -147,6 +151,7 @@ export const useTotem = (companyId: string) => {
       customerId: user?.uid || null,
       tableNumber: "", // Campo mantido vazio para compatibilidade com o schema
       address: identification.address || null,
+      deliveryFee,
       items: cart.map(i => ({ 
         productId: i.productId || i.id, 
         name: i.name, 

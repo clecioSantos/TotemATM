@@ -29,7 +29,7 @@ export async function middleware(request: NextRequest) {
 
   if (session && isPublicRoute) {
     // Redireciona usuários logados para suas respectivas homes se tentarem acessar login
-    if (userRole === 'admin') {
+    if (userRole === 'admin' || userRole === 'owner') {
       return NextResponse.redirect(new URL('/admin', request.url));
     }
     // Para clientes, redireciona para a tela de seleção de unidade
@@ -43,7 +43,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Impede acesso de clients a rotas admin (fallback de segurança)
-  if (pathname.startsWith("/admin") && userRole !== "admin") {
+  if (pathname.startsWith("/admin") && userRole !== "admin" && userRole !== "owner") {
     return NextResponse.redirect(new URL("/totem", request.url));
   }
 

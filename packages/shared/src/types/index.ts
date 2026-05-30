@@ -47,6 +47,14 @@ export interface OrderLineItem {
   condiments?: Condiment[];
 }
 
+export interface Address {
+  street: string;
+  number: string;
+  neighborhood: string;
+  cityId: string;
+  complement?: string;
+}
+
 export interface Order {
   id: string;
   companyId: string;
@@ -56,6 +64,8 @@ export interface Order {
   customerName?: string;
   tableNumber?: string;
   createdAt: Date | { seconds: number; nanoseconds: number };
+  deliveryFee?: number;
+  address?: Address;
 }
 
 export interface OrderFormPayload {
@@ -64,4 +74,6 @@ export interface OrderFormPayload {
   items: OrderLineItem[];
   total: number;
   status: OrderStatus;
+  deliveryFee?: number;
+  address?: Address;
 }

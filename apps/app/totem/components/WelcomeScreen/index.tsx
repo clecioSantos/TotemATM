@@ -235,12 +235,12 @@ export default function WelcomeScreen({ onStart, onLogout }: WelcomeScreenProps)
             <div className="p-4 border-b border-stone-50">
               <p className="text-sm font-bold truncate">{user?.name || "Usuário"}</p>
               <p className="text-[10px] text-stone-400 truncate">{user?.email}</p>
-              {user?.role === 'admin' && (
-                <span className="inline-block mt-2 px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full uppercase">Administrador</span>
+              {(user?.role === 'admin' || user?.role === 'owner') && (
+                <span className="inline-block mt-2 px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full uppercase">{user?.role === 'owner' ? 'Proprietário' : 'Administrador'}</span>
               )}
             </div>
             
-            {user?.role !== "admin" && (
+            {(user?.role !== "admin" && user?.role !== "owner") && (
               <button 
                 className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold text-stone-600 transition-colors hover:bg-stone-50"
                 onClick={() => setIsModalOpen(true)}
@@ -250,7 +250,7 @@ export default function WelcomeScreen({ onStart, onLogout }: WelcomeScreenProps)
               </button>
             )}
 
-            {user?.role === "admin" && (
+            {(user?.role === "admin" || user?.role === "owner") && (
               <button
                 className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold text-stone-600 transition-colors hover:bg-stone-50"
                 onClick={() => router.push("/admin")}
@@ -450,14 +450,36 @@ export default function WelcomeScreen({ onStart, onLogout }: WelcomeScreenProps)
 
                         <div className="border-t border-stone-100 pt-3 mt-3">
                           <div className="space-y-1.5">
-                            {order.items?.map((item: any, idx: number) => (
-                              <div key={idx} className="flex justify-between text-sm text-stone-600 font-medium">
-                                <span>{item.quantity}x {item.name}</span>
+                            {order.items?.map((item: any, idx: number) => {
+                              const condimentsPrice = item.condiments?.reduce((sum: number, c: any) => sum + (c.price || 0), 0) || 0;
+                              const itemTotal = ((item.price || 0) + condimentsPrice) * (item.quantity || 1);
+                              
+                              return (
+                                <div key={idx} className="flex flex-col">
+                                  <div className="flex justify-between text-sm text-stone-600 font-medium">
+                                    <span>{item.quantity}x {item.name}</span>
+                                    <span className="font-bold">
+                                      {itemTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                                    </span>
+                                  </div>
+                                  {item.condiments?.length > 0 && (
+                                    <div className="flex flex-wrap gap-1">
+                                      {item.condiments.map((c: any, cIdx: number) => (
+                                        <span key={cIdx} className="text-[10px] text-stone-400 italic leading-none">+ {c.name}</span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                            {order.deliveryFee > 0 && (
+                              <div className="flex justify-between text-sm text-stone-600 font-medium italic">
+                                <span>Taxa de Entrega</span>
                                 <span className="font-bold">
-                                  {((item.price || 0) * (item.quantity || 1)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                                  {order.deliveryFee.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                                 </span>
                               </div>
-                            ))}
+                            )}
                           </div>
                           
                           <div className="flex justify-between items-center border-t border-dashed border-stone-200 pt-3 mt-3">
@@ -640,4 +662,3 @@ export default function WelcomeScreen({ onStart, onLogout }: WelcomeScreenProps)
     </div>
   );
 }
-
