@@ -7,13 +7,14 @@ import OrderingScreen from "../components/OrderingScreen";
 // Estes componentes devem existir na pasta ../components/
 import IdentificationScreen from "../components/IdentificationScreen";
 import FinishedScreen from "../components/FinishedScreen";
+import PaymentScreen from "../components/PaymentScreen";
 import "@/page.css";
 
 interface PageProps {
   params: Promise<{ companyId: string }>;
 }
 
-type TotemStep = 'WELCOME' | 'ORDERING' | 'IDENTIFICATION' | 'FINISHED';
+type TotemStep = 'WELCOME' | 'ORDERING' | 'IDENTIFICATION' | 'PAYMENT' | 'FINISHED';
 
 export default function TotemPage({ params }: PageProps) {
   // No Next.js 15, params é uma Promise que deve ser resolvida com 'use'
@@ -24,6 +25,12 @@ export default function TotemPage({ params }: PageProps) {
   const [addressNumber, setAddressNumber] = useState("");
   const [addressNeighborhood, setAddressNeighborhood] = useState("");
   const [addressComplement, setAddressComplement] = useState("");
+  
+  // Estados de Pagamento
+  const [currentOrderId, setCurrentOrderId] = useState("");
+  const [pixData, setPixData] = useState({ qrCode: "", copyPaste: "" });
+  const [orderTotal, setOrderTotal] = useState(0);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const { 
     products, 
@@ -35,13 +42,24 @@ export default function TotemPage({ params }: PageProps) {
     updateQuantity, 
     updateItemObservation,
     clearCart,
+    cartTotal,
     finishOrder, 
     loading,
     logout
   } = useTotem(companyId);
 
   const handleFinish = async (deliveryFee: number) => {
+    setIsProcessingPayment(true);
+    const total = cartTotal + deliveryFee;
+    setOrderTotal(total);
+
+    // 1. Criar o pedido no Firestore via hook existente (ajustar se necessário para retornar ID)
+    // Para este exemplo, assumimos que o finishOrder foi refatorado para retornar o ID gerado
+    // ou que geramos um ID manualmente aqui para o reference_id do PagBank.
+    const orderId = `ORDER-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    
     await finishOrder({
+      id: orderId,
       address: {
         street: addressStreet,
         cityId: addressCity,
@@ -49,9 +67,27 @@ export default function TotemPage({ params }: PageProps) {
         neighborhood: addressNeighborhood,
         complement: addressComplement
       },
-      deliveryFee
+      deliveryFee,
+      paymentMethod: 'PIX',
+      paymentStatus: 'WAITING_PAYMENT'
     });
+
+    // 2. Chamar nossa API para gerar o PIX no PagBank
+    const res = await fetch("/api/payments/pix", {
+      method: "POST",
+      body: JSON.stringify({ orderId, amount: total, customerName: user?.name || "Kiosk Customer" })
+    });
+    const data = await res.json();
+
+    setPixData({ qrCode: data.pixQrCode, copyPaste: data.pixCopyPaste });
+    setCurrentOrderId(orderId);
+    setStep('PAYMENT');
+    setIsProcessingPayment(false);
+  };
+
+  const handlePaymentConfirmed = () => {
     setStep('FINISHED');
+    clearCart();
     setAddressStreet("");
     setAddressNumber("");
     setAddressCity("");
@@ -108,6 +144,16 @@ export default function TotemPage({ params }: PageProps) {
           setAddressComplement={setAddressComplement}
           onConfirm={handleFinish}
           onBack={() => setStep('ORDERING')}
+        />
+      );
+
+    case 'PAYMENT':
+      return (
+        <PaymentScreen 
+          orderId={currentOrderId}
+          pixData={pixData}
+          total={orderTotal}
+          onPaymentConfirmed={handlePaymentConfirmed}
         />
       );
 
