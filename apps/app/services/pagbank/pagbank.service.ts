@@ -8,7 +8,7 @@ export class PagBankService {
     const response = await fetch(`${this.baseUrl}/orders`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${this.token}`,
+        "Authorization": process.env.PAGBANK_TOKEN,
         "Content-Type": "application/json",
         "accept": "application/json"
       },
