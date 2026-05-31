@@ -42,11 +42,16 @@ export default function TotemPage({ params }: PageProps) {
     updateQuantity, 
     updateItemObservation,
     clearCart,
-    cartTotal,
     finishOrder, 
     loading,
     logout
   } = useTotem(companyId);
+
+  // Cálculo manual do total do carrinho (Preço Base + Condimentos) * Quantidade
+  const cartTotal = cart.reduce((acc, item) => {
+    const condimentsPrice = item.condiments?.reduce((sum, cond) => sum + cond.price, 0) || 0;
+    return acc + (item.price + condimentsPrice) * item.quantity;
+  }, 0);
 
   const handleFinish = async (deliveryFee: number) => {
     setIsProcessingPayment(true);
@@ -58,11 +63,10 @@ export default function TotemPage({ params }: PageProps) {
     // ou que geramos um ID manualmente aqui para o reference_id do PagBank.
     const orderId = `ORDER-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
     
-    await finishOrder({
+    const orderData: any = {
       id: orderId,
       address: {
         street: addressStreet,
-        cityId: addressCity,
         number: addressNumber,
         neighborhood: addressNeighborhood,
         complement: addressComplement
@@ -70,12 +74,18 @@ export default function TotemPage({ params }: PageProps) {
       deliveryFee,
       paymentMethod: 'PIX',
       paymentStatus: 'WAITING_PAYMENT'
-    });
+    };
+
+    await finishOrder(orderData);
 
     // 2. Chamar nossa API para gerar o PIX no PagBank
     const res = await fetch("/api/payments/pix", {
       method: "POST",
-      body: JSON.stringify({ orderId, amount: total, customerName: user?.name || "Kiosk Customer" })
+      body: JSON.stringify({ 
+        orderId, 
+        amount: total, 
+        customerName: "Cliente Totem" 
+      })
     });
     const data = await res.json();
 
