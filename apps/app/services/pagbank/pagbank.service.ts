@@ -1,10 +1,11 @@
 export class PagBankService {
-  private static baseUrl = process.env.PAGBANK_API_URL || "https://api.pagseguro.com.br";
+  private static baseUrl = process.env.PAGBANK_API_URL;
   private static token = process.env.PAGBANK_TOKEN;
 
   static async createPixOrder(orderId: string, amount: number, customerName: string) {
     if (!this.token) throw new Error("PAGBANK_TOKEN não configurado");
-
+    console.log("URL:", `${this.baseUrl}/orders`);
+    console.log("TOKEN:", this.token.substring(0, 10) + "...");
     const response = await fetch(`${this.baseUrl}/orders`, {
       method: "POST",
       headers: {
