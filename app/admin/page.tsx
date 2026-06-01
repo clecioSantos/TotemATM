@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { collection, onSnapshot, query, orderBy, limit, Timestamp, where } from "firebase/firestore";
-import { firestore } from "../../src/services/firebase";
+import { firestore } from "@/src/services/firebase";
 import { useAuth } from "@totem/shared/types/AuthProvider";
 import "./page.css";
 

@@ -1,19 +1,24 @@
-import { Injectable } from '@nestjs/common';
 import { Order, CreateOrderDTO, OrderStatus } from './order';
 import * as admin from 'firebase-admin';
+import { getAdminDb } from './firebase-admin.config';
 
-@Injectable()
 export class OrdersService {
-  private collection = admin.firestore().collection('orders');
+  private collection = getAdminDb().collection('orders');
 
   async createOrder(data: CreateOrderDTO): Promise<string> {
     const orderNumber = Math.floor(100 + Math.random() * 900); // Gerador simples de senha
     
+    const items = data.items.map(item => ({
+      ...item,
+      totalPrice: item.unitPrice * item.quantity
+    }));
+
     const newOrder: Partial<Order> = {
       ...data,
+      items,
       orderNumber,
       status: 'pending',
-      totalAmount: data.items.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0),
+      totalAmount: items.reduce((acc, item) => acc + item.totalPrice, 0),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -34,6 +39,15 @@ export class OrdersService {
       .where('status', 'in', ['pending', 'preparing', 'ready'])
       .orderBy('createdAt', 'asc')
       .get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
+
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        createdAt: data.createdAt?.toDate(),
+        updatedAt: data.updatedAt?.toDate(),
+      } as Order;
+    });
   }
 }

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { OrderItem, Product } from './order';
+import { OrderItem } from './order';
+import { Product } from '@totem/shared/types';
 
 interface CartState {
   items: OrderItem[];

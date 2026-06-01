@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useCompanies } from "../hooks/useCompanies";
+import { useCompanies } from "./useCompanies";
 import { useRouter } from "next/navigation";
 import "./page.css";
 

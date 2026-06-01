@@ -3,9 +3,9 @@
   "private": true,
   "packageManager": "npm@11.12.1",
   "scripts": {
-    "dev": "cd apps && npx next dev -p 3000",
-    "build": "cd apps && npx next build",
-    "startDev": "cd apps && npx next start", 
+    "dev": "npx next dev -p 3000",
+    "build": "npx next build",
+    "startDev": "npx next start",
     "start": "npx next start"
   },
   "devDependencies": {
@@ -24,6 +24,7 @@
     "dotenv": "^17.4.2",
     "firebase": "^12.13.0",
     "firebase-admin": "^13.9.0",
+    "framer-motion": "^12.40.0",
     "lucide-react": "^0.475.0",
     "next": "^15.5.0",
     "qrcode.react": "^4.2.0",

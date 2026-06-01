@@ -1,4 +1,4 @@
-import { getAdminAuth, setUserClaims } from "../../src/services/firebase-admin";
+import { getAdminAuth, setUserClaims } from "./firebase-admin";
 import { userRepository } from "@totem/shared/types/user.repository";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";

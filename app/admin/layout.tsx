@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Sidebar from "./components/Sidebar";
-import { AuthProvider } from "./orders/AuthContext";
+import { AuthProvider } from "@/app/admin/orders/AuthContext";
 import "../globals.css";
 
 export default function AdminLayout({

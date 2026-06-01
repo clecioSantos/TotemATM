@@ -4,7 +4,7 @@ import {
   signOut as firebaseSignOut,
   User
 } from "firebase/auth";
-import { auth } from "../../../../apps/src/services/firebase";
+import { auth } from "../../../../src/services/firebase";
 import { userRepository } from "@totem/shared/types/user.repository";
 import { UserProfile, UserRole } from "@totem/shared/types/auth";
 
