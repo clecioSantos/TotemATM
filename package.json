@@ -4,9 +4,8 @@
   "packageManager": "npm@11.12.1",
   "scripts": {
     "dev": "cd apps && npx next dev -p 3000",
-    "buildDev": "cd apps && npx next build",
-    "startDev": "cd apps && npx next start",
-    "build": "npx next build",
+    "build": "cd apps && npx next build",
+    "startDev": "cd apps && npx next start", 
     "start": "npx next start"
   },
   "devDependencies": {
