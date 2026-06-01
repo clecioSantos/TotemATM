@@ -38,16 +38,16 @@ function LoginForm() {
         const userRole = data.role || "client";
 
         if (redirectPath) {
-          // Se há um redirect salvo (ex: veio do middleware), usa ele
           window.location.href = redirectPath;
         } else if (userRole === "admin" || userRole === "owner") {
           window.location.href = "/admin";
         } else {
-          // Clientes vão para a tela de seleção de unidade
           window.location.href = "/totem";
         }
       } else {
-        setError("Erro ao criar sessão segura.");
+        const errorData = await res.json().catch(() => ({}));
+        setError(errorData.message || "Erro ao criar sessão segura no servidor.");
+        console.error("❌ Erro na API de Sessão:", errorData);
       }
     } catch (err) {
       console.error("🔥 Erro Firebase:", err);

@@ -20,11 +20,17 @@ function initializeFirebaseAdmin() {
     );
   }
 
+  // Limpeza robusta da chave privada para lidar com diferentes ambientes (Hostinger, Vercel, etc.)
+  const formattedPrivateKey = privateKey
+    .replace(/\\n/g, "\n")           // Converte \n literal em quebra de linha real
+    .replace(/^["']|["']$/g, "")     // Remove aspas simples ou duplas extras no início e fim
+    .trim();                         // Remove espaços em branco acidentais
+
   admin.initializeApp({
     credential: admin.credential.cert({
       projectId,
       clientEmail,
-      privateKey: privateKey.includes("-----BEGIN") ? privateKey.replace(/\\n/g, "\n") : privateKey,
+      privateKey: formattedPrivateKey,
     }),
   });
 }
