@@ -20,11 +20,20 @@ function initializeFirebaseAdmin() {
     );
   }
 
-  // Limpeza robusta da chave privada para lidar com diferentes ambientes (Hostinger, Vercel, etc.)
-  const formattedPrivateKey = privateKey
-    .replace(/\\n/g, "\n")           // Converte \n literal em quebra de linha real
-    .replace(/^["']|["']$/g, "")     // Remove aspas simples ou duplas extras no início e fim
-    .trim();                         // Remove espaços em branco acidentais
+  // Limpeza profunda da chave privada
+  let formattedPrivateKey = privateKey
+    .replace(/\\n/g, "\n")           // Converte strings "\n" literais em quebras de linha reais
+    .replace(/\\r/g, "\r")           // Converte strings "\r" literais
+    .replace(/^["']|["']$/g, "")     // Remove aspas extras no início e fim (comum no Hostinger)
+    .trim();
+
+  // Caso a Hostinger tenha removido todas as quebras de linha ao salvar a variável,
+  // o PEM falhará. Tentamos garantir que os delimitadores BEGIN e END estejam em linhas próprias.
+  if (formattedPrivateKey && !formattedPrivateKey.includes("\n") && formattedPrivateKey.includes("-----BEGIN PRIVATE KEY-----")) {
+    formattedPrivateKey = formattedPrivateKey
+      .replace("-----BEGIN PRIVATE KEY-----", "-----BEGIN PRIVATE KEY-----\n")
+      .replace("-----END PRIVATE KEY-----", "\n-----END PRIVATE KEY-----");
+  }
 
   admin.initializeApp({
     credential: admin.credential.cert({
