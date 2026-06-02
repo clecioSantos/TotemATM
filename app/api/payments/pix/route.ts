@@ -12,6 +12,16 @@ export async function POST(req: NextRequest) {
     const copyPaste = qrCodeData.text;
     const qrCodeImage = qrCodeData.links.find((l: any) => l.rel === "QRCODE.PNG")?.href;
 
+    // Rotina de simulação: Espera 10 segundos e envia o pagamento mockado
+    // Só executa se estivermos em ambiente de desenvolvimento/sandbox
+    if (process.env.PAGBANK_API_URL?.includes("sandbox")) {
+      setTimeout(() => {
+        PagBankService.simulateSandboxPayment(pagbankOrder.id)
+          .then(() => console.log(`Simulação concluída para ${pagbankOrder.id}`))
+          .catch(err => console.error("Falha no agendamento da simulação", err));
+      }, 10000);
+    }
+
     return NextResponse.json({
       paymentId: pagbankOrder.id,
       pixCopyPaste: copyPaste,
