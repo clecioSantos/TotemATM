@@ -39,7 +39,8 @@ function initializeFirebaseAdmin() {
   // Corrige chaves armazenadas em uma única linha no .env
   formattedPrivateKey = process.env.FIREBASE_PRIVATE_KEY
   ?.replace(/\\n/g, '\n')
-  .trim(); 
+  ?.replace(/\r/g, '')
+  ?.trim();
   console.log("🔍 Private Key Diagnostics");
   console.log("BEGIN CHECK:", formattedPrivateKey?.substring(0, 50));
   console.log("END CHECK:", formattedPrivateKey?.substring(formattedPrivateKey.length - 50));
@@ -52,7 +53,17 @@ function initializeFirebaseAdmin() {
     ),
     lines: formattedPrivateKey.split("\n").length,
   });
+console.log(
+  privateKey
+    ?.split('\n')
+    .slice(0, 2)
+);
 
+console.log(
+  privateKey
+    ?.split('\n')
+    .slice(-2)
+);
   try {
     admin.initializeApp({
       credential: admin.credential.cert({
