@@ -37,9 +37,12 @@ function initializeFirebaseAdmin() {
   let formattedPrivateKey = privateKey;
 
   // Corrige chaves armazenadas em uma única linha no .env
-  formattedPrivateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"); 
+  formattedPrivateKey = process.env.FIREBASE_PRIVATE_KEY
+  ?.replace(/\\n/g, '\n')
+  .trim(); 
   console.log("🔍 Private Key Diagnostics");
-
+  console.log("BEGIN CHECK:", formattedPrivateKey?.substring(0, 50));
+  console.log("END CHECK:", formattedPrivateKey?.substring(formattedPrivateKey.length - 50));
   console.log({
     startsWithBegin: formattedPrivateKey.includes(
       "-----BEGIN PRIVATE KEY-----"
