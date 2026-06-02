@@ -38,6 +38,7 @@ function initializeFirebaseAdmin() {
 
   // Corrige chaves armazenadas em uma única linha no .env
   formattedPrivateKey = process.env.FIREBASE_PRIVATE_KEY
+  ?.replace(/\\\\n/g, '\n')
   ?.replace(/\\n/g, '\n')
   ?.replace(/\r/g, '')
   ?.trim();
@@ -63,6 +64,11 @@ console.log(
   privateKey
     ?.split('\n')
     .slice(-2)
+);
+console.log(
+  JSON.stringify(
+    process.env.FIREBASE_PRIVATE_KEY?.substring(0, 50)
+  )
 );
   try {
     admin.initializeApp({
