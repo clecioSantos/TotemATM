@@ -4,11 +4,28 @@ import { firestore } from "@/src/services/firebase";
 
 export async function POST(req: NextRequest) {
   try {
-    const payload = await req.json();
+    const contentType = req.headers.get("content-type") || "";
+    let payload: any;
+
+    if (contentType.includes("application/json")) {
+      payload = await req.json();
+    } else {
+      // Se não for JSON, lê como texto e converte de Form Data para Objeto
+      const text = await req.text();
+      const params = new URLSearchParams(text);
+      payload = Object.fromEntries(params.entries());
+    }
+
+    console.log("📦 Webhook payload:", payload);
     
-    // O reference_id é o nosso ID de pedido do Firestore
-    const orderId = payload.reference_id;
-    const status = payload.status; // Ex: "PAID"
+    // Tenta obter o ID do pedido (suporta reference_id do V2 ou reference do legado)
+    const orderId = payload.reference_id || payload.reference;
+    const status = payload.status; 
+
+    if (!orderId) {
+      console.warn("⚠️ Webhook recebido sem reference_id identificado.");
+      return NextResponse.json({ received: true });
+    }
 
     if (status === "PAID") {
       const orderRef = doc(firestore, "orders", orderId);
