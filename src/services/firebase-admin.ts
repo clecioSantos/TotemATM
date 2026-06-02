@@ -37,8 +37,7 @@ function initializeFirebaseAdmin() {
   let formattedPrivateKey = privateKey;
 
   // Corrige chaves armazenadas em uma única linha no .env
-  formattedPrivateKey = formattedPrivateKey.replace(/\\n/g, "\n");
-
+  formattedPrivateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"); 
   console.log("🔍 Private Key Diagnostics");
 
   console.log({
