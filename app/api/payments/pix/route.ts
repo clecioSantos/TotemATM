@@ -9,8 +9,8 @@ export async function POST(req: NextRequest) {
     const pagbankOrder = await PagBankService.createPixOrder(orderId, amount, customerName);
 
     const qrCodeData = pagbankOrder.qr_codes[0];
-    const copyPaste = qrCodeData.links.find((l: any) => l.rel === "qr_code.text")?.href;
-    const qrCodeImage = qrCodeData.links.find((l: any) => l.rel === "qr_code.image")?.href;
+    const copyPaste = qrCodeData.text;
+    const qrCodeImage = qrCodeData.links.find((l: any) => l.rel === "QRCODE.PNG")?.href;
 
     return NextResponse.json({
       paymentId: pagbankOrder.id,
