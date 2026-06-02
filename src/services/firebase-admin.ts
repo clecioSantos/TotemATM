@@ -22,14 +22,7 @@ function initializeFirebaseAdmin() {
 
   // Limpeza profunda da chave privada
   let formattedPrivateKey = privateKey;
-
-  // Caso a Hostinger tenha removido todas as quebras de linha ao salvar a variável,
-  // o PEM falhará. Tentamos garantir que os delimitadores BEGIN e END estejam em linhas próprias.
-  if (formattedPrivateKey && !formattedPrivateKey.includes("\n") && formattedPrivateKey.includes("-----BEGIN PRIVATE KEY-----")) {
-    formattedPrivateKey = formattedPrivateKey
-      .replace("-----BEGIN PRIVATE KEY-----", "-----BEGIN PRIVATE KEY-----\n")
-      .replace("-----END PRIVATE KEY-----", "\n-----END PRIVATE KEY-----");
-  }
+  console.log('PRIVATE_KEY RAW:', privateKey); 
 
   admin.initializeApp({
     credential: admin.credential.cert({
