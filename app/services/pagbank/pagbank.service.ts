@@ -86,4 +86,32 @@ export class PagBankService {
 
     return data;
   }
+
+  static async simulateSandboxPayment(orderId: string) {
+    if (!this.baseUrl?.includes("sandbox")) {
+      console.warn("Simulação abortada: O ambiente atual não é Sandbox.");
+      return;
+    }
+
+    console.log(`[Mock] Iniciando simulação de pagamento para: ${orderId}`);
+
+    try {
+      const response = await fetch(`${this.baseUrl}/orders/${orderId}/pay`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        },
+        body: JSON.stringify({
+          // No sandbox do PagBank, chamar o endpoint /pay sem corpo 
+          // costuma autorizar o pedido automaticamente.
+        })
+      });
+
+      console.log(`[Mock] Status da simulação: ${response.status}`);
+    } catch (error) {
+      console.error("[Mock] Erro ao simular pagamento:", error);
+    }
+  }
 }
