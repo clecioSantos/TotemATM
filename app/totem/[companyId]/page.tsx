@@ -2,8 +2,6 @@
 
 import { use, useState } from "react";
 import { useTotem } from "@totem/hooks/useTotem";
-import { collection, doc } from "firebase/firestore";
-import { firestore } from "@/src/services/firebase";
 import WelcomeScreen from "../components/WelcomeScreen";
 import OrderingScreen from "../components/OrderingScreen";
 // Estes componentes devem existir na pasta ../components/
@@ -60,15 +58,7 @@ export default function TotemPage({ params }: PageProps) {
     const total = cartTotal + deliveryFee;
     setOrderTotal(total);
 
-    // 1. Criar o pedido no Firestore via hook existente (ajustar se necessário para retornar ID)
-    // Para este exemplo, assumimos que o finishOrder foi refatorado para retornar o ID gerado
-    // ou que geramos um ID manualmente aqui para o reference_id do PagBank.
-    
-    // Gera um ID oficial do Firestore de forma síncrona
-    const orderId = doc(collection(firestore, "orders")).id;
-    
     const orderData: any = {
-      id: orderId,
       address: {
         street: addressStreet,
         number: addressNumber,
@@ -80,7 +70,15 @@ export default function TotemPage({ params }: PageProps) {
       paymentStatus: 'WAITING_PAYMENT'
     };
 
-    await finishOrder(orderData);
+    // 1. Salva o pedido e aguarda o retorno do ID real do Firebase
+    // Fazemos o cast para string para resolver o erro de 'void' enquanto o hook é atualizado
+    const orderId = await finishOrder(orderData) as unknown as string;
+
+    if (!orderId) {
+      console.error("Erro: O ID do pedido não foi retornado pelo finishOrder.");
+      setIsProcessingPayment(false);
+      return;
+    }
 
     // 2. Chamar nossa API para gerar o PIX no PagBank
     const res = await fetch("/api/payments/pix", {
