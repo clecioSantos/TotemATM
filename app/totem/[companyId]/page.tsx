@@ -2,6 +2,8 @@
 
 import { use, useState } from "react";
 import { useTotem } from "@totem/hooks/useTotem";
+import { collection, doc } from "firebase/firestore";
+import { firestore } from "@/src/services/firebase";
 import WelcomeScreen from "../components/WelcomeScreen";
 import OrderingScreen from "../components/OrderingScreen";
 // Estes componentes devem existir na pasta ../components/
@@ -61,7 +63,9 @@ export default function TotemPage({ params }: PageProps) {
     // 1. Criar o pedido no Firestore via hook existente (ajustar se necessário para retornar ID)
     // Para este exemplo, assumimos que o finishOrder foi refatorado para retornar o ID gerado
     // ou que geramos um ID manualmente aqui para o reference_id do PagBank.
-    const orderId = `ORDER-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    
+    // Gera um ID oficial do Firestore de forma síncrona
+    const orderId = doc(collection(firestore, "orders")).id;
     
     const orderData: any = {
       id: orderId,
