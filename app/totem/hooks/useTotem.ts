@@ -133,7 +133,7 @@ export const useTotem = (companyId: string) => {
     deliveryFee?: number;
   }
 
-  const finishOrder = async (identification: OrderIdentification) => {
+  const finishOrder = async (identification: OrderIdentification): Promise<string | undefined> => {
     if (cart.length === 0 || !companyId) return;
     
     // Calcula o total considerando (preço base + soma dos condimentos) * quantidade
@@ -166,8 +166,9 @@ export const useTotem = (companyId: string) => {
       createdAt: serverTimestamp()
     };
 
-    await addDoc(collection(db, 'orders'), orderData);
+    const docRef = await addDoc(collection(db, 'orders'), orderData);
     clearCart();
+    return docRef.id;
   };
 
   const logout = async () => {
