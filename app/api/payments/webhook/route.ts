@@ -20,7 +20,10 @@ export async function POST(req: NextRequest) {
     
     // Tenta obter o ID do pedido (suporta reference_id do V2 ou reference do legado)
     // Nota: No V2, o reference_id do pedido pago vem na raiz ou dentro de cada charge
-    const orderId = payload.reference_id || payload.reference || payload.charges?.[0]?.reference_id;
+    let orderId = payload.reference_id || payload.reference || payload.charges?.[0]?.reference_id;
+    if (orderId && typeof orderId === 'string' && orderId.startsWith("ORDER-")) {
+      orderId = orderId.substring("ORDER-".length);
+    }
     
     // O status no PagBank V2 para ordens pode vir na raiz ou dentro do array de charges
     let status = payload.status;

@@ -6,7 +6,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { orderId, amount, customerName } = body;
 
-    const pagbankOrder = await PagBankService.createPixOrder(orderId, amount, customerName);
+    // Garante que o ID enviado ao PagBank seja apenas o ID do documento do Firebase
+    // removendo o prefixo "ORDER-" caso ele exista
+    const cleanOrderId = orderId.replace(/^ORDER-/, "");
+
+    const pagbankOrder = await PagBankService.createPixOrder(cleanOrderId, amount, customerName);
 
     const qrCodeData = pagbankOrder.qr_codes[0];
     const copyPaste = qrCodeData.text;
