@@ -19,8 +19,16 @@ export async function POST(req: NextRequest) {
     console.log("📦 Webhook payload:", payload);
     
     // Tenta obter o ID do pedido (suporta reference_id do V2 ou reference do legado)
-    const orderId = payload.reference_id || payload.reference;
-    const status = payload.status; 
+    // Nota: No V2, o reference_id do pedido pago vem na raiz ou dentro de cada charge
+    const orderId = payload.reference_id || payload.reference || payload.charges?.[0]?.reference_id;
+    
+    // O status no PagBank V2 para ordens pode vir na raiz ou dentro do array de charges
+    let status = payload.status;
+    if (!status && payload.charges && payload.charges.length > 0) {
+      status = payload.charges[0].status;
+    }
+
+    console.log(`🔍 Processando Pedido: ${orderId} | Status: ${status}`);
 
     if (!orderId) {
       console.warn("⚠️ Webhook recebido sem reference_id identificado.");
