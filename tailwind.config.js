@@ -8,17 +8,22 @@ module.exports = {
     extend: {
       colors: {
         brand: {
-          light: '#FDFBF7',     // Off-white para fundos
-          dark: '#1C1917',      // Carvão escuro para textos (stone-900)
-          accent: '#EAB308',    // Âmbar/Dourado (yellow-500)
-          accentHover: '#CA8A04', // yellow-600
-          success: '#16A34A',   // Verde fresco (green-600)
-          muted: '#78716C',     // Cinza quente para legendas (stone-500)
-          border: '#E7E5E4',    // Stone-200
+          light: '#F7F7F7',      // Cor de fundo do Veloce
+          surface: '#FFFFFF',    // Superfície clara
+          dark: '#202020',       // Texto principal
+          muted: '#666666',      // Texto secundário
+          border: '#EAEAEA',     // Bordas
+          primary: 'oklch(60% 0.18 25)', // Vermelho Veloce
+          primaryHover: 'oklch(55% 0.18 25)',
+          success: '#00A650',
+          alert: '#FFB800',
         }
       },
       borderRadius: {
-        'premium': '18px',      // Seguindo o padrão de 18px das regras do projeto
+        'sm': '8px',
+        'md': '12px',
+        'lg': '16px',
+        'premium': '18px',
       }
     },
   },
