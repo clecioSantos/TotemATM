@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { firestore } from "@/src/services/firebase";
-import { collection, onSnapshot, query, where, addDoc, serverTimestamp, deleteDoc, doc, writeBatch, getDocs, orderBy } from "firebase/firestore";
+import { collection, onSnapshot, query, where, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, writeBatch, getDocs, orderBy } from "firebase/firestore";
 import Link from "next/link";
 import { Search, MapPin, User, ShoppingBag, Store, X, LogOut, ChevronRight, Plus, Trash2, Home } from "lucide-react";
 import { useAuth } from "@totem/shared/types/AuthProvider";
@@ -24,6 +24,14 @@ export default function HomePage() {
   const [addressNeighborhood, setAddressNeighborhood] = useState("");
   const [addressComplement, setAddressComplement] = useState("");
   const [savingAddress, setSavingAddress] = useState(false);
+  const [addressCity, setAddressCity] = useState("");
+  const [availableCities, setAvailableCities] = useState<any[]>([]);
+  const [availableNeighborhoods, setAvailableNeighborhoods] = useState<any[]>([]);
+  const [isEditing, setIsEditing] = useState<string | null>(null);
+
+  const [search, setSearch] = useState("");
+  const [cityFilter, setCityFilter] = useState("");
+  const [cities, setCities] = useState<any[]>([]);
 
   const categories = [
     { name: "Lanches", icon: "🍔" },
@@ -32,6 +40,29 @@ export default function HomePage() {
     { name: "Doces", icon: "🍰" },
     { name: "Mercado", icon: "🛒" },
   ];
+
+  const [storeCitySettings, setStoreCitySettings] = useState<any[]>([]);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(firestore, "storeCitySettings"), (snap) => {
+        setStoreCitySettings(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsub();
+  }, []);
+
+  const filteredStores = stores.filter(store => {
+      const matchesName = store.name.toLowerCase().includes(search.toLowerCase());
+      
+      let matchesCity = true;
+      if (cityFilter) {
+          // Verifica se a loja possui configuração para essa cidade
+          const hasSettings = storeCitySettings.some(s => s.companyId === store.id && s.cityId === cityFilter && s.enabled);
+          matchesCity = hasSettings;
+      }
+      
+      return matchesName && matchesCity;
+  });
+
 
   useEffect(() => {
     const q = query(collection(firestore, "companies"));
@@ -43,6 +74,38 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    const unsubCities = onSnapshot(collection(firestore, "cities"), (snap) => {
+        const citiesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setCities(citiesData);
+        setAvailableCities(citiesData);
+    });
+    return () => unsubCities();
+  }, []);
+
+  // Sincronizar endereços do usuário
+  useEffect(() => {
+    if (!user) return;
+    const q = query(collection(firestore, "addresses"), where("userId", "==", user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setAddresses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  // Carregar bairros dinamicamente
+  useEffect(() => {
+    if (!addressCity) {
+      setAvailableNeighborhoods([]);
+      return;
+    }
+    const q = query(collection(firestore, "neighborhoods"), where("cityId", "==", addressCity), orderBy("name"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setAvailableNeighborhoods(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsubscribe();
+  }, [addressCity]);
+
+  useEffect(() => {
     if (!user || !isOrdersOpen) return;
     const q = query(collection(firestore, "orders"), where("customerId", "==", user.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -51,46 +114,31 @@ export default function HomePage() {
     return () => unsubscribe();
   }, [user, isOrdersOpen]);
 
-  useEffect(() => {
-    if (!isAddressesOpen || !user) return;
-    const addressesRef = collection(firestore, "addresses");
-    const q = query(addressesRef, where("userId", "==", user.uid));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setAddresses(data);
-    });
-    return () => unsubscribe();
-  }, [isAddressesOpen, user]);
+  const handleDeleteAddress = async (addressId: string) => {
+    if (!confirm("Deseja realmente excluir este endereço?")) return;
+    try {
+      await deleteDoc(doc(firestore, "addresses", addressId));
+      if (isEditing === addressId) resetAddressForm();
+    } catch (error) {
+      console.error("Erro ao deletar endereço:", error);
+    }
+  };
 
-  const [isEditing, setIsEditing] = useState<string | null>(null);
-
-  const [addressCity, setAddressCity] = useState("");
-  const [availableCities, setAvailableCities] = useState<any[]>([]);
-  const [availableNeighborhoods, setAvailableNeighborhoods] = useState<any[]>([]);
-
-  useEffect(() => {
-    const unsubCities = onSnapshot(collection(firestore, "cities"), (snap) => {
-        setAvailableCities(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
-    return () => unsubCities();
-  }, []);
-
-  useEffect(() => {
-      if (addressCity) {
-          const q = query(collection(firestore, "neighborhoods"), where("cityId", "==", addressCity));
-          const unsubNb = onSnapshot(q, (snap) => {
-              setAvailableNeighborhoods(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-          });
-          return () => unsubNb();
-      }
-      setAvailableNeighborhoods([]);
-  }, [addressCity]);
+  const resetAddressForm = () => {
+    setIsEditing(null);
+    setAddressStreet("");
+    setAddressNumber("");
+    setAddressNeighborhood("");
+    setAddressComplement("");
+    setAddressCity("");
+  };
 
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !addressStreet || !addressNumber || !addressNeighborhood || !addressCity) return;
     setSavingAddress(true);
-    const neighborhoodName = availableNeighborhoods.find(n => n.id === addressNeighborhood)?.name || addressNeighborhood;
+    const neighborhoodObj = availableNeighborhoods.find(n => n.id === addressNeighborhood);
+    const neighborhoodName = neighborhoodObj?.name || addressNeighborhood;
     try {
         if (isEditing) {
             await updateDoc(doc(firestore, "addresses", isEditing), {
@@ -98,6 +146,7 @@ export default function HomePage() {
                 number: addressNumber,
                 cityId: addressCity,
                 neighborhood: neighborhoodName,
+                neighborhoodId: neighborhoodObj?.id || "",
                 complement: addressComplement,
             });
             setIsEditing(null);
@@ -109,19 +158,17 @@ export default function HomePage() {
                 number: addressNumber,
                 cityId: addressCity,
                 neighborhood: neighborhoodName,
+                neighborhoodId: neighborhoodObj?.id || "",
                 complement: addressComplement,
                 enabled: true,
                 createdAt: serverTimestamp(),
             });
             alert("Endereço adicionado!");
         }
-        setAddressStreet(""); setAddressNumber(""); setAddressNeighborhood(""); setAddressComplement(""); setAddressCity("");
+        resetAddressForm();
     } finally { setSavingAddress(false); }
   };
 
-  const handleDeleteAddress = async (addressId: string) => {
-      if (confirm("Excluir este endereço?")) await deleteDoc(doc(firestore, "addresses", addressId));
-  };
 
 
   if (loading) {
@@ -196,9 +243,15 @@ export default function HomePage() {
           <div className="flex items-center text-sm font-semibold">
             <img src="/logo.png" alt="Bora De Delivery" className="h-[50px] w-auto" />
           </div>
-          <div className="bg-[#F0F0F0] h-10 rounded-[12px] flex items-center px-4 text-brand-muted text-sm mt-1">
-            <Search className="h-4 w-4 mr-3" />
-            Buscar lojas
+          <div className="flex flex-col gap-2 mt-1">
+            <div className="bg-[#F0F0F0] h-10 rounded-[12px] flex items-center px-4 text-brand-muted text-sm">
+                <Search className="h-4 w-4 mr-3" />
+                <input className="bg-transparent w-full outline-none" placeholder="Buscar lojas..." value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+            <select className="bg-[#F0F0F0] h-10 rounded-[12px] px-4 text-brand-muted text-sm" value={cityFilter} onChange={e => setCityFilter(e.target.value)}>
+                <option value="">Todas as cidades</option>
+                {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
           </div>
         </div>
         <div className="flex gap-2 pt-2">
@@ -256,7 +309,8 @@ export default function HomePage() {
                             setIsEditing(addr.id); 
                             setAddressStreet(addr.street); 
                             setAddressNumber(addr.number); 
-                            setAddressNeighborhood(addr.neighborhood); 
+                          setAddressCity(addr.cityId || "");
+                          setAddressNeighborhood(addr.neighborhoodId || addr.neighborhood); 
                             setAddressComplement(addr.complement || ""); 
                           }} className="p-1 hover:bg-brand-surface rounded-lg"><ChevronRight className="h-4 w-4" /></button>
                           <button onClick={() => handleDeleteAddress(addr.id)} className="p-1 hover:bg-red-50 text-red-600 rounded-lg"><Trash2 className="h-4 w-4" /></button>
@@ -264,9 +318,11 @@ export default function HomePage() {
                       </div>
                     ))}
                   </div>
-                  <form onSubmit={handleAddAddress} className="space-y-2 pt-2 border-t border-brand-border">
-                    <input required className="w-full p-2 bg-brand-light rounded-lg border border-brand-border text-xs" placeholder="Rua" value={addressStreet} onChange={e => setAddressStreet(e.target.value)} />
-                    <input required className="w-full p-2 bg-brand-light rounded-lg border border-brand-border text-xs" placeholder="Nº" value={addressNumber} onChange={e => setAddressNumber(e.target.value)} />
+                  <form onSubmit={handleAddAddress} className="space-y-2 pt-4 border-t border-brand-border mt-2">
+                    <div className="grid grid-cols-4 gap-2">
+                      <input required className="col-span-3 p-2 bg-brand-light rounded-lg border border-brand-border text-xs" placeholder="Rua" value={addressStreet} onChange={e => setAddressStreet(e.target.value)} />
+                      <input required className="col-span-1 p-2 bg-brand-light rounded-lg border border-brand-border text-xs" placeholder="Nº" value={addressNumber} onChange={e => setAddressNumber(e.target.value)} />
+                    </div>
                     <select required className="w-full p-2 bg-brand-light rounded-lg border border-brand-border text-xs" value={addressCity} onChange={e => setAddressCity(e.target.value)}>
                         <option value="">Selecione a cidade</option>
                         {availableCities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -276,10 +332,10 @@ export default function HomePage() {
                         {availableNeighborhoods.map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
                     </select>
                     <input className="w-full p-2 bg-brand-light rounded-lg border border-brand-border text-xs" placeholder="Complemento" value={addressComplement} onChange={e => setAddressComplement(e.target.value)} />
-                    <button type="submit" className="w-full p-2 bg-brand-primary text-white font-bold rounded-lg text-xs" disabled={savingAddress}>
-                        {isEditing ? "Salvar Edição" : "Adicionar Endereço"}
+                    <button type="submit" className="w-full p-3 bg-brand-primary text-white font-bold rounded-xl flex items-center justify-center gap-2 text-xs" disabled={savingAddress}>
+                        {savingAddress ? "Salvando..." : isEditing ? <><Plus className="h-4 w-4"/> Salvar Alterações</> : <><Plus className="h-4 w-4"/> Adicionar Endereço</>}
                     </button>
-                    {isEditing && <button type="button" onClick={() => {setIsEditing(null); setAddressStreet(""); setAddressNumber(""); setAddressNeighborhood(""); setAddressComplement(""); setAddressCity("");}} className="w-full p-1 text-xs underline">Cancelar</button>}
+                    {isEditing && <button type="button" onClick={resetAddressForm} className="w-full p-1 text-xs text-brand-muted underline text-center">Cancelar edição</button>}
                   </form>
                 </div>
               ) : (
@@ -321,7 +377,7 @@ export default function HomePage() {
         <h3 className="text-xl font-bold mb-4 mt-2">Unidades Disponíveis</h3>
         
         <div className="flex flex-col gap-4">
-          {stores.map((store) => (
+          {filteredStores.map((store) => (
             <Link 
               key={store.id} 
               href={`/totem/${store.id}`}

@@ -2,8 +2,7 @@
 
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useTotem } from "@totem/hooks/useTotem";
-import WelcomeScreen from "../components/WelcomeScreen";
+import { useTotem } from "@totem/hooks/useTotem"; 
 import OrderingScreen from "../components/OrderingScreen";
 // Estes componentes devem existir na pasta ../components/
 import IdentificationScreen from "../components/IdentificationScreen";
