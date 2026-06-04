@@ -17,32 +17,27 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       whileTap={{ scale: 0.95 }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-[2rem] overflow-hidden shadow-xl border border-gray-100 p-4 flex flex-col items-center text-center cursor-pointer hover:border-red-500 transition-colors"
+      className="bg-white rounded-[24px] overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.08)] border border-gray-100 p-4 flex flex-row items-center cursor-pointer transition-all duration-200 hover:translate-y-[-2px] hover:shadow-lg"
       onClick={() => addItem(product, 1)}
     >
-      <div className="relative w-40 h-40 mb-4">
+      <div className="relative w-[35%] aspect-square shrink-0 rounded-2xl overflow-hidden">
         <Image
           src={product.imageUrl}
           alt={product.name}
           fill
-          className="object-contain"
+          className="object-cover"
           priority
         />
       </div>
       
-      <h3 className="text-xl font-bold text-gray-800 mb-1">{product.name}</h3>
-      <p className="text-gray-500 text-sm mb-4 line-clamp-2">{product.description}</p>
-      
-      <div className="mt-auto w-full flex items-center justify-between">
-        <span className="text-2xl font-black text-red-600">
+      <div className="flex-1 ml-4 flex flex-col justify-center">
+        <h3 className="text-[18px] font-bold text-gray-900 mb-1">{product.name}</h3>
+        <p className="text-[14px] text-gray-500 mb-2 line-clamp-2">{product.description}</p>
+        <span className="text-[22px] font-bold text-red-600">
           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
         </span>
-        <div className="bg-red-500 text-white p-2 rounded-full shadow-lg">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-        </div>
       </div>
+ 
     </motion.div>
   );
 };

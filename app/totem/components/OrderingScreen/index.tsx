@@ -1,9 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Product, Category, CartItem, Condiment } from "@totem/shared/types";
-import { ShoppingBag, Trash2, Plus, Minus, X, RotateCcw, Check } from "lucide-react";
+import { ShoppingBag, Trash2, Plus, Minus, X, ArrowLeft, Check } from "lucide-react";
 
 interface OrderingScreenProps {
+  companyName: string;
   products: Product[];
   categories: Category[];
   condiments: Condiment[];
@@ -20,6 +21,7 @@ interface OrderingScreenProps {
 }
 
 export default function OrderingScreen({ 
+  companyName,
   products = [], 
   categories = [], 
   condiments = [], 
@@ -31,10 +33,31 @@ export default function OrderingScreen({
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedCondiments, setSelectedCondiments] = useState<Condiment[]>([]);
+  const [quantity, setQuantity] = useState(1);
   const [loading] = useState(false);
+
+  // Filtra condimentos relevantes para o produto selecionado
+  const productCondiments = selectedProduct 
+    ? condiments.filter(c => c.categoryIds?.includes(selectedProduct.categoryId)) 
+    : [];
+
+  const toggleCondiment = (condiment: Condiment) => {
+    setSelectedCondiments(prev => 
+      prev.find(c => c.id === condiment.id)
+        ? prev.filter(c => c.id !== condiment.id)
+        : [...prev, condiment]
+    );
+  };
+
+  const productTotal = selectedProduct 
+    ? (selectedProduct.price + selectedCondiments.reduce((sum, c) => sum + c.price, 0)) * quantity
+    : 0;
 
   const filteredProducts = activeCategory === "all" 
     ? products 
+    : activeCategory === "featured"
+    ? products.filter(p => p.featured)
     : products.filter(p => p.categoryId === activeCategory);
 
   const cartTotal = cart.reduce((acc, i) => {
@@ -56,68 +79,114 @@ export default function OrderingScreen({
   return (
     <div className="flex h-screen w-screen bg-brand-light overflow-hidden text-brand-dark font-sans select-none">
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <header className="bg-brand-surface border-b border-brand-border px-6 py-4 flex flex-col gap-4 shrink-0">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold">Bora De Delivery</h1>
+        <header className="sticky top-0 z-30 backdrop-blur-[16px] bg-[rgba(255,255,255,0.85)] border-b border-[rgba(0,0,0,0.05)] px-6 h-[80px] flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-4">
+             <button 
+                onClick={onCancel}
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-600"
+             >
+                <ArrowLeft className="h-6 w-6" />
+             </button>
+             <img src="/Logo.png" alt="Bora" className="h-10" />
+             <div className="h-6 w-[1px] bg-gray-200" />
+             <div> 
+                <div className="flex items-center gap-2 text-[12px] text-green-600 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-green-500"></span> Aberto
+                </div>
+             </div>
           </div>
-          <div className="flex gap-4 items-center">
-            <div className="w-16 h-16 bg-brand-light rounded-[12px] flex-shrink-0 overflow-hidden border border-brand-border">
-              <img src="https://placehold.co/200x200?text=Loja" alt="Logo da Loja" className="w-full h-full object-cover" />
-            </div>
-            <div className="flex-1">
-              <h2 className="font-bold text-lg">Nome da Loja</h2>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-brand-muted font-medium">
-                <span>Frete: R$ 5,00</span>
-                <span>•</span>
-                <span>08:00 - 22:00</span>
-                <span>•</span>
-                <span>30-45 min</span>
-              </div>
-            </div>
+          <div className="h-6 w-[1px] bg-gray-200" />
+          <div className="flex items-center gap-4">
+             
+             <button 
+                className="relative p-3 rounded-full hover:bg-gray-100"
+                onClick={() => setIsMobileCartOpen(true)}
+             >
+                <ShoppingBag className="h-6 w-6 text-gray-900" />
+                {cartItemsCount > 0 && (
+                    <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold">
+                        {cartItemsCount}
+                    </span>
+                )}
+             </button>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-brand-light">
-          {loading ? (
-             <div className="p-4 space-y-4">{[1,2,3,4].map(i => <Skeleton key={i} />)}</div>
-          ) : filteredProducts.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-12 text-brand-muted">
-                <p>Nenhum produto encontrado.</p>
+        <main className="flex-1 flex flex-col overflow-hidden bg-gray-50">
+          {/* Hero do Restaurante (Fixo) */}
+          <div className="p-6 shrink-0">
+              <div className="bg-gradient-to-r from-red-600 to-red-400 rounded-3xl p-6 text-white shadow-lg">
+                <h2 className="text-2xl font-black mb-2">{companyName || (categories.length > 0 ? "Bem-vindo ao Bora" : "Cardápio")}</h2>
+                <div className="flex items-center gap-4 text-sm font-medium opacity-90">
+                    <div className="flex items-center gap-1">⭐ 4.8</div>
+                    <div className="flex items-center gap-1">🕒 25-35 min</div>
+                    <div className="flex items-center gap-1">🚚 Entrega rápida</div>
+                </div>
               </div>
-          ) : (
-            <div className="flex flex-col w-full">
+          </div>
+          
+          {/* Categorias (Sticky) */}
+          <div className="sticky top-0 z-20 bg-white border-b border-gray-100 p-4 flex gap-2 overflow-x-auto no-scrollbar shrink-0">
+              <button 
+                onClick={() => setActiveCategory("featured")}
+                className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold transition-colors ${activeCategory === "featured" ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              >
+                ⭐ Destaques
+              </button>
+              <button 
+                onClick={() => setActiveCategory("all")}
+                className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold transition-colors ${activeCategory === "all" ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              >
+                Todos
+              </button>
+              {categories.map(cat => (
+                  <button 
+                    key={cat.id}
+                    onClick={() => setActiveCategory(cat.id)}
+                    className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold transition-colors ${activeCategory === cat.id ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  >
+                    {cat.name}
+                  </button>
+              ))}
+          </div>
+
+          {/* Lista de Produtos (Scrollable) */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {filteredProducts.map(product => (
                   <div 
                     key={product.id} 
-                    className="bg-brand-surface border-b border-brand-border p-4 transition-all hover:bg-brand-light cursor-pointer flex gap-4 w-full"
-                    onClick={() => {
-                      setSelectedProduct(product);
-                    }}
+                    className="bg-white rounded-[24px] overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.08)] border border-gray-100 p-4 flex flex-row items-center cursor-pointer transition-all duration-200 hover:translate-y-[-2px] hover:shadow-lg"
+                    onClick={() => setSelectedProduct(product)}
                   >
-                    <div className="w-20 h-20 rounded-[8px] overflow-hidden bg-brand-light flex-shrink-0 border border-brand-border">
+                    <div className="relative w-[35%] aspect-square shrink-0 rounded-2xl overflow-hidden">
                       <img src={product.imageUrl || 'https://placehold.co/400x400?text=Sem+Imagem'} alt={product.name} className="h-full w-full object-cover" />
                     </div>
-                    <div className="flex-1 flex flex-col justify-center gap-1">
-                      <h3 className="font-bold text-sm text-brand-dark leading-snug">{product.name}</h3>
-                      <p className="text-[11px] text-brand-muted leading-snug line-clamp-2">{product.description}</p>
-                      <span className="font-black text-brand-primary text-sm mt-1">R$ {product.price.toFixed(2)}</span>
+                    <div className="flex-1 ml-4 flex flex-col justify-center">
+                      <h3 className="text-[18px] font-bold text-gray-900 mb-1">{product.name}</h3>
+                      <p className="text-[14px] text-gray-500 mb-2 line-clamp-2">{product.description}</p>
+                      <span className="text-[22px] font-bold text-red-600">
+                        R$ {product.price.toFixed(2)}
+                      </span>
                     </div>
+                    {/* Botão removido */}
                   </div>
                 ))}
             </div>
-          )}
         </main>
 
-        <nav className="h-16 bg-brand-surface border-t border-brand-border flex items-center justify-around shrink-0 px-4">
-          <div className="flex flex-col items-center gap-1 text-brand-primary" onClick={() => window.location.href = '/'}>
-            <span className="text-xl">🏠</span>
-            <span className="text-[10px] font-bold">Início</span>
-          </div>
-          <div className="flex flex-col items-center gap-1 text-brand-muted" onClick={() => setIsMobileCartOpen(true)}>
-            <span className="text-xl">🛒</span>
-            <span className="text-[10px] font-bold">Pedido ({cartItemsCount})</span>
-          </div>
-        </nav>
+        {cart.length > 0 && (
+            <div className="fixed bottom-6 left-6 right-6 z-40">
+                <button 
+                    className="w-full h-[60px] bg-red-600 text-white rounded-[18px] shadow-[0_15px_40px_rgba(220,38,38,0.3)] flex items-center justify-between px-6 font-bold text-lg"
+                    onClick={() => setIsMobileCartOpen(true)}
+                >
+                    <div className="flex items-center gap-3">
+                        <ShoppingBag /> Ver Pedido
+                    </div>
+                    <div>{cartItemsCount} itens • R$ {cartTotal.toFixed(2)}</div>
+                </button>
+            </div>
+        )}
       </div>
       
       {/* Carrinho Desktop (Fixado à direita) */}
@@ -268,59 +337,88 @@ export default function OrderingScreen({
 
       {/* 5. MODAL DE DETALHES DO PRODUTO (TELA CHEIA) */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-surface">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white">
           
-          {/* Card do Modal Ocupando a Tela Toda */}
           <div className="relative w-full h-full flex flex-col md:flex-row overflow-hidden">
             
-            {/* Botão Fechar (X) */}
             <button 
-              className="absolute top-6 left-6 z-20 p-3 rounded-full bg-brand-light text-brand-dark transition-colors border border-brand-border"
+              className="absolute top-6 left-6 z-20 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
               onClick={() => setSelectedProduct(null)}
             >
-              <X className="h-6 w-6" />
+              <ArrowLeft className="h-6 w-6 text-gray-900" />
             </button>
 
-            {/* Lado Esquerdo: Imagem (Superior em mobile) */}
-            <div className="w-full md:w-1/2 bg-brand-light flex items-center justify-center p-8 md:p-16 shrink-0">
+            <div className="w-full md:w-1/2 bg-gray-100 flex items-center justify-center p-8 shrink-0">
               <img 
                 src={selectedProduct.imageUrl || 'https://placehold.co/600x600?text=Sem+Imagem'} 
                 alt={selectedProduct.name}
-                className="max-w-full max-h-[40vh] md:max-h-full object-contain"
+                className="max-w-full max-h-[50vh] md:max-h-full object-cover rounded-3xl shadow-xl"
               />
             </div>
 
-            {/* Lado Direito: Informações */}
-            <div className="w-full md:w-1/2 flex flex-col p-8 md:p-20 overflow-y-auto bg-brand-surface">
-              <div className="mb-8">
-                <h2 className="text-4xl md:text-5xl font-bold text-brand-dark leading-tight mb-4">
+            <div className="w-full md:w-1/2 flex flex-col p-8 md:p-16 bg-white">
+              <div className="mb-6">
+                <h2 className="text-4xl font-bold text-gray-900 mb-2">
                   {selectedProduct.name}
                 </h2>
-                <p className="text-2xl font-bold text-brand-primary">
-                  R$ {selectedProduct.price.toFixed(2)}
+                <p className="text-gray-500 text-lg">
+                  {selectedProduct.description}
                 </p>
               </div>
 
-              <div className="space-y-8 flex-1">
-                {selectedProduct.description && (
-                  <div>
-                    <h4 className="text-[12px] font-bold text-brand-muted uppercase tracking-widest mb-3">Descrição</h4>
-                    <p className="text-brand-muted text-base leading-relaxed max-w-xl">
-                      {selectedProduct.description}
-                    </p>
-                  </div>
-                )}
+              <div className="flex-1 overflow-y-auto">
+                 {productCondiments.length > 0 && (
+                    <div className="space-y-4">
+                      <h4 className="font-bold text-lg text-gray-900">Adicionais</h4>
+                      <div className="grid grid-cols-1 gap-3">
+                        {productCondiments.map(cond => {
+                          const isSelected = selectedCondiments.find(c => c.id === cond.id);
+                          return (
+                            <button
+                              key={cond.id}
+                              onClick={() => toggleCondiment(cond)}
+                              className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
+                                isSelected ? 'border-red-600 bg-red-50' : 'border-gray-100 bg-gray-50'
+                              }`}
+                            >
+                              <span className="font-medium text-gray-900">{cond.name}</span>
+                              <span className="font-bold text-gray-600">+ R$ {cond.price.toFixed(2)}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                 )}
               </div>
 
-              <div className="mt-8 pt-8 border-t border-brand-border">
+              <div className="mt-auto pt-8 border-t border-gray-100">
+                <div className="flex items-center justify-between mb-6">
+                    <span className="text-2xl font-bold">Quantidade</span>
+                    <div className="flex items-center gap-4 border border-gray-200 rounded-2xl p-2">
+                        <button 
+                          className="p-3 text-2xl font-bold text-gray-600 disabled:opacity-50"
+                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                          disabled={quantity <= 1}
+                        >-</button>
+                        <span className="text-2xl font-bold w-12 text-center">{quantity}</span>
+                        <button 
+                          className="p-3 text-2xl font-bold text-red-600"
+                          onClick={() => setQuantity(quantity + 1)}
+                        >+</button>
+                    </div>
+                </div>
+
                 <button 
-                  className="w-full flex items-center justify-center gap-4 bg-brand-primary hover:bg-brand-primaryHover text-white py-6 rounded-[16px] font-bold text-lg transition-all active:scale-[0.98]"
+                  className="w-full h-[64px] flex items-center justify-between px-8 bg-red-600 hover:bg-red-700 text-white rounded-[16px] font-bold text-lg transition-all"
                   onClick={() => {
-                    actions.addToCart(selectedProduct);
+                    actions.addToCart(selectedProduct, selectedCondiments);
                     setSelectedProduct(null);
+                    setQuantity(1);
+                    setSelectedCondiments([]);
                   }}
                 >
-                  <span>ADICIONAR • R$ {selectedProduct.price.toFixed(2)}</span>
+                  <span>Adicionar ao Pedido</span>
+                  <span>R$ {productTotal.toFixed(2)}</span>
                 </button>
               </div>
             </div>

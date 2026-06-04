@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { firestore as db } from '@/src/services/firebase';
 import { Product, Category, CartItem, Condiment } from '@totem/shared/types';
 import { useAuth } from '@totem/shared/types/AuthProvider';
@@ -13,9 +13,21 @@ export const useTotem = (companyId: string) => {
   const [condiments, setCondiments] = useState<Condiment[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [companyName, setCompanyName] = useState<string>("");
 
   useEffect(() => {
     if (!db.app.options.projectId || !companyId) return;
+
+    // Busca nome da empresa
+    const fetchCompany = async () => {
+        const docRef = doc(db, 'companies', companyId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            setCompanyName(docSnap.data().name);
+        }
+    }
+    fetchCompany();
+    
     setLoading(true);
 
     // Escuta apenas categorias da empresa atual
@@ -188,6 +200,7 @@ export const useTotem = (companyId: string) => {
     products, 
     categories, 
     condiments, 
+    companyName,
     cart, 
     addToCart, 
     removeFromCart, 

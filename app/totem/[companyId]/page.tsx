@@ -43,7 +43,8 @@ export default function TotemPage({ params }: PageProps) {
   const { 
     products, 
     categories, 
-    condiments,
+    condiments, 
+    companyName,
     cart, 
     addToCart, 
     removeFromCart, 
@@ -51,7 +52,7 @@ export default function TotemPage({ params }: PageProps) {
     updateItemObservation,
     clearCart,
     finishOrder, 
-    loading,
+    loading, 
     logout
   } = useTotem(companyId);
 
@@ -133,21 +134,22 @@ export default function TotemPage({ params }: PageProps) {
     
     case 'ORDERING':
       return (
-        <OrderingScreen 
-          products={products}
-          categories={categories}
-          condiments={condiments}
-          cart={cart}
-          actions={{ 
-            addToCart, 
-            removeFromCart, 
-            updateQuantity, 
-            updateItemObservation, 
-            clearCart 
-          }}
-          onFinish={() => setStep('IDENTIFICATION')}
-          onCancel={() => setStep('ORDERING')}
-        />
+          <OrderingScreen 
+            companyName={companyName}
+            products={products}
+            categories={categories}
+            condiments={condiments}
+            cart={cart}
+            actions={{ 
+              addToCart, 
+              removeFromCart, 
+              updateQuantity, 
+              updateItemObservation, 
+              clearCart 
+            }}
+            onFinish={() => setStep('IDENTIFICATION')}
+            onCancel={() => router.push('/')}
+          />
       );
 
     case 'IDENTIFICATION':

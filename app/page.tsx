@@ -20,13 +20,15 @@ export default function HomePage() {
   const { user, signOut } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isOrdersOpen, setIsOrdersOpen] = useState(false);
-
   const [userOrders, setUserOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     const q = query(collection(firestore, "companies"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setStores(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -40,7 +42,16 @@ export default function HomePage() {
     return () => unsubscribe();
   }, [user, isOrdersOpen]);
 
-  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-brand-light flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <img src="/Logo.png" alt="Logo" className="h-24 w-auto mb-6 animate-pulse" />
+          <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </main>
+    );
+  }
 
   const statusLabels: Record<string, string> = {
     pending: "Pendente",
