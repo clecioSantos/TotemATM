@@ -19,8 +19,10 @@ export default function OrdersPage() {
   const statuses = [
     { id: "all", label: "Todos" },
     { id: "pending", label: "Pendentes" },
+    { id: "paid", label: "Pagos" },
     { id: "preparing", label: "Em preparo" },
     { id: "ready", label: "Prontos" },
+    { id: "delivering", label: "Em entrega" },
     { id: "finished", label: "Finalizados" },
     { id: "canceled", label: "Cancelados" },
   ];
@@ -77,7 +79,7 @@ export default function OrdersPage() {
                 key={order.id} 
                 order={order} 
                 onStatusUpdate={(id, next) => updateOrderStatus(id, next)}
-                onCancel={(id) => updateOrderStatus(id, 'canceled')}
+                onCancel={(id) => updateOrderStatus(id, 'cancelled')}
               />
             ))}
           </div>
