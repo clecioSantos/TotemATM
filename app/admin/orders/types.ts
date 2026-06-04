@@ -3,7 +3,8 @@ import { Product as SharedProduct, Order as SharedOrder } from '@totem/shared/ty
 export type Product = SharedProduct;
 
 export interface Order extends Omit<SharedOrder, 'address' | 'status'> {
-  status: 'pending' | 'preparing' | 'ready' | 'finished' | 'canceled';
+  status: 'pending' | 'paid' | 'preparing' | 'ready' | 'delivering' | 'finished' | 'cancelled';
+  userName?: string;
   address?: {
     street: string;
     number: string;

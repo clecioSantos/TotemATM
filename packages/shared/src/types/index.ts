@@ -1,4 +1,4 @@
-export type OrderStatus = "pending" | "preparing" | "ready" | "finished";
+export type OrderStatus = "pending" | "paid" | "preparing" | "ready" | "delivering" | "finished" | "cancelled";
 
 export interface Product {
   id: string;
@@ -62,6 +62,7 @@ export interface Order {
   total: number;
   status: OrderStatus;
   customerName?: string;
+  userName?: string;
   tableNumber?: string;
   createdAt: Date | { seconds: number; nanoseconds: number };
   deliveryFee?: number;
