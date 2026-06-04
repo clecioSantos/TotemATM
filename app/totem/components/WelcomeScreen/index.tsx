@@ -217,7 +217,7 @@ export default function WelcomeScreen({ onStart, onLogout }: WelcomeScreenProps)
     >
       {/* Header - Simulado para o Totem, opcionalmente visível ou não */}
       <header className="px-6 py-6 border-b border-brand-border bg-brand-surface">
-        <h2 className="text-xl font-bold">Bem-vindo ao NexOrder</h2>
+        <h2 className="text-xl font-bold">Bem-vindo ao Bora De Delivery</h2>
       </header>
 
       {/* Main Content: Carousel Banner Style */}
@@ -244,7 +244,7 @@ export default function WelcomeScreen({ onStart, onLogout }: WelcomeScreenProps)
 
           {/* Seção de destaque */}
           <div className="mt-8 p-12 bg-brand-surface rounded-lg shadow-sm border border-brand-border flex flex-col items-center justify-center text-center">
-            <h1 className="text-4xl font-black mb-4">NexOrder</h1>
+            <h1 className="text-4xl font-black mb-4">Bora De Delivery</h1>
             <p className="text-brand-muted mb-8">Toque na tela para iniciar seu pedido.</p>
             
             <button className="h-12 rounded-md bg-brand-primary text-white font-semibold px-12 transition-all hover:bg-brand-primaryHover">

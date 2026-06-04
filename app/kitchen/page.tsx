@@ -8,7 +8,7 @@ export default function HomePage() {
       fontSize: '48px',
       fontWeight: 'bold'
     }}>
-      NexOrder Kitchen
+      Bora De Delivery Kitchen
     </main>
   );
 }

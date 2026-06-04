@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* NexOrder Design Tokens */
+/* Bora De Delivery Design Tokens */
 @import "../src/styles/abstracts/_variables.css";
 /* Base Styles */
 @import "../src/styles/base/_layout.css";

@@ -11,6 +11,14 @@ export default function DashboardPage() {
     { title: "Ticket Médio", value: "R$ 37,65", growth: "+5%" },
   ];
 
+  const categories = [
+    { name: "Lanches", icon: "🍔" },
+    { name: "Pizza", icon: "🍕" },
+    { name: "Japonês", icon: "🍣" },
+    { name: "Doces", icon: "🍰" },
+    { name: "Mercado", icon: "🛒" },
+  ];
+
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
@@ -28,6 +36,20 @@ export default function DashboardPage() {
               <span className="stat-value">{stat.value}</span>
               <span className="stat-growth">{stat.growth}</span>
             </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Categorias */}
+      <div className="flex gap-4 overflow-x-auto pb-4 mb-2 mt-8 scrollbar-hide">
+        {categories.map((cat, i) => (
+          <div key={i} className="flex flex-col items-center gap-2 min-w-[70px]">
+            <div className="w-16 h-16 bg-brand-surface rounded-[16px] flex items-center justify-center text-2xl shadow-sm border border-brand-border">
+              {cat.icon}
+            </div>
+            <span className="text-xs font-semibold text-brand-muted">
+              {cat.name}
+            </span>
           </div>
         ))}
       </div>

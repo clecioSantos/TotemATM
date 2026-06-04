@@ -41,7 +41,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       <div className="sidebar-top">
         {!collapsed && (
           <div className="sidebar-logo">
-            <h1 className="logo-title">NexOrder</h1>
+            <h1 className="logo-title">Bora De Delivery</h1>
             <p className="logo-subtitle">Admin Panel</p>
           </div>
         )}

@@ -71,7 +71,7 @@ function RegisterForm() {
       <div className="login-card">
         <header className="login-header">
           <h1>Criar Conta</h1>
-          <p>Comece a gerenciar seu negócio com NexOrder</p>
+          <p>Comece a gerenciar seu negócio com Bora De Delivery</p>
         </header>
 
         <form className="login-form" onSubmit={handleRegister}>
@@ -104,4 +104,4 @@ export default function RegisterPage() {
       <RegisterForm />
     </Suspense>
   );
-}
+}

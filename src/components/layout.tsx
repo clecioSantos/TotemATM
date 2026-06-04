@@ -6,7 +6,7 @@ import { Clock } from 'lucide-react';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'NexOrder Kitchen',
+  title: 'Bora De Delivery Kitchen',
   description: 'Painel de Produção Realtime',
 };
 

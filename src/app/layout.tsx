@@ -7,8 +7,11 @@ import Link from 'next/link';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'NexOrder Admin',
-  description: 'Gestão de Restaurante NexOrder',
+  title: 'Bora De Delivery',
+  description: 'Gestão de Restaurante Bora De Delivery',
+  icons: {
+    icon: '/Icon.png',
+  },
 };
 
 export default function AdminLayout({

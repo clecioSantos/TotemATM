@@ -1,6 +1,7 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useTotem } from "@totem/hooks/useTotem";
 import WelcomeScreen from "../components/WelcomeScreen";
 import OrderingScreen from "../components/OrderingScreen";
@@ -17,9 +18,16 @@ interface PageProps {
 type TotemStep = 'WELCOME' | 'ORDERING' | 'IDENTIFICATION' | 'PAYMENT' | 'FINISHED';
 
 export default function TotemPage({ params }: PageProps) {
+  const router = useRouter();
   // No Next.js 15, params é uma Promise que deve ser resolvida com 'use'
   const { companyId } = use(params);
-  const [step, setStep] = useState<TotemStep>('WELCOME');
+
+  useEffect(() => {
+    if (!companyId) {
+      router.push('/');
+    }
+  }, [companyId, router]);
+  const [step, setStep] = useState<TotemStep>('ORDERING');
   const [addressStreet, setAddressStreet] = useState("");
   const [addressCity, setAddressCity] = useState("");
   const [addressNumber, setAddressNumber] = useState("");
@@ -106,9 +114,10 @@ export default function TotemPage({ params }: PageProps) {
     setAddressNeighborhood("");
     setAddressComplement("");
     setTimeout(() => {
-      setStep('WELCOME');
-    }, 5000);
-  };
+        setStep('ORDERING');
+      }, 5000);
+    };
+
 
   if (loading) {
     return (
@@ -137,7 +146,7 @@ export default function TotemPage({ params }: PageProps) {
             clearCart 
           }}
           onFinish={() => setStep('IDENTIFICATION')}
-          onCancel={() => setStep('WELCOME')}
+          onCancel={() => setStep('ORDERING')}
         />
       );
 
