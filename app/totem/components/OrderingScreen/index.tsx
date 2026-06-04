@@ -31,8 +31,7 @@ export default function OrderingScreen({
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [tempSelectedCondimentIds, setTempSelectedCondimentIds] = useState<string[]>([]);
-  const [loading] = useState(false); // Assume loading is handled outside or logic needed
+  const [loading] = useState(false);
 
   const filteredProducts = activeCategory === "all" 
     ? products 
@@ -43,16 +42,6 @@ export default function OrderingScreen({
     return acc + ((i.price + condimentsPrice) * i.quantity);
   }, 0);
   const cartItemsCount = cart.reduce((acc, i) => acc + i.quantity, 0);
-
-  const productCondiments = selectedProduct 
-    ? condiments.filter(c => c.enabled && c.categoryIds?.includes(selectedProduct.categoryId))
-    : [];
-
-  const modalTotalPrice = selectedProduct 
-    ? selectedProduct.price + condiments
-        .filter(c => tempSelectedCondimentIds.includes(c.id))
-        .reduce((sum, c) => sum + c.price, 0)
-    : 0;
 
   const Skeleton = () => (
     <div className="animate-pulse flex gap-4 w-full p-4">
@@ -66,24 +55,28 @@ export default function OrderingScreen({
 
   return (
     <div className="flex h-screen w-screen bg-brand-light overflow-hidden text-brand-dark font-sans select-none">
-      {/* 1. ÁREA PRINCIPAL: CATEGORIAS E PRODUTOS */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <header className="bg-brand-surface border-b border-brand-border px-6 py-4 flex items-center justify-between shrink-0">
-          <div>
-            <h1 className="text-xl font-bold flex items-center gap-1.5">
-              NexOrder
-              <span className="h-1.5 w-1.5 rounded-full bg-brand-primary"></span>
-            </h1>
+        <header className="bg-brand-surface border-b border-brand-border px-6 py-4 flex flex-col gap-4 shrink-0">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold">Bora De Delivery</h1>
           </div>
-          <button 
-            className="flex items-center gap-1.5 text-xs font-bold text-brand-muted hover:text-brand-primary transition-colors bg-brand-light px-4 py-2 rounded-[12px] border border-brand-border" 
-            onClick={() => { actions.clearCart(); onCancel(); }}
-          >
-            <span>Voltar</span>
-          </button>
+          <div className="flex gap-4 items-center">
+            <div className="w-16 h-16 bg-brand-light rounded-[12px] flex-shrink-0 overflow-hidden border border-brand-border">
+              <img src="https://placehold.co/200x200?text=Loja" alt="Logo da Loja" className="w-full h-full object-cover" />
+            </div>
+            <div className="flex-1">
+              <h2 className="font-bold text-lg">Nome da Loja</h2>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-brand-muted font-medium">
+                <span>Frete: R$ 5,00</span>
+                <span>•</span>
+                <span>08:00 - 22:00</span>
+                <span>•</span>
+                <span>30-45 min</span>
+              </div>
+            </div>
+          </div>
         </header>
 
-        {/* Grade de Produtos */}
         <main className="flex-1 overflow-y-auto bg-brand-light">
           {loading ? (
              <div className="p-4 space-y-4">{[1,2,3,4].map(i => <Skeleton key={i} />)}</div>
@@ -92,23 +85,22 @@ export default function OrderingScreen({
                 <p>Nenhum produto encontrado.</p>
               </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-0">
+            <div className="flex flex-col w-full">
                 {filteredProducts.map(product => (
                   <div 
                     key={product.id} 
-                    className="bg-brand-surface border-b border-r border-brand-border p-6 transition-all hover:bg-brand-light cursor-pointer flex gap-4 w-full"
+                    className="bg-brand-surface border-b border-brand-border p-4 transition-all hover:bg-brand-light cursor-pointer flex gap-4 w-full"
                     onClick={() => {
-                      setTempSelectedCondimentIds([]);
                       setSelectedProduct(product);
                     }}
                   >
-                    <div className="w-24 h-24 rounded-[12px] overflow-hidden bg-brand-light flex-shrink-0 border border-brand-border">
+                    <div className="w-20 h-20 rounded-[8px] overflow-hidden bg-brand-light flex-shrink-0 border border-brand-border">
                       <img src={product.imageUrl || 'https://placehold.co/400x400?text=Sem+Imagem'} alt={product.name} className="h-full w-full object-cover" />
                     </div>
                     <div className="flex-1 flex flex-col justify-center gap-1">
-                      <h3 className="font-bold text-base text-brand-dark leading-snug">{product.name}</h3>
-                      <p className="text-xs text-brand-muted leading-snug line-clamp-2">{product.description}</p>
-                      <span className="font-black text-brand-primary text-base mt-1">R$ {product.price.toFixed(2)}</span>
+                      <h3 className="font-bold text-sm text-brand-dark leading-snug">{product.name}</h3>
+                      <p className="text-[11px] text-brand-muted leading-snug line-clamp-2">{product.description}</p>
+                      <span className="font-black text-brand-primary text-sm mt-1">R$ {product.price.toFixed(2)}</span>
                     </div>
                   </div>
                 ))}
@@ -116,9 +108,8 @@ export default function OrderingScreen({
           )}
         </main>
 
-        {/* NAVIGATION BOTTOM */}
         <nav className="h-16 bg-brand-surface border-t border-brand-border flex items-center justify-around shrink-0 px-4">
-          <div className="flex flex-col items-center gap-1 text-brand-primary" onClick={() => setActiveCategory("all")}>
+          <div className="flex flex-col items-center gap-1 text-brand-primary" onClick={() => window.location.href = '/'}>
             <span className="text-xl">🏠</span>
             <span className="text-[10px] font-bold">Início</span>
           </div>
@@ -201,7 +192,6 @@ export default function OrderingScreen({
         )}
       </aside>
 
-      {/* 4. MODAL/DRAWER DO CARRINHO EM DISPOSITIVOS MÓVEIS */}
       {isMobileCartOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end">
           <div className="absolute inset-0 bg-brand-dark/40 backdrop-blur-sm" onClick={() => setIsMobileCartOpen(false)} />
@@ -218,7 +208,6 @@ export default function OrderingScreen({
                 <X className="h-5 w-5" />
               </button>
             </div>
-
             <div className="flex-1 overflow-y-auto space-y-4 py-2">
               {cart.map(item => (
                 <div key={item.id} className="bg-brand-light rounded-[12px] p-4 border border-brand-border flex flex-col gap-3">
@@ -308,7 +297,7 @@ export default function OrderingScreen({
                   {selectedProduct.name}
                 </h2>
                 <p className="text-2xl font-bold text-brand-primary">
-                  R$ {modalTotalPrice.toFixed(2)}
+                  R$ {selectedProduct.price.toFixed(2)}
                 </p>
               </div>
 
@@ -321,56 +310,17 @@ export default function OrderingScreen({
                     </p>
                   </div>
                 )}
-
-                {productCondiments.length > 0 && (
-                  <div>
-                    <h4 className="text-[12px] font-bold text-brand-muted uppercase tracking-widest mb-6">Adicionais</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {productCondiments.map(cond => (
-                      <button
-                        key={cond.id}
-                        onClick={() => {
-                          setTempSelectedCondimentIds(prev => 
-                            prev.includes(cond.id) ? prev.filter(id => id !== cond.id) : [...prev, cond.id]
-                          );
-                        }}
-                        className={`flex items-center justify-between p-5 rounded-[16px] border-2 transition-all ${
-                          tempSelectedCondimentIds.includes(cond.id)
-                            ? 'border-brand-primary bg-brand-primary/5'
-                            : 'border-brand-border bg-brand-surface hover:border-brand-muted'
-                        }`}
-                      >
-                        <div className="flex flex-col items-start">
-                          <span className={`text-sm font-bold ${tempSelectedCondimentIds.includes(cond.id) ? 'text-brand-dark' : 'text-brand-dark'}`}>
-                            {cond.name}
-                          </span>
-                          <span className="text-xs text-brand-primary font-bold">+ R$ {cond.price.toFixed(2)}</span>
-                        </div>
-                        <div className={`w-6 h-6 rounded-[8px] flex items-center justify-center border-2 transition-colors ${
-                          tempSelectedCondimentIds.includes(cond.id) 
-                            ? 'bg-brand-primary border-brand-primary' 
-                            : 'border-brand-border bg-brand-surface'
-                        }`}>
-                          {tempSelectedCondimentIds.includes(cond.id) && <Check className="h-4 w-4 text-white" strokeWidth={3} />}
-                        </div>
-                      </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div className="mt-8 pt-8 border-t border-brand-border">
                 <button 
                   className="w-full flex items-center justify-center gap-4 bg-brand-primary hover:bg-brand-primaryHover text-white py-6 rounded-[16px] font-bold text-lg transition-all active:scale-[0.98]"
                   onClick={() => {
-                    const selected = condiments.filter(c => tempSelectedCondimentIds.includes(c.id));
-                    actions.addToCart(selectedProduct, selected);
+                    actions.addToCart(selectedProduct);
                     setSelectedProduct(null);
-                    setTempSelectedCondimentIds([]);
                   }}
                 >
-                  <span>ADICIONAR • R$ {modalTotalPrice.toFixed(2)}</span>
+                  <span>ADICIONAR • R$ {selectedProduct.price.toFixed(2)}</span>
                 </button>
               </div>
             </div>
@@ -380,3 +330,6 @@ export default function OrderingScreen({
     </div>
   );
 }
+
+
+

@@ -157,9 +157,15 @@ export default function IdentificationScreen({
     setAddressComplement("");
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleConfirmAndSave = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     if (!user) {
       onConfirm(deliveryPrice);
+      setIsSubmitting(false);
       return;
     }
 
@@ -205,8 +211,11 @@ export default function IdentificationScreen({
       }
     } catch (e) {
       console.error("Erro ao atualizar regras de habilitar endereço no envio:", e);
+    } finally {
+      onConfirm(deliveryPrice);
+      // Não resetamos isSubmitting aqui porque onConfirm provavelmente redireciona para a tela de pagamento
+      // Caso a tela de pagamento falhe, o usuário voltará e o estado seria resetado pelo componente.
     }
-    onConfirm(deliveryPrice);
   };
 
   return (
@@ -223,32 +232,33 @@ export default function IdentificationScreen({
 
         {/* Endereços Salvos */}
         {user && addresses.length > 0 && (
-          <div className="mb-6 flex flex-col gap-3">
-            <span className="text-[10px] font-bold tracking-widest text-brand-muted uppercase ml-1">Seus endereços</span>
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+          <div className="mb-6 flex flex-col gap-1">
+            <span className="text-[10px] font-bold tracking-widest text-brand-muted uppercase ml-1 mb-2">Meus endereços</span>
+            <div className="flex flex-col border border-brand-border rounded-[12px] overflow-hidden">
               <button
                 onClick={handleSelectNewAddress}
-                className={`flex-shrink-0 p-4 rounded-[12px] border-2 transition-all flex items-center justify-center min-w-[120px] ${
+                className={`p-4 border-b border-brand-border transition-all text-left flex items-center gap-3 ${
                   selectedAddressId === "new"
-                    ? "border-brand-primary bg-brand-light"
-                    : "border-brand-border bg-brand-surface hover:border-brand-muted"
+                    ? "bg-brand-light"
+                    : "bg-brand-surface hover:bg-brand-light"
                 }`}
               >
                 <PlusCircle className="h-5 w-5 text-brand-primary" />
+                <span className="text-sm font-bold text-brand-dark">Novo endereço</span>
               </button>
 
               {addresses.map((addr) => (
                 <button
                   key={addr.id}
                   onClick={() => handleSelectAddress(addr)}
-                  className={`flex-shrink-0 p-4 rounded-[12px] border-2 transition-all text-left w-[160px] ${
+                  className={`p-4 border-b border-brand-border last:border-0 transition-all text-left ${
                     selectedAddressId === addr.id
-                      ? "border-brand-primary bg-brand-light"
-                      : "border-brand-border bg-brand-surface hover:border-brand-muted"
+                      ? "bg-brand-light"
+                      : "bg-brand-surface hover:bg-brand-light"
                   }`}
                 >
-                  <p className="text-xs font-bold text-brand-dark truncate">{addr.street}, {addr.number}</p>
-                  <p className="text-[10px] text-brand-muted mt-1">{addr.neighborhood}</p>
+                  <p className="text-sm font-bold text-brand-dark">{addr.street}, {addr.number}</p>
+                  <p className="text-xs text-brand-muted">{addr.neighborhood}</p>
                 </button>
               ))}
             </div>
@@ -348,10 +358,10 @@ export default function IdentificationScreen({
         <div className="flex flex-col gap-3">
           <button 
             className="w-full bg-brand-primary hover:bg-brand-primaryHover text-white font-bold py-4 rounded-[12px] transition-all disabled:opacity-50" 
-            disabled={!addressStreet || !addressNumber || !addressNeighborhood || !isCityDeliveryEnabled || !isNeighborhoodSupported} 
+            disabled={isSubmitting || !addressStreet || !addressNumber || !addressNeighborhood || !isCityDeliveryEnabled || !isNeighborhoodSupported} 
             onClick={handleConfirmAndSave}
           >
-            CONFIRMAR E ENVIAR
+            {isSubmitting ? "ENVIANDO..." : "CONFIRMAR E ENVIAR"}
           </button>
           
           <button 

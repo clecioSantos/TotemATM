@@ -61,7 +61,7 @@ function LoginForm() {
     <div className="login-container">
       <div className="login-card">
         <header className="login-header">
-          <h1>NexOrder</h1>
+          <h1>Bora De Delivery</h1>
           <p>Faça seu login</p>
         </header>
 

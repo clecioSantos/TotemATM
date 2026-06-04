@@ -133,42 +133,51 @@ export const useTotem = (companyId: string) => {
     deliveryFee?: number;
   }
 
+  const [isFinishing, setIsFinishing] = useState(false);
+
   const finishOrder = async (identification: OrderIdentification): Promise<string | undefined> => {
-    if (cart.length === 0 || !companyId) return;
+    if (cart.length === 0 || !companyId || isFinishing) return;
     
-    // Calcula o total considerando (preço base + soma dos condimentos) * quantidade
-    const itemsTotal = cart.reduce((acc, item) => {
-      const condimentsTotal = item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0;
-      return acc + ((item.price + condimentsTotal) * item.quantity);
-    }, 0);
-
-    const deliveryFee = identification.deliveryFee || 0;
-    const total = itemsTotal + deliveryFee;
+    setIsFinishing(true);
     
-    const orderData = {
-      companyId: companyId,
-      customerName: user?.name || "Cliente",
-      customerId: user?.uid || null,
-      tableNumber: "", // Campo mantido vazio para compatibilidade com o schema
-      address: identification.address || null,
-      deliveryFee,
-      items: cart.map(i => ({ 
-        productId: i.productId || i.id, 
-        name: i.name, 
-        price: i.price, 
-        quantity: i.quantity,
-        observation: i.observation || "",
-        condiments: i.condiments || [] // AGORA PERSISTE OS CONDIMENTOS NO FIREBASE
-      })),
-      total,
-      status: 'pending',
-      source: 'totem',
-      createdAt: serverTimestamp()
-    };
+    try {
+      // Calcula o total considerando (preço base + soma dos condimentos) * quantidade
+      const itemsTotal = cart.reduce((acc, item) => {
+        const condimentsTotal = item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0;
+        return acc + ((item.price + condimentsTotal) * item.quantity);
+      }, 0);
 
-    const docRef = await addDoc(collection(db, 'orders'), orderData);
-    clearCart();
-    return docRef.id;
+      const deliveryFee = identification.deliveryFee || 0;
+      const total = itemsTotal + deliveryFee;
+      
+      const orderData = {
+        companyId: companyId,
+        customerName: user?.name || "Cliente",
+        userName: user?.name || "Cliente",
+        customerId: user?.uid || null,
+        tableNumber: "", // Campo mantido vazio para compatibilidade com o schema
+        address: identification.address || null,
+        deliveryFee,
+        items: cart.map(i => ({ 
+          productId: i.productId || i.id, 
+          name: i.name, 
+          price: i.price, 
+          quantity: i.quantity,
+          observation: i.observation || "",
+          condiments: i.condiments || [] // AGORA PERSISTE OS CONDIMENTOS NO FIREBASE
+        })),
+        total,
+        status: 'pending',
+        source: 'totem',
+        createdAt: serverTimestamp()
+      };
+
+      const docRef = await addDoc(collection(db, 'orders'), orderData);
+      clearCart();
+      return docRef.id;
+    } finally {
+      setIsFinishing(false);
+    }
   };
 
   const logout = async () => {

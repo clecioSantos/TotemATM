@@ -16,17 +16,21 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
 
   const statusMap = {
     pending: { label: "Pendente", class: "status-pending" },
+    paid: { label: "Pago", class: "status-paid" },
     preparing: { label: "Preparando", class: "status-preparing" },
     ready: { label: "Pronto", class: "status-ready" },
+    delivering: { label: "Em entrega", class: "status-delivering" },
     finished: { label: "Finalizado", class: "status-finished" },
-    canceled: { label: "Cancelado", class: "status-canceled" },
+    cancelled: { label: "Cancelado", class: "status-cancelled" },
   };
 
   const getNextStatus = (current: Order['status']): Order['status'] | null => {
     const flow: Record<string, Order['status']> = {
-      pending: 'preparing',
+      pending: 'paid',
+      paid: 'preparing',
       preparing: 'ready',
-      ready: 'finished'
+      ready: 'delivering',
+      delivering: 'finished',
     };
     return flow[current] || null;
   };
@@ -40,12 +44,13 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
   return (
     <div className={`order-card ${isExpanded ? 'expanded' : ''}`}>
       <div className="order-header" onClick={() => setIsExpanded(!isExpanded)}>
-        <div className="order-info">
-          <span className="order-id">#{order.id.slice(-4).toUpperCase()}</span>
-          <div className="order-meta">
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span className="order-customer">{order.customerName || (order.tableNumber ? `Mesa ${order.tableNumber}` : 'Cliente')}</span>
-              {order.address && (
+          <div className="order-info">
+            <span className="order-id">#{order.id.slice(-4).toUpperCase()}</span>
+            <div className="order-meta">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span className="order-customer">{order.customerName || order.userName || (order.tableNumber ? `Mesa ${order.tableNumber}` : 'Cliente')}</span>
+                {order.address && (
+
                 <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500', marginTop: '1px' }}>
                   📍 {order.address.neighborhood}
                 </span>
