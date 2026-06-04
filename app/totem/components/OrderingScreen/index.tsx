@@ -2,8 +2,11 @@
 import { useState, useEffect } from "react";
 import { Product, Category, CartItem, Condiment } from "@totem/shared/types";
 import { ShoppingBag, Trash2, Plus, Minus, X, ArrowLeft, Check } from "lucide-react";
+import { firestore } from "@/src/services/firebase";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 
 interface OrderingScreenProps {
+  companyId: string;
   companyName: string;
   products: Product[];
   categories: Category[];
@@ -21,6 +24,7 @@ interface OrderingScreenProps {
 }
 
 export default function OrderingScreen({ 
+  companyId,
   companyName,
   products = [], 
   categories = [], 
@@ -36,6 +40,17 @@ export default function OrderingScreen({
   const [selectedCondiments, setSelectedCondiments] = useState<Condiment[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [loading] = useState(false);
+  const [deliveryCosts, setDeliveryCosts] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!companyId) return;
+    
+    const q = query(collection(firestore, "deliveryCosts"), where("companyId", "==", companyId));
+    const unsubscribe = onSnapshot(q, (snapshot: any) => {
+      setDeliveryCosts(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsubscribe();
+  }, [companyId]);
 
   // Filtra condimentos relevantes para o produto selecionado
   const productCondiments = selectedProduct 
@@ -120,7 +135,9 @@ export default function OrderingScreen({
                 <div className="flex items-center gap-4 text-sm font-medium opacity-90">
                     <div className="flex items-center gap-1">⭐ 4.8</div>
                     <div className="flex items-center gap-1">🕒 25-35 min</div>
-                    <div className="flex items-center gap-1">🚚 Entrega rápida</div>
+                    <div className="flex items-center gap-1">
+                      🚚 {deliveryCosts.length > 0 ? `Entrega R$ ${Math.min(...deliveryCosts.map(d => d.deliveryPrice)).toFixed(2)}` : "Entrega rápida"}
+                    </div>
                 </div>
               </div>
           </div>

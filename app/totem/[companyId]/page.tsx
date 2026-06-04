@@ -129,12 +129,12 @@ export default function TotemPage({ params }: PageProps) {
   }
 
   switch (step) {
-    case 'WELCOME':
-      return <WelcomeScreen onStart={() => setStep('ORDERING')} onLogout={logout} />;
-    
+// import WelcomeScreen from "../components/WelcomeScreen";
+// ...
     case 'ORDERING':
       return (
           <OrderingScreen 
+            companyId={companyId}
             companyName={companyName}
             products={products}
             categories={categories}
@@ -184,6 +184,24 @@ export default function TotemPage({ params }: PageProps) {
       return <FinishedScreen />;
 
     default:
-      return <WelcomeScreen onStart={() => setStep('ORDERING')} onLogout={logout} />;
+      return (
+        <OrderingScreen 
+            companyId={companyId}
+            companyName={companyName}
+            products={products}
+            categories={categories}
+            condiments={condiments}
+            cart={cart}
+            actions={{ 
+              addToCart, 
+              removeFromCart, 
+              updateQuantity, 
+              updateItemObservation, 
+              clearCart 
+            }}
+            onFinish={() => setStep('IDENTIFICATION')}
+            onCancel={() => router.push('/')}
+          />
+      );
   }
 }

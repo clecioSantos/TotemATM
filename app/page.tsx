@@ -2,27 +2,36 @@
 
 import { useEffect, useState } from "react";
 import { firestore } from "@/src/services/firebase";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query, where, addDoc, serverTimestamp, deleteDoc, doc, writeBatch, getDocs, orderBy } from "firebase/firestore";
 import Link from "next/link";
-import { Search, MapPin, User, ShoppingBag, Store, X, LogOut, ChevronRight } from "lucide-react";
+import { Search, MapPin, User, ShoppingBag, Store, X, LogOut, ChevronRight, Plus, Trash2, Home } from "lucide-react";
 import { useAuth } from "@totem/shared/types/AuthProvider";
-
-const categories = [
-  { name: "Lanches", icon: "🍔" },
-  { name: "Pizza", icon: "🍕" },
-  { name: "Japonês", icon: "🍣" },
-  { name: "Doces", icon: "🍰" },
-  { name: "Bebidas", icon: "🥤" },
-];
 
 export default function HomePage() {
   const [stores, setStores] = useState<any[]>([]);
   const { user, signOut } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isOrdersOpen, setIsOrdersOpen] = useState(false);
+  const [isAddressesOpen, setIsAddressesOpen] = useState(false);
   const [userOrders, setUserOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  
+  // Estados de Endereços
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [addressStreet, setAddressStreet] = useState("");
+  const [addressNumber, setAddressNumber] = useState("");
+  const [addressNeighborhood, setAddressNeighborhood] = useState("");
+  const [addressComplement, setAddressComplement] = useState("");
+  const [savingAddress, setSavingAddress] = useState(false);
+
+  const categories = [
+    { name: "Lanches", icon: "🍔" },
+    { name: "Pizza", icon: "🍕" },
+    { name: "Japonês", icon: "🍣" },
+    { name: "Doces", icon: "🍰" },
+    { name: "Mercado", icon: "🛒" },
+  ];
 
   useEffect(() => {
     const q = query(collection(firestore, "companies"));
@@ -41,6 +50,79 @@ export default function HomePage() {
     });
     return () => unsubscribe();
   }, [user, isOrdersOpen]);
+
+  useEffect(() => {
+    if (!isAddressesOpen || !user) return;
+    const addressesRef = collection(firestore, "addresses");
+    const q = query(addressesRef, where("userId", "==", user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setAddresses(data);
+    });
+    return () => unsubscribe();
+  }, [isAddressesOpen, user]);
+
+  const [isEditing, setIsEditing] = useState<string | null>(null);
+
+  const [addressCity, setAddressCity] = useState("");
+  const [availableCities, setAvailableCities] = useState<any[]>([]);
+  const [availableNeighborhoods, setAvailableNeighborhoods] = useState<any[]>([]);
+
+  useEffect(() => {
+    const unsubCities = onSnapshot(collection(firestore, "cities"), (snap) => {
+        setAvailableCities(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsubCities();
+  }, []);
+
+  useEffect(() => {
+      if (addressCity) {
+          const q = query(collection(firestore, "neighborhoods"), where("cityId", "==", addressCity));
+          const unsubNb = onSnapshot(q, (snap) => {
+              setAvailableNeighborhoods(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+          });
+          return () => unsubNb();
+      }
+      setAvailableNeighborhoods([]);
+  }, [addressCity]);
+
+  const handleAddAddress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !addressStreet || !addressNumber || !addressNeighborhood || !addressCity) return;
+    setSavingAddress(true);
+    const neighborhoodName = availableNeighborhoods.find(n => n.id === addressNeighborhood)?.name || addressNeighborhood;
+    try {
+        if (isEditing) {
+            await updateDoc(doc(firestore, "addresses", isEditing), {
+                street: addressStreet,
+                number: addressNumber,
+                cityId: addressCity,
+                neighborhood: neighborhoodName,
+                complement: addressComplement,
+            });
+            setIsEditing(null);
+            alert("Endereço atualizado!");
+        } else {
+            await addDoc(collection(firestore, "addresses"), {
+                userId: user.uid,
+                street: addressStreet,
+                number: addressNumber,
+                cityId: addressCity,
+                neighborhood: neighborhoodName,
+                complement: addressComplement,
+                enabled: true,
+                createdAt: serverTimestamp(),
+            });
+            alert("Endereço adicionado!");
+        }
+        setAddressStreet(""); setAddressNumber(""); setAddressNeighborhood(""); setAddressComplement(""); setAddressCity("");
+    } finally { setSavingAddress(false); }
+  };
+
+  const handleDeleteAddress = async (addressId: string) => {
+      if (confirm("Excluir este endereço?")) await deleteDoc(doc(firestore, "addresses", addressId));
+  };
+
 
   if (loading) {
     return (
@@ -116,7 +198,7 @@ export default function HomePage() {
           </div>
           <div className="bg-[#F0F0F0] h-10 rounded-[12px] flex items-center px-4 text-brand-muted text-sm mt-1">
             <Search className="h-4 w-4 mr-3" />
-            Buscar lojas ou produtos
+            Buscar lojas
           </div>
         </div>
         <div className="flex gap-2 pt-2">
@@ -136,21 +218,69 @@ export default function HomePage() {
       </header>
 
       {/* Modais de Perfil e Pedidos (Simplificados) */}
-      {(isProfileOpen || isOrdersOpen) && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm" onClick={() => {setIsProfileOpen(false); setIsOrdersOpen(false);}}>
+        {(isProfileOpen || isOrdersOpen || isAddressesOpen) && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm" onClick={() => {setIsProfileOpen(false); setIsOrdersOpen(false); setIsAddressesOpen(false);}}>
           <div className="bg-brand-surface w-full max-w-[430px] rounded-t-[24px] p-6 shadow-2xl animate-in slide-in-from-bottom" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold text-lg">{isProfileOpen ? "Meu Perfil" : "Meus Pedidos"}</h3>
-              <button onClick={() => {setIsProfileOpen(false); setIsOrdersOpen(false);}}><X className="h-5 w-5" /></button>
+              <h3 className="font-bold text-lg">
+                {isProfileOpen ? "Meu Perfil" : isAddressesOpen ? "Meus Endereços" : "Meus Pedidos"}
+              </h3>
+              <button onClick={() => {setIsProfileOpen(false); setIsOrdersOpen(false); setIsAddressesOpen(false);}}><X className="h-5 w-5" /></button>
             </div>
             <div className="flex-1 overflow-y-auto max-h-[70vh] p-1">
               {isProfileOpen ? (
                 <div className="space-y-4">
                   <p className="text-sm">Olá, {user?.name || "Usuário"}</p>
+                  <button 
+                    onClick={() => {setIsProfileOpen(false); setIsAddressesOpen(true);}}
+                    className="w-full flex items-center gap-3 p-3 bg-brand-light rounded-lg font-bold text-sm"
+                  >
+                    <MapPin size={18} /> Meus Endereços
+                  </button>
                   {(user?.role === 'admin' || user?.role === 'owner') && (
                     <Link href="/admin" className="block p-3 bg-brand-primary text-white text-center rounded-lg font-bold">Acessar Painel Admin</Link>
                   )}
                   <button onClick={() => signOut()} className="flex items-center gap-2 text-red-500 font-bold w-full"><LogOut size={18} /> Sair</button>
+                </div>
+              ) : isAddressesOpen ? (
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-3 max-h-[40vh] overflow-y-auto">
+                    {addresses.map(addr => (
+                      <div key={addr.id} className="p-3 bg-brand-light rounded-lg flex justify-between items-center border border-brand-border">
+                        <div>
+                          <p className="font-bold text-xs">{addr.street}, {addr.number}</p>
+                          <p className="text-[10px] text-brand-muted">{addr.neighborhood}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => { 
+                            setIsEditing(addr.id); 
+                            setAddressStreet(addr.street); 
+                            setAddressNumber(addr.number); 
+                            setAddressNeighborhood(addr.neighborhood); 
+                            setAddressComplement(addr.complement || ""); 
+                          }} className="p-1 hover:bg-brand-surface rounded-lg"><ChevronRight className="h-4 w-4" /></button>
+                          <button onClick={() => handleDeleteAddress(addr.id)} className="p-1 hover:bg-red-50 text-red-600 rounded-lg"><Trash2 className="h-4 w-4" /></button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <form onSubmit={handleAddAddress} className="space-y-2 pt-2 border-t border-brand-border">
+                    <input required className="w-full p-2 bg-brand-light rounded-lg border border-brand-border text-xs" placeholder="Rua" value={addressStreet} onChange={e => setAddressStreet(e.target.value)} />
+                    <input required className="w-full p-2 bg-brand-light rounded-lg border border-brand-border text-xs" placeholder="Nº" value={addressNumber} onChange={e => setAddressNumber(e.target.value)} />
+                    <select required className="w-full p-2 bg-brand-light rounded-lg border border-brand-border text-xs" value={addressCity} onChange={e => setAddressCity(e.target.value)}>
+                        <option value="">Selecione a cidade</option>
+                        {availableCities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                    <select required className="w-full p-2 bg-brand-light rounded-lg border border-brand-border text-xs" value={addressNeighborhood} onChange={e => setAddressNeighborhood(e.target.value)} disabled={!addressCity}>
+                        <option value="">Selecione o bairro</option>
+                        {availableNeighborhoods.map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
+                    </select>
+                    <input className="w-full p-2 bg-brand-light rounded-lg border border-brand-border text-xs" placeholder="Complemento" value={addressComplement} onChange={e => setAddressComplement(e.target.value)} />
+                    <button type="submit" className="w-full p-2 bg-brand-primary text-white font-bold rounded-lg text-xs" disabled={savingAddress}>
+                        {isEditing ? "Salvar Edição" : "Adicionar Endereço"}
+                    </button>
+                    {isEditing && <button type="button" onClick={() => {setIsEditing(null); setAddressStreet(""); setAddressNumber(""); setAddressNeighborhood(""); setAddressComplement(""); setAddressCity("");}} className="w-full p-1 text-xs underline">Cancelar</button>}
+                  </form>
                 </div>
               ) : (
                 <div className="space-y-6">
