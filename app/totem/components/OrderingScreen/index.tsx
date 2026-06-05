@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Product, Category, CartItem, Condiment } from "@totem/shared/types";
-import { ShoppingBag, Trash2, Plus, Minus, X, ArrowLeft } from "lucide-react";
+import { ShoppingBag, Trash2, Plus, Minus, X, ArrowLeft, Store } from "lucide-react";
 import { firestore } from "@/src/services/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 
@@ -9,6 +9,7 @@ interface OrderingScreenProps {
   companyId: string;
   companyName: string;
   companyBanner: string;
+  companyOpen: boolean | null;
   tempoPreparoMin: number;
   tempoPreparoMax: number;
   products: Product[];
@@ -32,6 +33,7 @@ export default function OrderingScreen({
   companyId,
   companyName,
   companyBanner,
+  companyOpen,
   tempoPreparoMin,
   tempoPreparoMax,
   products = [], 
@@ -104,6 +106,8 @@ export default function OrderingScreen({
   }, 0);
   const cartItemsCount = cart.reduce((acc, i) => acc + i.quantity, 0);
 
+  const isClosed = companyOpen === false;
+
   return (
     <div className="flex h-screen w-screen bg-brand-light overflow-hidden text-brand-dark font-sans select-none">
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
@@ -118,8 +122,9 @@ export default function OrderingScreen({
              <img src="/Logo.png" alt="Bora" className="h-10" />
              <div className="h-6 w-[1px] bg-gray-200" />
              <div> 
-                <div className="flex items-center gap-2 text-[12px] text-green-600 font-semibold">
-                  <span className="w-2 h-2 rounded-full bg-green-500"></span> Aberto
+                <div className={`flex items-center gap-2 text-[12px] font-semibold ${isClosed ? 'text-red-600' : 'text-green-600'}`}>
+                  <span className={`w-2 h-2 rounded-full ${isClosed ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                  {isClosed ? 'Fechado' : 'Aberto'}
                 </div>
              </div>
           </div>
@@ -138,6 +143,13 @@ export default function OrderingScreen({
              </button>
           </div>
         </header>
+
+        {isClosed && (
+          <div className="sticky top-0 z-20 bg-red-50 border-b border-red-200 px-6 py-3 flex items-center gap-3 text-sm font-semibold text-red-700">
+            <Store size={16} />
+            Loja fechada · Visualização do cardápio apenas
+          </div>
+        )}
 
         <main ref={scrollRef} className="flex-1 overflow-y-auto bg-gray-50">
           {/* Hero Banner - full width */}
@@ -159,12 +171,12 @@ export default function OrderingScreen({
                     src={companyBanner}
                     alt=""
                     className="w-full h-[calc(100%+80px)] object-cover"
-                    style={{ objectPosition: "center 30%" }}
+                    style={{ objectPosition: "center 30%", filter: isClosed ? 'grayscale(1)' : 'none' }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                 </>
               ) : (
-                <div className="w-full h-full bg-gradient-to-r from-brand-primary to-brand-primaryHover" />
+                <div className="w-full h-full bg-gradient-to-r from-brand-primary to-brand-primaryHover" style={{ filter: isClosed ? 'grayscale(1)' : 'none' }} />
               )}
             </div>
 
@@ -323,10 +335,12 @@ export default function OrderingScreen({
                 <span className="text-2xl font-bold text-brand-dark">R$ {cartTotal.toFixed(2)}</span>
               </div>
               <button
-                className="w-full bg-brand-primary hover:bg-brand-primaryHover text-white py-4 rounded-[12px] font-bold text-base transition-all"
-                onClick={onFinish}
+                className={`w-full py-4 rounded-[12px] font-bold text-base transition-all ${isClosed ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-brand-primary hover:bg-brand-primaryHover text-white'}`}
+                onClick={isClosed ? undefined : onFinish}
+                disabled={isClosed}
+                title={isClosed ? "Loja fechada" : ""}
               >
-                FINALIZAR PEDIDO
+                {isClosed ? "LOJA FECHADA" : "FINALIZAR PEDIDO"}
               </button>
             </div>
           </>
@@ -390,10 +404,12 @@ export default function OrderingScreen({
                 <span className="text-xl font-bold text-brand-dark">R$ {cartTotal.toFixed(2)}</span>
               </div>
               <button
-                className="w-full bg-brand-primary hover:bg-brand-primaryHover text-white py-4 rounded-[12px] font-bold text-base transition-all"
-                onClick={() => { setIsMobileCartOpen(false); onFinish(); }}
+                className={`w-full py-4 rounded-[12px] font-bold text-base transition-all ${isClosed ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-brand-primary hover:bg-brand-primaryHover text-white'}`}
+                onClick={isClosed ? undefined : () => { setIsMobileCartOpen(false); onFinish(); }}
+                disabled={isClosed}
+                title={isClosed ? "Loja fechada" : ""}
               >
-                FINALIZAR PEDIDO
+                {isClosed ? "LOJA FECHADA" : "FINALIZAR PEDIDO"}
               </button>
             </div>
           </div>

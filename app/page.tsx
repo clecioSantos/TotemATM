@@ -382,25 +382,36 @@ export default function HomePage() {
         <h3 className="text-xl font-bold mb-4 mt-2">Unidades Disponíveis</h3>
         
         <div className="flex flex-col gap-4">
-          {filteredStores.map((store) => (
+          {filteredStores.map((store) => {
+            const closed = store.open === false;
+            return (
             <Link 
               key={store.id} 
               href={`/totem/${store.id}`}
-              className="bg-brand-surface rounded-[16px] p-4 flex gap-4 items-center shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-brand-border transition-transform active:scale-[0.98]"
+              className={`bg-brand-surface rounded-[16px] p-4 flex gap-4 items-center shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-brand-border transition-transform active:scale-[0.98] ${closed ? 'store-closed' : ''}`}
+              style={closed ? { filter: 'grayscale(0.6)', opacity: 0.75 } : {}}
             >
-              <div className="w-16 h-16 bg-[#eee] rounded-[12px] flex items-center justify-center overflow-hidden">
+              <div className="relative w-16 h-16 bg-[#eee] rounded-[12px] flex items-center justify-center overflow-hidden">
                 {store.logo ? <img src={store.logo} alt={store.name} className="w-full h-full object-cover" /> : <span className="text-2xl font-bold">{store.name.charAt(0)}</span>}
+                {closed && <div className="absolute inset-0 bg-black/10 rounded-[12px]" />}
               </div>
               <div className="flex-1">
-                <h4 className="text-base font-bold text-brand-dark mb-1">{store.name}</h4>
+                <div className="flex items-center gap-2 mb-1">
+                  <h4 className="text-base font-bold text-brand-dark">{store.name}</h4>
+                  {closed && <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">Fechada</span>}
+                </div>
                 <div className="flex items-center text-xs text-brand-muted gap-2">
-                  <span className="text-brand-alert font-bold">⭐ 4.8</span> 
-                  <span>• 30-40 min</span>
+                  {closed ? (
+                    <span className="text-red-500 font-semibold">Toque para ver o cardápio</span>
+                  ) : (
+                    <><span className="text-brand-alert font-bold">⭐ 4.8</span> <span>• 30-40 min</span></>
+                  )}
                 </div>
               </div>
-              <Store className="h-5 w-5 text-brand-primary" />
+              <Store className={`h-5 w-5 ${closed ? 'text-red-400' : 'text-brand-primary'}`} />
             </Link>
-          ))}
+            );
+          })}
         </div>
       </div>
     </main>
