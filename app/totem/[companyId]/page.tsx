@@ -45,6 +45,7 @@ export default function TotemPage({ params }: PageProps) {
     condiments, 
     companyName,
     companyBanner,
+    companyOpen,
     tempoPreparoMin,
     tempoPreparoMax,
     cart, 
@@ -65,6 +66,10 @@ export default function TotemPage({ params }: PageProps) {
   }, 0);
 
   const handleFinish = async (deliveryFee: number) => {
+    if (companyOpen === false) {
+      alert("Loja fechada. Não é possível realizar pedidos no momento.");
+      return;
+    }
     setIsProcessingPayment(true);
     const total = cartTotal + deliveryFee;
     setOrderTotal(total);
@@ -139,6 +144,7 @@ export default function TotemPage({ params }: PageProps) {
             companyId={companyId}
             companyName={companyName}
             companyBanner={companyBanner}
+            companyOpen={companyOpen}
             tempoPreparoMin={tempoPreparoMin}
             tempoPreparoMax={tempoPreparoMax}
             products={products}
@@ -194,6 +200,7 @@ export default function TotemPage({ params }: PageProps) {
             companyId={companyId}
             companyName={companyName}
             companyBanner={companyBanner}
+            companyOpen={companyOpen}
             tempoPreparoMin={tempoPreparoMin}
             tempoPreparoMax={tempoPreparoMax}
             products={products}

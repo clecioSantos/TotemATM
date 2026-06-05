@@ -17,6 +17,7 @@ export const useTotem = (companyId: string) => {
   const [companyBanner, setCompanyBanner] = useState<string>("");
   const [tempoPreparoMin, setTempoPreparoMin] = useState<number>(0);
   const [tempoPreparoMax, setTempoPreparoMax] = useState<number>(0);
+  const [companyOpen, setCompanyOpen] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!db.app.options.projectId || !companyId) return;
@@ -31,6 +32,7 @@ export const useTotem = (companyId: string) => {
             setCompanyBanner(data.banner || "");
             setTempoPreparoMin(data.tempoPreparoMin || 0);
             setTempoPreparoMax(data.tempoPreparoMax || 0);
+            setCompanyOpen(data.open !== undefined ? data.open : null);
         }
     }
     fetchCompany();
@@ -156,6 +158,10 @@ export const useTotem = (companyId: string) => {
 
   const finishOrder = async (identification: OrderIdentification): Promise<string | undefined> => {
     if (cart.length === 0 || !companyId || isFinishing) return;
+    if (companyOpen === false) {
+      alert("Loja fechada. Não é possível realizar pedidos no momento.");
+      return;
+    }
     
     setIsFinishing(true);
     
@@ -209,6 +215,7 @@ export const useTotem = (companyId: string) => {
     condiments, 
     companyName,
     companyBanner,
+    companyOpen,
     tempoPreparoMin,
     tempoPreparoMax,
     cart, 
