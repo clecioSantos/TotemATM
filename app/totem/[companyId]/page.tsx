@@ -45,6 +45,8 @@ export default function TotemPage({ params }: PageProps) {
     condiments, 
     companyName,
     companyBanner,
+    tempoPreparoMin,
+    tempoPreparoMax,
     cart, 
     addToCart, 
     removeFromCart, 
@@ -137,6 +139,8 @@ export default function TotemPage({ params }: PageProps) {
             companyId={companyId}
             companyName={companyName}
             companyBanner={companyBanner}
+            tempoPreparoMin={tempoPreparoMin}
+            tempoPreparoMax={tempoPreparoMax}
             products={products}
             categories={categories}
             condiments={condiments}
@@ -190,6 +194,8 @@ export default function TotemPage({ params }: PageProps) {
             companyId={companyId}
             companyName={companyName}
             companyBanner={companyBanner}
+            tempoPreparoMin={tempoPreparoMin}
+            tempoPreparoMax={tempoPreparoMax}
             products={products}
             categories={categories}
             condiments={condiments}

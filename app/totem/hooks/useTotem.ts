@@ -15,6 +15,8 @@ export const useTotem = (companyId: string) => {
   const [loading, setLoading] = useState(true);
   const [companyName, setCompanyName] = useState<string>("");
   const [companyBanner, setCompanyBanner] = useState<string>("");
+  const [tempoPreparoMin, setTempoPreparoMin] = useState<number>(0);
+  const [tempoPreparoMax, setTempoPreparoMax] = useState<number>(0);
 
   useEffect(() => {
     if (!db.app.options.projectId || !companyId) return;
@@ -27,6 +29,8 @@ export const useTotem = (companyId: string) => {
             const data = docSnap.data();
             setCompanyName(data.name);
             setCompanyBanner(data.banner || "");
+            setTempoPreparoMin(data.tempoPreparoMin || 0);
+            setTempoPreparoMax(data.tempoPreparoMax || 0);
         }
     }
     fetchCompany();
@@ -205,6 +209,8 @@ export const useTotem = (companyId: string) => {
     condiments, 
     companyName,
     companyBanner,
+    tempoPreparoMin,
+    tempoPreparoMax,
     cart, 
     addToCart, 
     removeFromCart, 
