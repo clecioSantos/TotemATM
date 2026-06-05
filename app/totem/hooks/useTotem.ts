@@ -152,6 +152,8 @@ export const useTotem = (companyId: string) => {
       complement?: string;
     };
     deliveryFee?: number;
+    paymentMethod?: string;
+    paymentStatus?: string;
   }
 
   const [isFinishing, setIsFinishing] = useState(false);
@@ -180,16 +182,18 @@ export const useTotem = (companyId: string) => {
         customerName: user?.name || "Cliente",
         userName: user?.name || "Cliente",
         customerId: user?.uid || null,
-        tableNumber: "", // Campo mantido vazio para compatibilidade com o schema
+        tableNumber: "",
         address: identification.address || null,
         deliveryFee,
-        items: cart.map(i => ({ 
-          productId: i.productId || i.id, 
-          name: i.name, 
-          price: i.price, 
+        paymentMethod: identification.paymentMethod || "PIX",
+        paymentStatus: identification.paymentStatus || "WAITING_PAYMENT",
+        items: cart.map(i => ({
+          productId: i.productId || i.id,
+          name: i.name,
+          price: i.price,
           quantity: i.quantity,
           observation: i.observation || "",
-          condiments: i.condiments || [] // AGORA PERSISTE OS CONDIMENTOS NO FIREBASE
+          condiments: i.condiments || []
         })),
         total,
         status: 'pending',

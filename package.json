@@ -6,7 +6,8 @@
     "dev": "npx next dev -p 3000",
     "build": "npx next build",
     "startDev": "npx next start",
-    "start": "npx next start"
+    "start": "npx next start",
+    "start:build": "npx next build && npx next start"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

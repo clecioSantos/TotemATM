@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { firestore } from "@/src/services/firebase";
+import { getAdminDb } from "@/src/services/firebase-admin";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,22 +9,18 @@ export async function POST(req: NextRequest) {
     if (contentType.includes("application/json")) {
       payload = await req.json();
     } else {
-      // Se não for JSON, lê como texto e converte de Form Data para Objeto
       const text = await req.text();
       const params = new URLSearchParams(text);
       payload = Object.fromEntries(params.entries());
     }
 
-    console.log("📦 Webhook payload:", payload);
+    console.log("📦 Webhook payload:", JSON.stringify(payload));
     
-    // Tenta obter o ID do pedido (suporta reference_id do V2 ou reference do legado)
-    // Nota: No V2, o reference_id do pedido pago vem na raiz ou dentro de cada charge
     let orderId = payload.reference_id || payload.reference || payload.charges?.[0]?.reference_id;
     if (orderId && typeof orderId === 'string' && orderId.startsWith("ORDER-")) {
       orderId = orderId.substring("ORDER-".length);
     }
     
-    // O status no PagBank V2 para ordens pode vir na raiz ou dentro do array de charges
     let status = payload.status;
     if (!status && payload.charges && payload.charges.length > 0) {
       status = payload.charges[0].status;
@@ -39,12 +34,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (status === "PAID") {
-      const orderRef = doc(firestore, "orders", orderId);
-      
-      await updateDoc(orderRef, {
+      const db = getAdminDb();
+      await db.collection("orders").doc(orderId).update({
         paymentStatus: "PAID",
-        status: "preparing", // Avança automaticamente para a cozinha
-        paidAt: serverTimestamp(),
+        status: "preparing",
+        paidAt: new Date(),
       });
       
       console.log(`✅ Pagamento confirmado para o pedido: ${orderId}`);
