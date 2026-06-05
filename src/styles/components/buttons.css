@@ -1,10 +1,10 @@
 .primary-button, .btn-primary {
-  height: 58px;
+  height: 48px;
   padding: 0 28px;
-  background-color: var(--text-primary);
-  color: var(--white);
+  background-color: var(--primary);
+  color: white;
   border: none;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
@@ -15,9 +15,9 @@
 }
 
 .primary-button:hover, .btn-primary:hover {
-  opacity: 0.9;
+  background-color: var(--primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .primary-button:active, .btn-primary:active {
@@ -25,6 +25,6 @@
 }
 
 .primary-button:disabled, .btn-primary:disabled {
-  background-color: var(--text-muted);
+  background-color: var(--fg-muted);
   cursor: not-allowed;
 }

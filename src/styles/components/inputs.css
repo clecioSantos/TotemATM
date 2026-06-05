@@ -2,13 +2,13 @@
   width: 100%;
   padding: 15px;
   border-radius: var(--radius-md);
-  border: 1px solid #ddd;
-  background: var(--white);
+  border: 1px solid var(--border);
+  background: var(--surface);
   font-size: 1rem;
   transition: border-color 0.2s;
 }
 
 .form-input:focus {
-  border-color: var(--primary-color);
+  border-color: var(--primary);
   outline: none;
 }

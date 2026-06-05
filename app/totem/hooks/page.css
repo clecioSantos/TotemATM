@@ -4,10 +4,12 @@
   flex-direction: column;
   align-items: center;
   padding: 4rem 2rem;
-  background-color: #f4f7f6;
+  background-color: #F7F7F7;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 .selection-header { text-align: center; margin-bottom: 3rem; }
-.selection-header h1 { font-size: 2rem; color: #1a1a1a; }
+.selection-header h1 { font-size: 2rem; color: #202020; font-weight: 700; }
+.selection-header p { color: #666666; margin-top: 4px; }
 .company-list {
   width: 100%;
   max-width: 450px;
@@ -21,21 +23,21 @@
   align-items: center;
   padding: 1.5rem;
   background: white;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #EAEAEA;
   border-radius: 12px;
   cursor: pointer;
   transition: transform 0.2s, border-color 0.2s;
 }
 .company-item:hover {
-  border-color: #0070f3;
+  border-color: oklch(60% 0.18 25);
   transform: translateY(-2px);
 }
-.company-name { font-weight: 600; font-size: 1.1rem; color: #0070f3; }
+.company-name { font-weight: 600; font-size: 1.1rem; color: #202020; }
 .loader {
   width: 40px;
   height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #0070f3;
+  border: 4px solid #EAEAEA;
+  border-top: 4px solid oklch(60% 0.18 25);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 1rem;
@@ -43,4 +45,17 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+.loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  color: #666666;
+}
+.empty-selection {
+  padding: 2rem;
+  text-align: center;
+  color: #666666;
 }
