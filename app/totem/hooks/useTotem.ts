@@ -14,16 +14,19 @@ export const useTotem = (companyId: string) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [companyName, setCompanyName] = useState<string>("");
+  const [companyBanner, setCompanyBanner] = useState<string>("");
 
   useEffect(() => {
     if (!db.app.options.projectId || !companyId) return;
 
-    // Busca nome da empresa
+    // Busca nome e banner da empresa
     const fetchCompany = async () => {
         const docRef = doc(db, 'companies', companyId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-            setCompanyName(docSnap.data().name);
+            const data = docSnap.data();
+            setCompanyName(data.name);
+            setCompanyBanner(data.banner || "");
         }
     }
     fetchCompany();
@@ -201,6 +204,7 @@ export const useTotem = (companyId: string) => {
     categories, 
     condiments, 
     companyName,
+    companyBanner,
     cart, 
     addToCart, 
     removeFromCart, 

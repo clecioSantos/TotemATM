@@ -44,6 +44,7 @@ export default function TotemPage({ params }: PageProps) {
     categories, 
     condiments, 
     companyName,
+    companyBanner,
     cart, 
     addToCart, 
     removeFromCart, 
@@ -135,6 +136,7 @@ export default function TotemPage({ params }: PageProps) {
           <OrderingScreen 
             companyId={companyId}
             companyName={companyName}
+            companyBanner={companyBanner}
             products={products}
             categories={categories}
             condiments={condiments}
@@ -187,6 +189,7 @@ export default function TotemPage({ params }: PageProps) {
         <OrderingScreen 
             companyId={companyId}
             companyName={companyName}
+            companyBanner={companyBanner}
             products={products}
             categories={categories}
             condiments={condiments}

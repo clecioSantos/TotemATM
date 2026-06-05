@@ -8,6 +8,7 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 interface OrderingScreenProps {
   companyId: string;
   companyName: string;
+  companyBanner: string;
   products: Product[];
   categories: Category[];
   condiments: Condiment[];
@@ -26,6 +27,7 @@ interface OrderingScreenProps {
 export default function OrderingScreen({ 
   companyId,
   companyName,
+  companyBanner,
   products = [], 
   categories = [], 
   condiments = [], 
@@ -130,20 +132,24 @@ export default function OrderingScreen({
         <main className="flex-1 flex flex-col overflow-hidden bg-gray-50">
           {/* Hero do Restaurante (Fixo) */}
           <div className="p-6 shrink-0">
-              <div className="bg-gradient-to-r from-red-600 to-red-400 rounded-3xl p-6 text-white shadow-lg">
-                <h2 className="text-2xl font-black mb-2">{companyName || (categories.length > 0 ? "Bem-vindo ao Bora" : "Cardápio")}</h2>
-                <div className="flex items-center gap-4 text-sm font-medium opacity-90">
-                    <div className="flex items-center gap-1">⭐ 4.8</div>
-                    <div className="flex items-center gap-1">🕒 25-35 min</div>
-                    <div className="flex items-center gap-1">
-                      🚚 {deliveryCosts.length > 0 ? `Entrega R$ ${Math.min(...deliveryCosts.map(d => d.deliveryPrice)).toFixed(2)}` : "Entrega rápida"}
-                    </div>
+              <div className={`relative rounded-3xl p-6 text-white shadow-lg overflow-hidden ${!companyBanner ? 'bg-gradient-to-r from-red-600 to-red-400' : ''}`}
+                style={companyBanner ? { backgroundImage: `url(${companyBanner})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}>
+                {companyBanner && <div className="absolute inset-0 bg-black/40" />}
+                <div className="relative z-10">
+                  <h2 className="text-2xl font-black mb-2">{companyName || (categories.length > 0 ? "Bem-vindo ao Bora" : "Cardápio")}</h2>
+                  <div className="flex items-center gap-4 text-sm font-medium opacity-90">
+                      <div className="flex items-center gap-1">⭐ 4.8</div>
+                      <div className="flex items-center gap-1">🕒 25-35 min</div>
+                      <div className="flex items-center gap-1">
+                        🚚 {deliveryCosts.length > 0 ? `Entrega R$ ${Math.min(...deliveryCosts.map(d => d.deliveryPrice)).toFixed(2)}` : "Entrega rápida"}
+                      </div>
+                  </div>
                 </div>
               </div>
           </div>
           
           {/* Categorias (Sticky) */}
-          <div className="sticky top-0 z-20 bg-white border-b border-gray-100 p-4 flex gap-2 overflow-x-auto no-scrollbar shrink-0">
+          <div className="sticky top-0 z-20 bg-white border-b border-gray-200/60 p-4 flex gap-2 overflow-x-auto no-scrollbar shrink-0">
               <button 
                 onClick={() => setActiveCategory("featured")}
                 className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold transition-colors ${activeCategory === "featured" ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
@@ -172,16 +178,16 @@ export default function OrderingScreen({
                 {filteredProducts.map(product => (
                   <div 
                     key={product.id} 
-                    className="bg-white rounded-[24px] overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.08)] border border-gray-100 p-4 flex flex-row items-center cursor-pointer transition-all duration-200 hover:translate-y-[-2px] hover:shadow-lg"
+                    className="bg-white rounded-[16px] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-gray-200/60 p-3 flex flex-row items-center cursor-pointer transition-all duration-200 hover:translate-y-[-2px] hover:shadow-md"
                     onClick={() => setSelectedProduct(product)}
                   >
-                    <div className="relative w-[35%] aspect-square shrink-0 rounded-2xl overflow-hidden">
+                    <div className="relative w-[30%] aspect-[4/3] shrink-0 rounded-xl overflow-hidden">
                       <img src={product.imageUrl || 'https://placehold.co/400x400?text=Sem+Imagem'} alt={product.name} className="h-full w-full object-cover" />
                     </div>
-                    <div className="flex-1 ml-4 flex flex-col justify-center">
-                      <h3 className="text-[18px] font-bold text-gray-900 mb-1">{product.name}</h3>
-                      <p className="text-[14px] text-gray-500 mb-2 line-clamp-2">{product.description}</p>
-                      <span className="text-[22px] font-bold text-red-600">
+                    <div className="flex-1 ml-3 flex flex-col justify-center">
+                      <h3 className="text-[16px] font-bold text-gray-900 mb-0.5">{product.name}</h3>
+                      <p className="text-[13px] text-gray-500 mb-1 line-clamp-2">{product.description}</p>
+                      <span className="text-[20px] font-bold text-red-600">
                         R$ {product.price.toFixed(2)}
                       </span>
                     </div>
@@ -207,8 +213,8 @@ export default function OrderingScreen({
       </div>
       
       {/* Carrinho Desktop (Fixado à direita) */}
-      <aside className="hidden lg:flex flex-col w-96 bg-brand-surface border-l border-brand-border p-6 shrink-0 h-full overflow-hidden shadow-sm">
-        <div className="flex items-center gap-2 border-b border-brand-border pb-4 shrink-0">
+      <aside className="hidden lg:flex flex-col w-96 bg-brand-surface border-l border-brand-border/40 p-6 shrink-0 h-full overflow-hidden shadow-sm">
+        <div className="flex items-center gap-2 border-b border-brand-border/40 pb-4 shrink-0">
           <ShoppingBag className="h-5 w-5 text-brand-primary" />
           <h2 className="text-lg font-bold text-brand-dark">Seu Pedido</h2>
           <span className="ml-auto bg-brand-light text-brand-dark font-bold text-xs px-2.5 py-1 rounded-[8px]">
@@ -225,7 +231,7 @@ export default function OrderingScreen({
           <>
             <div className="flex-1 overflow-y-auto space-y-4 py-2 pr-1">
               {cart.map(item => (
-                <div key={item.id} className="bg-brand-surface rounded-[8px] p-3 border border-brand-border flex flex-col gap-2">
+                <div key={item.id} className="bg-brand-surface rounded-[8px] p-3 border border-brand-border/40 flex flex-col gap-2">
                   <div className="flex justify-between items-start gap-2">
                     <span className="font-bold text-brand-dark text-sm leading-tight">{item.name}</span>
                     <button 
@@ -237,18 +243,18 @@ export default function OrderingScreen({
                   </div>
                   
                   <div className="flex justify-between items-center mt-1">
-                    <div className="flex items-center gap-2 bg-brand-light rounded-[6px] p-1 border border-brand-border">
+                    <div className="flex items-center gap-2 bg-brand-light rounded-[6px] p-1 border border-brand-border/40">
                       <button 
                         onClick={() => actions.updateQuantity(item.id, -1)} 
                         disabled={item.quantity <= 1}
-                        className="w-6 h-6 bg-brand-surface border border-brand-border rounded-[4px] flex items-center justify-center active:bg-brand-light disabled:opacity-50"
+                        className="w-6 h-6 bg-brand-surface border border-brand-border/40 rounded-[4px] flex items-center justify-center active:bg-brand-light disabled:opacity-50"
                       >
                         <Minus className="h-3 w-3" />
                       </button>
                       <span className="font-bold text-xs w-6 text-center">{item.quantity}</span>
                       <button 
                         onClick={() => actions.updateQuantity(item.id, 1)}
-                        className="w-6 h-6 bg-brand-surface border border-brand-border rounded-[4px] flex items-center justify-center active:bg-brand-light"
+                        className="w-6 h-6 bg-brand-surface border border-brand-border/40 rounded-[4px] flex items-center justify-center active:bg-brand-light"
                       >
                         <Plus className="h-3 w-3" />
                       </button>
@@ -261,7 +267,7 @@ export default function OrderingScreen({
               ))}
             </div>
 
-            <div className="border-t border-brand-border pt-4 mt-auto space-y-4 shrink-0">
+            <div className="border-t border-brand-border/40 pt-4 mt-auto space-y-4 shrink-0">
               <div className="flex justify-between items-end">
                 <span className="text-xs font-bold uppercase text-brand-muted">Total</span>
                 <span className="text-2xl font-bold text-brand-dark">R$ {cartTotal.toFixed(2)}</span>
@@ -296,7 +302,7 @@ export default function OrderingScreen({
             </div>
             <div className="flex-1 overflow-y-auto space-y-4 py-2">
               {cart.map(item => (
-                <div key={item.id} className="bg-brand-light rounded-[12px] p-4 border border-brand-border flex flex-col gap-3">
+                <div key={item.id} className="bg-brand-light rounded-[12px] p-4 border border-brand-border/40 flex flex-col gap-3">
                   <div className="flex justify-between items-start gap-2">
                     <span className="font-bold text-brand-dark text-sm leading-tight">{item.name}</span>
                     <button 
@@ -308,18 +314,18 @@ export default function OrderingScreen({
                   </div>
                   
                   <div className="flex justify-between items-center mt-1">
-                    <div className="flex items-center gap-2 bg-brand-surface rounded-[8px] p-1 border border-brand-border">
+                    <div className="flex items-center gap-2 bg-brand-surface rounded-[8px] p-1 border border-brand-border/40">
                       <button 
                         onClick={() => actions.updateQuantity(item.id, -1)} 
                         disabled={item.quantity <= 1}
-                        className="w-7 h-7 bg-brand-light border border-brand-border rounded-[6px] flex items-center justify-center active:bg-brand-surface disabled:opacity-50"
+                        className="w-7 h-7 bg-brand-light border border-brand-border/40 rounded-[6px] flex items-center justify-center active:bg-brand-surface disabled:opacity-50"
                       >
                         <Minus className="h-3 w-3" />
                       </button>
                       <span className="font-bold text-sm w-6 text-center">{item.quantity}</span>
                       <button 
                         onClick={() => actions.updateQuantity(item.id, 1)}
-                        className="w-7 h-7 bg-brand-light border border-brand-border rounded-[6px] flex items-center justify-center active:bg-brand-surface"
+                        className="w-7 h-7 bg-brand-light border border-brand-border/40 rounded-[6px] flex items-center justify-center active:bg-brand-surface"
                       >
                         <Plus className="h-3 w-3" />
                       </button>
@@ -332,7 +338,7 @@ export default function OrderingScreen({
               ))}
             </div>
 
-            <div className="border-t border-brand-border pt-6 mt-auto space-y-4 shrink-0">
+            <div className="border-t border-brand-border/40 pt-6 mt-auto space-y-4 shrink-0">
               <div className="flex justify-between items-end">
                 <span className="text-xs font-bold uppercase text-brand-muted">Total</span>
                 <span className="text-xl font-bold text-brand-dark">R$ {cartTotal.toFixed(2)}</span>
@@ -395,7 +401,7 @@ export default function OrderingScreen({
                               key={cond.id}
                               onClick={() => toggleCondiment(cond)}
                               className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
-                                isSelected ? 'border-red-600 bg-red-50' : 'border-gray-100 bg-gray-50'
+                                isSelected ? 'border-red-600 bg-red-50' : 'border-gray-200/60 bg-gray-50'
                               }`}
                             >
                               <span className="font-medium text-gray-900">{cond.name}</span>
@@ -408,10 +414,10 @@ export default function OrderingScreen({
                  )}
               </div>
 
-              <div className="mt-auto pt-8 border-t border-gray-100">
+              <div className="mt-auto pt-8 border-t border-gray-200/60">
                 <div className="flex items-center justify-between mb-6">
                     <span className="text-2xl font-bold">Quantidade</span>
-                    <div className="flex items-center gap-4 border border-gray-200 rounded-2xl p-2">
+                    <div className="flex items-center gap-4 border border-gray-200/60 rounded-2xl p-2">
                         <button 
                           className="p-3 text-2xl font-bold text-gray-600 disabled:opacity-50"
                           onClick={() => setQuantity(Math.max(1, quantity - 1))}
