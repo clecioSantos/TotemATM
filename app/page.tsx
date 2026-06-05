@@ -32,13 +32,20 @@ export default function HomePage() {
   const [search, setSearch] = useState("");
   const [cityFilter, setCityFilter] = useState("");
   const [cities, setCities] = useState<any[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   const categories = [
-    { name: "Lanches", icon: "🍔" },
-    { name: "Pizza", icon: "🍕" },
-    { name: "Japonês", icon: "🍣" },
-    { name: "Doces", icon: "🍰" },
-    { name: "Mercado", icon: "🛒" },
+    { name: "Todas", icon: "★", key: "all" },
+    { name: "Lanches", icon: "🍔", key: "Lanches" },
+    { name: "Pizzas", icon: "🍕", key: "Pizzas" },
+    { name: "Pratos", icon: "🍽️", key: "Pratos" },
+    { name: "Marmitas", icon: "🥡", key: "Marmitas" },
+    { name: "Porções", icon: "🍟", key: "Porções" },
+    { name: "Bebidas", icon: "🥤", key: "Bebidas" },
+    { name: "Sobremesas", icon: "🍰", key: "Sobremesas" },
+    { name: "Açaí", icon: "🫐", key: "Açaí" },
+    { name: "Sushi", icon: "🍣", key: "Sushi" },
+    { name: "Padaria e Confeitaria", icon: "🥐", key: "Padaria e Confeitaria e mercado" },
   ];
 
   const [storeCitySettings, setStoreCitySettings] = useState<any[]>([]);
@@ -55,12 +62,16 @@ export default function HomePage() {
       
       let matchesCity = true;
       if (cityFilter) {
-          // Verifica se a loja possui configuração para essa cidade
           const hasSettings = storeCitySettings.some(s => s.companyId === store.id && s.cityId === cityFilter && s.enabled);
           matchesCity = hasSettings;
       }
       
-      return matchesName && matchesCity;
+      let matchesCategory = true;
+      if (categoryFilter !== "all") {
+          matchesCategory = store.areasAtuacao?.includes(categoryFilter);
+      }
+      
+      return matchesName && matchesCity && matchesCategory;
   });
 
 
@@ -365,12 +376,12 @@ export default function HomePage() {
         {/* Categorias */}
         <div className="flex gap-4 overflow-x-auto pb-4 mb-2 scrollbar-hide">
           {categories.map((cat, i) => (
-            <div key={i} className="flex flex-col items-center gap-2 min-w-[70px]">
-              <div className="w-16 h-16 bg-brand-surface rounded-[16px] flex items-center justify-center text-2xl shadow-sm border border-brand-border">
+            <button key={i} onClick={() => setCategoryFilter(cat.key)} className="flex flex-col items-center gap-2 min-w-[70px]">
+              <div className={`w-16 h-16 rounded-[16px] flex items-center justify-center text-2xl shadow-sm border ${categoryFilter === cat.key ? 'bg-brand-primary text-white border-brand-primary' : 'bg-brand-surface border-brand-border'}`}>
                 {cat.icon}
               </div>
-              <span className="text-xs font-semibold text-brand-muted">{cat.name}</span>
-            </div>
+              <span className={`text-xs font-semibold ${categoryFilter === cat.key ? 'text-brand-primary' : 'text-brand-muted'}`}>{cat.name}</span>
+            </button>
           ))}
         </div>
 
@@ -383,8 +394,8 @@ export default function HomePage() {
               href={`/totem/${store.id}`}
               className="bg-brand-surface rounded-[16px] p-4 flex gap-4 items-center shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-brand-border transition-transform active:scale-[0.98]"
             >
-              <div className="w-16 h-16 bg-[#eee] rounded-[12px] flex items-center justify-center text-2xl font-bold">
-                {store.name.charAt(0)}
+              <div className="w-16 h-16 bg-[#eee] rounded-[12px] flex items-center justify-center overflow-hidden">
+                {store.logo ? <img src={store.logo} alt={store.name} className="w-full h-full object-cover" /> : <span className="text-2xl font-bold">{store.name.charAt(0)}</span>}
               </div>
               <div className="flex-1">
                 <h4 className="text-base font-bold text-brand-dark mb-1">{store.name}</h4>
