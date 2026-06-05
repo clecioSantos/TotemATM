@@ -9,6 +9,8 @@ interface OrderingScreenProps {
   companyId: string;
   companyName: string;
   companyBanner: string;
+  tempoPreparoMin: number;
+  tempoPreparoMax: number;
   products: Product[];
   categories: Category[];
   condiments: Condiment[];
@@ -30,6 +32,8 @@ export default function OrderingScreen({
   companyId,
   companyName,
   companyBanner,
+  tempoPreparoMin,
+  tempoPreparoMax,
   products = [], 
   categories = [], 
   condiments = [], 
@@ -171,7 +175,7 @@ export default function OrderingScreen({
               </h2>
               <div className="flex items-center gap-4 text-sm font-medium opacity-90 drop-shadow">
                 <div className="flex items-center gap-1">⭐ 4.8</div>
-                <div className="flex items-center gap-1">🕒 25-35 min</div>
+                <div className="flex items-center gap-1">🕒 {tempoPreparoMin}-{tempoPreparoMax} min</div>
                 <div className="flex items-center gap-1">
                   🚚 {deliveryCosts.length > 0
                     ? `Entrega R$ ${Math.min(...deliveryCosts.map(d => d.deliveryPrice)).toFixed(2)}`
