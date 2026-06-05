@@ -79,24 +79,34 @@ export const useCondiments = () => {
       categoryIds: data.categoryIds || [],
     };
 
-    if (data.id) {
-      const ref = doc(firestore, 'condiments', data.id);
-      await updateDoc(ref, condimentData);
-    } else {
-      await addDoc(collection(firestore, 'condiments'), {
-        ...condimentData,
-        companyId: user?.companyId,
-        createdAt: Timestamp.now(),
-      });
+    try {
+      if (data.id) {
+        const ref = doc(firestore, 'condiments', data.id);
+        await updateDoc(ref, condimentData);
+      } else {
+        await addDoc(collection(firestore, 'condiments'), {
+          ...condimentData,
+          companyId: user?.companyId,
+          createdAt: Timestamp.now(),
+        });
+      }
+    } catch (error) {
+      console.error("🔥 Erro ao salvar condimento:", error);
+      throw error;
     }
   };
 
   const removeCondiment = async (id: string) => {
-    const condiment = condiments.find(c => c.id === id);
-    if (condiment?.imageUrl?.includes('res.cloudinary.com')) {
-      try { await fetch(`/api/upload?fileUrl=${encodeURIComponent(condiment.imageUrl)}`, { method: 'DELETE' }); } catch {}
+    try {
+      const condiment = condiments.find(c => c.id === id);
+      if (condiment?.imageUrl?.includes('res.cloudinary.com')) {
+        try { await fetch(`/api/upload?fileUrl=${encodeURIComponent(condiment.imageUrl)}`, { method: 'DELETE' }); } catch {}
+      }
+      await deleteDoc(doc(firestore, 'condiments', id));
+    } catch (error) {
+      console.error(`🔥 Erro ao remover condimento ${id}:`, error);
+      throw error;
     }
-    await deleteDoc(doc(firestore, 'condiments', id));
   };
 
   return { condiments, loading, error, saveCondiment, removeCondiment };

@@ -12,10 +12,15 @@ export default function NewStorePage() {
   const [newCity, setNewCity] = useState({ name: "", estado: "" });
 
   const handleAddCity = async () => {
-    if (!newCity.name || !newCity.estado) return;
-    await addDoc(collection(firestore, "cities"), newCity);
-    setNewCity({ name: "", estado: "" });
-    setIsAddingCity(false);
+    try {
+      if (!newCity.name || !newCity.estado) return;
+      await addDoc(collection(firestore, "cities"), newCity);
+      setNewCity({ name: "", estado: "" });
+      setIsAddingCity(false);
+    } catch (error) {
+      console.error("🔥 Erro ao adicionar cidade:", error);
+      alert("Erro ao adicionar cidade.");
+    }
   };
   const [formData, setFormData] = useState({
     name: "",
@@ -60,6 +65,8 @@ export default function NewStorePage() {
     const unsub = onSnapshot(collection(firestore, "cities"), (snap) => {
       const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setCities(data);
+    }, (error) => {
+      console.error("🔥 Erro ao carregar cidades:", error);
     });
     return () => unsub();
   }, []);

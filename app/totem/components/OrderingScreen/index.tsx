@@ -58,6 +58,8 @@ export default function OrderingScreen({
     const q = query(collection(firestore, "deliveryCosts"), where("companyId", "==", companyId));
     const unsubscribe = onSnapshot(q, (snapshot: any) => {
       setDeliveryCosts(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() })));
+    }, (error) => {
+      console.error("🔥 Erro ao carregar custos de entrega:", error);
     });
     return () => unsubscribe();
   }, [companyId]);

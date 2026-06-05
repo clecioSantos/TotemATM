@@ -4,18 +4,23 @@ import { UserProfile } from "@totem/shared/types/auth";
 
 export const userRepository = {
   async getById(uid: string): Promise<UserProfile | null> {
-    const docRef = doc(firestore, "users", uid);
-    const docSnap = await getDoc(docRef);
+    try {
+      const docRef = doc(firestore, "users", uid);
+      const docSnap = await getDoc(docRef);
 
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      return {
-        ...data,
-        uid: docSnap.id,
-        createdAt: data.createdAt?.toDate() || new Date(),
-      } as UserProfile;
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        return {
+          ...data,
+          uid: docSnap.id,
+          createdAt: data.createdAt?.toDate() || new Date(),
+        } as UserProfile;
+      }
+      return null;
+    } catch (error) {
+      console.error(`🔥 Erro ao buscar usuário ${uid}:`, error);
+      return null;
     }
-    return null;
   },
 
   async create(profile: Omit<UserProfile, "createdAt">): Promise<void> {

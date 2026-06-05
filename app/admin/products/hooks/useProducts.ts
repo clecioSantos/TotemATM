@@ -90,18 +90,23 @@ export const useProducts = () => {
     }
 
     // 2. Salva ou atualiza no Firestore
-    if (data.id) {
-      const productRef = doc(firestore, 'products', data.id);
-      await updateDoc(productRef, { ...data, imageUrl });
-    } else {
-      await addDoc(collection(firestore, 'products'), {
-        ...data,
-        companyId: user?.companyId,
-        imageUrl,
-        active: data.active ?? true,
-        featured: data.featured ?? false,
-        createdAt: Timestamp.now(),
-      });
+    try {
+      if (data.id) {
+        const productRef = doc(firestore, 'products', data.id);
+        await updateDoc(productRef, { ...data, imageUrl });
+      } else {
+        await addDoc(collection(firestore, 'products'), {
+          ...data,
+          companyId: user?.companyId,
+          imageUrl,
+          active: data.active ?? true,
+          featured: data.featured ?? false,
+          createdAt: Timestamp.now(),
+        });
+      }
+    } catch (error) {
+      console.error("🔥 Erro ao salvar produto:", error);
+      throw error;
     }
   };
 
@@ -119,7 +124,12 @@ export const useProducts = () => {
     }
 
     // 2. Remove o documento do Firestore
-    await deleteDoc(doc(firestore, 'products', id));
+    try {
+      await deleteDoc(doc(firestore, 'products', id));
+    } catch (error) {
+      console.error(`🔥 Erro ao remover produto ${id}:`, error);
+      throw error;
+    }
   };
 
   return { products, loading, error, saveProduct, removeProduct };

@@ -12,13 +12,19 @@ export default function StoresPage() {
     const unsub = onSnapshot(collection(firestore, "companies"), (snap) => {
       const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setStores(data);
+    }, (error) => {
+      console.error("🔥 Erro ao carregar lojas:", error);
     });
     return () => unsub();
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (confirm("Tem certeza que deseja excluir esta loja?")) {
-      await deleteDoc(doc(firestore, "companies", id));
+    try {
+      if (confirm("Tem certeza que deseja excluir esta loja?")) {
+        await deleteDoc(doc(firestore, "companies", id));
+      }
+    } catch (error) {
+      console.error("🔥 Erro ao remover loja:", error);
     }
   };
 

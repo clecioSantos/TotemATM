@@ -69,7 +69,12 @@ export const useCategoriesStore = () => {
   };
 
   const removeCategory = async (id: string) => {
-    await deleteDoc(doc(db, 'categories', id));
+    try {
+      await deleteDoc(doc(db, 'categories', id));
+    } catch (error) {
+      console.error(`🔥 Erro ao remover categoria ${id}:`, error);
+      throw error;
+    }
   };
 
   return { categories, loading, saveCategory, removeCategory };

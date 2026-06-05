@@ -19,13 +19,13 @@ export default function PaymentScreen({ orderId, pixData, total, onPaymentConfir
   useEffect(() => {
     if (!orderId) return;
 
-    // Escuta em tempo real o documento do pedido no Firestore
-    // O Webhook do PagBank atualizará o status para PAID
     const unsubscribe = onSnapshot(doc(firestore, "orders", orderId), (snapshot) => {
       const data = snapshot.data();
       if (data?.paymentStatus === "PAID") {
         onPaymentConfirmed();
       }
+    }, (error) => {
+      console.error(`🔥 Erro ao escutar pedido ${orderId}:`, error);
     });
 
     return () => unsubscribe();

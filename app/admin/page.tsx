@@ -517,6 +517,8 @@ export default function AdminDashboard() {
     if (!user?.companyId) return;
     const unsub = onSnapshot(doc(firestore, "companies", user.companyId), snap => {
       if (snap.exists()) setCompany({ id: snap.id, ...snap.data() });
+    }, (error) => {
+      console.error("🔥 Erro ao carregar empresa:", error);
     });
     return () => unsub();
   }, [user?.companyId]);
@@ -524,9 +526,11 @@ export default function AdminDashboard() {
   // Products
   useEffect(() => {
     if (!user?.companyId) return;
-    getDocs(query(collection(firestore, "products"), where("companyId", "==", user.companyId))).then(snap => {
-      setAllProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
+    getDocs(query(collection(firestore, "products"), where("companyId", "==", user.companyId)))
+      .then(snap => {
+        setAllProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      })
+      .catch(error => console.error("🔥 Erro ao carregar produtos:", error));
   }, [user?.companyId]);
 
   // Today's orders (real-time)
@@ -561,7 +565,7 @@ export default function AdminDashboard() {
       orderBy("createdAt", "desc")
     )).then(snap => {
       setYesterdayOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
+    }).catch(error => console.error("🔥 Erro ao carregar pedidos de ontem:", error));
   }, [user?.companyId]);
 
   // This week (static)
@@ -574,7 +578,7 @@ export default function AdminDashboard() {
       orderBy("createdAt", "desc")
     )).then(snap => {
       setThisWeekOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
+    }).catch(error => console.error("🔥 Erro ao carregar pedidos da semana:", error));
   }, [user?.companyId]);
 
   // Last week (static)
@@ -593,7 +597,7 @@ export default function AdminDashboard() {
       orderBy("createdAt", "desc")
     )).then(snap => {
       setLastWeekOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
+    }).catch(error => console.error("🔥 Erro ao carregar pedidos da semana passada:", error));
   }, [user?.companyId]);
 
   // Previous customers (before today - for new vs returning)
@@ -608,7 +612,7 @@ export default function AdminDashboard() {
       orderBy("createdAt", "desc")
     )).then(snap => {
       setPrevCustomerIds(new Set(snap.docs.map(d => d.data().customerId).filter(Boolean)));
-    });
+    }).catch(error => console.error("🔥 Erro ao carregar clientes anteriores:", error));
   }, [user?.companyId]);
 
   // ── KPIs ──

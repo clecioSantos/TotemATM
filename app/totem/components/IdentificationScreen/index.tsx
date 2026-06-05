@@ -102,6 +102,8 @@ export default function IdentificationScreen({
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(firestore, "cities"), (snapshot) => {
       setAvailableCities(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (error) => {
+      console.error("🔥 Erro ao carregar cidades:", error);
     });
     return () => unsubscribe();
   }, []);
@@ -112,6 +114,8 @@ export default function IdentificationScreen({
     const q = query(collection(firestore, "storeCitySettings"), where("companyId", "==", companyId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setCitySettings(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (error) => {
+      console.error("🔥 Erro ao carregar configurações de cidade:", error);
     });
     return () => unsubscribe();
   }, [companyId]);
@@ -122,6 +126,8 @@ export default function IdentificationScreen({
     const q = query(collection(firestore, "deliveryCosts"), where("companyId", "==", companyId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setDeliveryCosts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (error) => {
+      console.error("🔥 Erro ao carregar custos de entrega:", error);
     });
     return () => unsubscribe();
   }, [companyId]);
@@ -132,6 +138,8 @@ export default function IdentificationScreen({
       const q = query(collection(firestore, "neighborhoods"), where("cityId", "==", addressCity));
       const unsubscribe = onSnapshot(q, (snapshot) => {
         setAvailableNeighborhoods(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      }, (error) => {
+        console.error("🔥 Erro ao carregar bairros:", error);
       });
       return () => unsubscribe();
     } else {

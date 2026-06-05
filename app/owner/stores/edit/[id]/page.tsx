@@ -66,32 +66,42 @@ export default function EditStorePage() {
 
   useEffect(() => {
     const fetchStore = async () => {
-      const docRef = doc(firestore, "companies", storeId);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data) {
-          if (data.cep) data.cep = maskCEP(data.cep);
-          if (data.telefone) data.telefone = maskTelefone(data.telefone);
-          if (data.whatsapp) data.whatsapp = maskTelefone(data.whatsapp);
-          if (data.cnpj) data.cnpj = maskCNPJ(data.cnpj);
+      try {
+        const docRef = doc(firestore, "companies", storeId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data) {
+            if (data.cep) data.cep = maskCEP(data.cep);
+            if (data.telefone) data.telefone = maskTelefone(data.telefone);
+            if (data.whatsapp) data.whatsapp = maskTelefone(data.whatsapp);
+            if (data.cnpj) data.cnpj = maskCNPJ(data.cnpj);
+          }
+          setFormData(data);
         }
-        setFormData(data);
+      } catch (error) {
+        console.error("🔥 Erro ao buscar loja:", error);
       }
     };
     fetchStore();
 
     const unsub = onSnapshot(collection(firestore, "cities"), (snap) => {
       setCities(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      console.error("🔥 Erro ao carregar cidades:", error);
     });
     return () => unsub();
   }, [storeId]);
 
   const handleAddCity = async () => {
-    if (!newCity.name || !newCity.estado) return;
-    await addDoc(collection(firestore, "cities"), newCity);
-    setNewCity({ name: "", estado: "" });
-    setIsAddingCity(false);
+    try {
+      if (!newCity.name || !newCity.estado) return;
+      await addDoc(collection(firestore, "cities"), newCity);
+      setNewCity({ name: "", estado: "" });
+      setIsAddingCity(false);
+    } catch (error) {
+      console.error("🔥 Erro ao adicionar cidade:", error);
+    }
   };
 
   const handleHorarioChange = (dia: string, field: 'open' | 'close', value: string) => {
@@ -151,9 +161,14 @@ export default function EditStorePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await updateDoc(doc(firestore, "companies", storeId), formData);
-    alert("Loja atualizada!");
-    router.push("/owner/stores");
+    try {
+      await updateDoc(doc(firestore, "companies", storeId), formData);
+      alert("Loja atualizada!");
+      router.push("/owner/stores");
+    } catch (error) {
+      console.error("🔥 Erro ao atualizar loja:", error);
+      alert("Erro ao atualizar loja.");
+    }
   };
 
   if (!formData) return <div>Carregando...</div>;

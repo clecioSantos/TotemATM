@@ -11,24 +11,29 @@ export default function OrderTimer({ createdAt }: OrderTimerProps) {
 
   useEffect(() => {
     const calculateTime = () => {
-      const now = new Date();
-      const start = createdAt?.toDate ? createdAt.toDate() : new Date(createdAt);
-      const diffInMs = now.getTime() - start.getTime();
-      
-      const diffInMins = Math.floor(diffInMs / 60000);
-      
-      if (diffInMins < 1) {
-        setElapsed("Agora mesmo");
-      } else if (diffInMins < 60) {
-        setElapsed(`${diffInMins} min atrás`);
-      } else {
-        const hours = Math.floor(diffInMins / 60);
-        setElapsed(`${hours}h atrás`);
+      try {
+        const now = new Date();
+        const start = createdAt?.toDate ? createdAt.toDate() : new Date(createdAt);
+        const diffInMs = now.getTime() - start.getTime();
+        
+        const diffInMins = Math.floor(diffInMs / 60000);
+        
+        if (diffInMins < 1) {
+          setElapsed("Agora mesmo");
+        } else if (diffInMins < 60) {
+          setElapsed(`${diffInMins} min atrás`);
+        } else {
+          const hours = Math.floor(diffInMins / 60);
+          setElapsed(`${hours}h atrás`);
+        }
+      } catch (error) {
+        console.error("🔥 Erro no OrderTimer:", error);
+        setElapsed("--");
       }
     };
 
     calculateTime();
-    const interval = setInterval(calculateTime, 60000); // Atualiza a cada 1 minuto
+    const interval = setInterval(calculateTime, 60000);
 
     return () => clearInterval(interval);
   }, [createdAt]);

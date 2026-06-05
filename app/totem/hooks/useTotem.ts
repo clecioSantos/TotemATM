@@ -22,20 +22,23 @@ export const useTotem = (companyId: string) => {
   useEffect(() => {
     if (!db.app.options.projectId || !companyId) return;
 
-    // Busca nome e banner da empresa
     const fetchCompany = async () => {
+      try {
         const docRef = doc(db, 'companies', companyId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-            const data = docSnap.data();
-            setCompanyName(data.name);
-            setCompanyBanner(data.banner || "");
-            setTempoPreparoMin(data.tempoPreparoMin || 0);
-            setTempoPreparoMax(data.tempoPreparoMax || 0);
-            setCompanyOpen(data.open !== undefined ? data.open : null);
+          const data = docSnap.data();
+          setCompanyName(data.name);
+          setCompanyBanner(data.banner || "");
+          setTempoPreparoMin(data.tempoPreparoMin || 0);
+          setTempoPreparoMax(data.tempoPreparoMax || 0);
+          setCompanyOpen(data.open !== undefined ? data.open : null);
         }
+      } catch (error) {
+        console.error("🔥 Erro ao buscar empresa:", error);
+      }
     }
-    fetchCompany();
+    fetchCompany().catch(err => console.error("🔥 fetchCompany falhou:", err));
     
     setLoading(true);
 
@@ -210,7 +213,11 @@ export const useTotem = (companyId: string) => {
   };
 
   const logout = async () => {
-    await authService.signOut();
+    try {
+      await authService.signOut();
+    } catch (error) {
+      console.error("🔥 Erro no logout:", error);
+    }
   };
 
   return { 

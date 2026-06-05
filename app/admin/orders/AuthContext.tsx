@@ -21,33 +21,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        const userDoc = await getDoc(doc(firestore, "users", firebaseUser.uid));
-        if (userDoc.exists()) {
-          setUser(userDoc.data() as UserProfile);
+      try {
+        if (firebaseUser) {
+          const userDoc = await getDoc(doc(firestore, "users", firebaseUser.uid));
+          if (userDoc.exists()) {
+            setUser(userDoc.data() as UserProfile);
+          } else {
+            setUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email!,
+              name: firebaseUser.displayName || "Administrador",
+              role: 'admin',
+              companyId: 'default',
+              createdAt: new Date().toISOString()
+            } as unknown as UserProfile);
+          }
         } else {
-          setUser({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email!,
-            name: firebaseUser.displayName || "Administrador",
-            role: 'admin', // Fallback apenas se não houver doc no Firestore
-            companyId: 'default',
-            createdAt: new Date().toISOString()
-          } as unknown as UserProfile);
+          setUser(null);
         }
-      } else {
+      } catch (error) {
+        console.error("🔥 Erro no onAuthStateChanged:", error);
         setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
   const signOut = async () => {
-    setUser(null);
-    await auth.signOut();
-    await fetch("/api/auth/logout", { method: "POST" });
+    try {
+      setUser(null);
+      await auth.signOut();
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (error) {
+      console.error("🔥 Erro ao fazer logout:", error);
+    }
     window.location.href = "/login";
   };
 

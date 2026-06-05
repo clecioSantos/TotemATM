@@ -96,21 +96,36 @@ export default function TotemPage({ params }: PageProps) {
       return;
     }
 
-    // 2. Chamar nossa API para gerar o PIX no PagBank
-    const res = await fetch("/api/payments/pix", {
-      method: "POST",
-      body: JSON.stringify({ 
-        orderId, 
-        amount: total, 
-        customerName: "Cliente Totem" 
-      })
-    });
-    const data = await res.json();
+    try {
+      const res = await fetch("/api/payments/pix", {
+        method: "POST",
+        body: JSON.stringify({
+          orderId,
+          amount: total,
+          customerName: "Cliente Totem"
+        })
+      });
 
-    setPixData({ qrCode: data.pixQrCode, copyPaste: data.pixCopyPaste });
-    setCurrentOrderId(orderId);
-    setStep('PAYMENT');
-    setIsProcessingPayment(false);
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`PagBank API error (${res.status}): ${errorText}`);
+      }
+
+      const data = await res.json();
+
+      if (!data.pixQrCode || !data.pixCopyPaste) {
+        throw new Error("Resposta do PIX inválida: campos ausentes");
+      }
+
+      setPixData({ qrCode: data.pixQrCode, copyPaste: data.pixCopyPaste });
+      setCurrentOrderId(orderId);
+      setStep('PAYMENT');
+    } catch (error) {
+      console.error("🔥 Erro ao gerar PIX:", error);
+      alert("Erro ao gerar pagamento PIX. Tente novamente.");
+    } finally {
+      setIsProcessingPayment(false);
+    }
   };
 
   const handlePaymentConfirmed = () => {

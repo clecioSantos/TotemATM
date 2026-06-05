@@ -108,6 +108,11 @@ export async function setUserClaims(
   uid: string,
   role: string
 ): Promise<void> {
-  const auth = getAdminAuth();
-  await auth.setCustomUserClaims(uid, { role });
+  try {
+    const auth = getAdminAuth();
+    await auth.setCustomUserClaims(uid, { role });
+  } catch (error) {
+    console.error(`🔥 Erro ao definir claims do usuário ${uid}:`, error);
+    throw error;
+  }
 }

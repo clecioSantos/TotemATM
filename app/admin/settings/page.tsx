@@ -77,19 +77,24 @@ export default function ConfigurationsPage() {
   useEffect(() => {
     if (!user?.companyId) return;
     const fetchCompany = async () => {
-      const docRef = doc(firestore, "companies", user.companyId!);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data) {
-          if (data.cep) data.cep = maskCEP(data.cep);
-          if (data.telefone) data.telefone = maskTelefone(data.telefone);
-          if (data.whatsapp) data.whatsapp = maskTelefone(data.whatsapp);
-          if (data.cnpj) data.cnpj = maskCNPJ(data.cnpj);
+      try {
+        const docRef = doc(firestore, "companies", user.companyId!);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data) {
+            if (data.cep) data.cep = maskCEP(data.cep);
+            if (data.telefone) data.telefone = maskTelefone(data.telefone);
+            if (data.whatsapp) data.whatsapp = maskTelefone(data.whatsapp);
+            if (data.cnpj) data.cnpj = maskCNPJ(data.cnpj);
+          }
+          setCompanyData(data);
         }
-        setCompanyData(data);
+      } catch (error) {
+        console.error("🔥 Erro ao buscar empresa:", error);
+      } finally {
+        setLoadingCompany(false);
       }
-      setLoadingCompany(false);
     };
     fetchCompany();
   }, [user?.companyId]);
@@ -97,6 +102,8 @@ export default function ConfigurationsPage() {
   useEffect(() => {
     const unsub = onSnapshot(collection(firestore, "cities"), (snap) => {
       setCities(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      console.error("🔥 Erro ao carregar cidades:", error);
     });
     return () => unsub();
   }, []);

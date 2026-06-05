@@ -32,6 +32,8 @@ export default function AddressesManagementPage() {
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(firestore, "cities"), (snapshot) => {
       setCities(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (error) => {
+      console.error("🔥 Erro ao carregar cidades:", error);
     });
     return () => unsubscribe();
   }, []);
@@ -43,6 +45,8 @@ export default function AddressesManagementPage() {
         query(collection(firestore, "neighborhoods"), where("cityId", "==", selectedCityId)),
         (snapshot) => {
         setNeighborhoods(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      }, (error) => {
+        console.error("🔥 Erro ao carregar bairros:", error);
       });
       return () => unsubscribe();
     }
@@ -55,6 +59,8 @@ export default function AddressesManagementPage() {
     const q = query(collection(firestore, "storeCitySettings"), where("companyId", "==", user.companyId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setCitySettings(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (error) => {
+      console.error("🔥 Erro ao carregar configurações de cidade:", error);
     });
     return () => unsubscribe();
   }, [user?.companyId]);
@@ -65,14 +71,21 @@ export default function AddressesManagementPage() {
     const q = query(collection(firestore, "deliveryCosts"), where("companyId", "==", user.companyId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setDeliveryCosts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (error) => {
+      console.error("🔥 Erro ao carregar custos de entrega:", error);
     });
     return () => unsubscribe();
   }, [user?.companyId]);
 
   // Ações de Cidade
   const handleDeleteCity = async (id: string) => {
-    await deleteDoc(doc(firestore, "cities", id));
-    if (selectedCityId === id) setSelectedCityId("");
+    try {
+      await deleteDoc(doc(firestore, "cities", id));
+      if (selectedCityId === id) setSelectedCityId("");
+    } catch (error) {
+      console.error("🔥 Erro ao remover cidade:", error);
+      alert("Erro ao remover cidade.");
+    }
   }
 
   const handleToggleDelivery = async (cityId: string, enabled: boolean) => {
@@ -134,17 +147,21 @@ export default function AddressesManagementPage() {
   };
 
   const handleToggleNb = async (nbId: string, enabled: boolean) => {
-    if (!user?.companyId) return;
-    const costSetting = deliveryCosts.find(c => c.neighborhoodId === nbId);
-    if (costSetting) {
-      await updateDoc(doc(firestore, "deliveryCosts", costSetting.id), { enabled });
-    } else {
-      await addDoc(collection(firestore, "deliveryCosts"), { 
-        neighborhoodId: nbId, 
-        companyId: user.companyId, 
-        enabled,
-        deliveryPrice: 0 
-      });
+    try {
+      if (!user?.companyId) return;
+      const costSetting = deliveryCosts.find(c => c.neighborhoodId === nbId);
+      if (costSetting) {
+        await updateDoc(doc(firestore, "deliveryCosts", costSetting.id), { enabled });
+      } else {
+        await addDoc(collection(firestore, "deliveryCosts"), {
+          neighborhoodId: nbId,
+          companyId: user.companyId,
+          enabled,
+          deliveryPrice: 0
+        });
+      }
+    } catch (error) {
+      console.error("🔥 Erro ao alternar bairro:", error);
     }
   };
 
@@ -197,7 +214,10 @@ export default function AddressesManagementPage() {
           isAdmin={isAdmin}
           onAddNb={() => setModalConfig({ type: 'nb' })}
           onEditNb={(nb) => setModalConfig({ type: 'nb', data: nb })}
-          onDeleteNb={async (id) => await deleteDoc(doc(firestore, "neighborhoods", id))}
+          onDeleteNb={async (id) => {
+            try { await deleteDoc(doc(firestore, "neighborhoods", id)); }
+            catch (error) { console.error("🔥 Erro ao remover bairro:", error); }
+          }}
           onEditPrice={(nb) => setModalConfig({ type: 'price', data: nb })}
           onToggleNb={handleToggleNb}
         />

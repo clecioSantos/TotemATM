@@ -1,9 +1,10 @@
-import { cloudinary, CLOUDINARY_FOLDER } from '../lib/cloudinary';
+import { cloudinary, CLOUDINARY_FOLDER, ensureCloudinary } from '../lib/cloudinary';
 
 export const saveFile = async (file: {
   buffer: Buffer;
   originalname: string;
 }): Promise<{ imageUrl: string; publicId: string }> => {
+  ensureCloudinary();
   return new Promise((resolve, reject) => {
     const fileInfo = {
       originalname: file.originalname,

@@ -19,9 +19,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const refreshProfile = useCallback(async () => {
-    if (auth.currentUser) {
-      const profile = await userRepository.getById(auth.currentUser.uid);
-      setUser(profile);
+    try {
+      if (auth.currentUser) {
+        const profile = await userRepository.getById(auth.currentUser.uid);
+        setUser(profile);
+      }
+    } catch (error) {
+      console.error("🔥 Erro ao atualizar perfil:", error);
     }
   }, []);
 
