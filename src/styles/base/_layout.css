@@ -13,22 +13,21 @@
 .page-title {
   font-size: 30px;
   font-weight: 500;
-  color: var(--text-primary);
-  margin: 50;
-  text-align: center;
+  color: var(--fg);
+  margin: 0;
   letter-spacing: -1.5px;
 }
 
 .page-subtitle {
   font-size: 18px;
-  color: var(--text-secondary);
+  color: var(--fg-muted);
   margin-top: 4px;
 }
 
 .card {
-  background: var(--white);
+  background: var(--surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-soft);
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--border);
   padding: 24px;
 }

@@ -7,14 +7,14 @@
   justify-content: center;
   z-index: 1000;
   backdrop-filter: blur(4px);
-  padding: 3%; /* Adicionado para garantir espaçamento em telas menores */
+  padding: 3%;
 }
 
 .modal-card {
-  background: var(--white);
+  background: var(--surface);
   width: 100%;
   max-width: 600px;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   padding: 32px;
   margin: 3%;
   box-shadow: var(--shadow-modal);
@@ -30,7 +30,7 @@
 .modal-header h3 {
   font-size: 24px;
   margin: 0;
-  color: var(--text-primary);
+  color: var(--fg);
 }
 
 .modal-body {

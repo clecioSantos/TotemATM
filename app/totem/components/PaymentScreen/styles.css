@@ -1,6 +1,6 @@
 .payment-container {
   min-height: 100vh;
-  background-color: #f8f7f5;
+  background-color: #F7F7F7;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -11,17 +11,17 @@
   background: white;
   width: 100%;
   max-width: 480px;
-  border-radius: 28px;
+  border-radius: 16px;
   padding: 40px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   text-align: center;
-  border: 1px solid rgba(0,0,0,0.05);
+  border: 1px solid #EAEAEA;
 }
 
 .payment-title {
   font-size: 28px;
   font-weight: 900;
-  color: #1a1a1a;
+  color: #202020;
   text-transform: uppercase;
   letter-spacing: -0.5px;
   margin-bottom: 8px;
@@ -35,8 +35,8 @@
 
 .qr-code-section {
   background: #fdfdfd;
-  border: 2px solid #f0f0f0;
-  border-radius: 24px;
+  border: 2px solid #EAEAEA;
+  border-radius: 16px;
   padding: 24px;
   margin-bottom: 24px;
 }
@@ -44,7 +44,7 @@
 .qr-code-wrapper {
   background: white;
   padding: 12px;
-  border-radius: 16px;
+  border-radius: 12px;
   display: inline-block;
   margin-bottom: 16px;
 }
@@ -70,16 +70,16 @@
 .amount-value {
   font-size: 32px;
   font-weight: 900;
-  color: #2e7d32;
+  color: #202020;
 }
 
 .copy-button {
   width: 100%;
-  background: #1a1a1a;
+  background: oklch(60% 0.18 25);
   color: white;
   border: none;
   padding: 18px;
-  border-radius: 16px;
+  border-radius: 12px;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -105,7 +105,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #ed6c02;
+  color: oklch(60% 0.18 25);
   font-weight: 700;
   font-size: 14px;
 }

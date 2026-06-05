@@ -4,21 +4,10 @@
   font-weight: 700;
   font-size: 12px;
   text-transform: uppercase;
-}
-
-.status-pending { background: #fee2e2; color: var(--danger-color); }
-.status-badge {
-  padding: 6px 12px;
-  border-radius: var(--radius-pill);
-  font-weight: 700;
-  font-size: 12px;
-  text-transform: uppercase;
   display: inline-block;
 }
 
-.status-pending { background: #fee2e2; color: var(--danger-color); }
-.status-preparing { background: #fef3c7; color: var(--warning-color); }
-.status-ready { background: #dcfce7; color: var(--success-color); }
-.status-finished { background: var(--border-light); color: var(--text-secondary); }
-.status-preparing { background: #fef3c7; color: var(--warning-color); }
-.status-ready { background: #dcfce7; color: var(--success-color); }
+.status-pending { background: #fee2e2; color: var(--error); }
+.status-preparing { background: #fef3c7; color: var(--alert); }
+.status-ready { background: #dcfce7; color: var(--success); }
+.status-finished { background: var(--border); color: var(--fg-muted); }

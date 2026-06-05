@@ -249,35 +249,29 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-brand-light pb-20">
-      <header className="sticky top-0 bg-brand-surface z-10 p-2 border-b border-brand-border flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center text-sm font-semibold">
-            <img src="/logo.png" alt="Bora De Delivery" className="h-[50px] w-auto" />
+      <header className="sticky top-0 bg-white z-10 border-b border-brand-border">
+        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+          <div className="flex items-center gap-2">
+            <img src="/Logo.png" alt="Bora De Delivery" className="h-[42px] w-auto" />
           </div>
-          <div className="flex flex-col gap-2 mt-1">
-            <div className="bg-[#F0F0F0] h-10 rounded-[12px] flex items-center px-4 text-brand-muted text-sm">
-                <Search className="h-4 w-4 mr-3" />
-                <input className="bg-transparent w-full outline-none" placeholder="Buscar lojas..." value={search} onChange={e => setSearch(e.target.value)} />
-            </div>
-            <select className="bg-[#F0F0F0] h-10 rounded-[12px] px-4 text-brand-muted text-sm" value={cityFilter} onChange={e => setCityFilter(e.target.value)}>
-                <option value="">Todas as cidades</option>
-                {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setIsOrdersOpen(true)} className="w-9 h-9 rounded-full flex items-center justify-center text-brand-muted hover:bg-gray-100 transition-colors">
+              <ShoppingBag className="h-5 w-5" />
+            </button>
+            <button onClick={() => setIsProfileOpen(true)} className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-brand-muted hover:bg-gray-200 transition-colors">
+              <User className="h-5 w-5" />
+            </button>
           </div>
         </div>
-        <div className="flex gap-2 pt-2">
-          <button 
-            onClick={() => setIsOrdersOpen(true)}
-            className="p-2 bg-brand-surface rounded-[12px] border border-brand-border text-brand-dark"
-          >
-            <ShoppingBag className="h-5 w-5" />
-          </button>
-          <button 
-            onClick={() => setIsProfileOpen(true)}
-            className="p-2 bg-brand-surface rounded-[12px] border border-brand-border text-brand-dark"
-          >
-            <User className="h-5 w-5" />
-          </button>
+        <div className="px-4 pb-3 flex items-center gap-2">
+          <select className="h-11 bg-[#F0F0F0] rounded-[12px] px-3 text-sm font-semibold text-brand-dark outline-none cursor-pointer min-w-[120px] appearance-none" value={cityFilter} onChange={e => setCityFilter(e.target.value)} style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center", paddingRight: "32px" }}>
+            <option value="">Todas as cidades</option>
+            {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-muted pointer-events-none" />
+            <input className="w-full h-11 bg-[#F0F0F0] rounded-[12px] pl-9 pr-4 text-sm text-brand-dark outline-none placeholder:text-[#999]" placeholder="Buscar lojas..." value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
         </div>
       </header>
 

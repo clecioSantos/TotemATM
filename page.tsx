@@ -21,10 +21,62 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-container">
-      <header className="dashboard-header">
-        <div>
-          <h1>Dashboard</h1>
-          <p>Bem-vindo ao NexOrder Admin</p>
+      {/* Veloce-style top header */}
+      <header className="delivery-header">
+        <div className="header-top">
+          <div className="logo-area">
+            <div className="logo-icon">
+              <span className="logo-letter">B</span>
+            </div>
+            <span className="logo-text">Bora De Delivery</span>
+          </div>
+          <div className="header-actions">
+            <button className="header-btn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+            </button>
+            <button className="header-btn profile-btn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="8" r="5" />
+                <path d="M20 21a8 8 0 1 0-16 0" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="location-bar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+          <span className="location-text">R. das Flores, 123</span>
+          <svg className="location-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+
+        <div className="search-area">
+          <div className="city-selector">
+            <select className="city-select" defaultValue="">
+              <option value="" disabled>Cidade</option>
+              <option value="sp">São Paulo</option>
+              <option value="rj">Rio de Janeiro</option>
+              <option value="bh">Belo Horizonte</option>
+            </select>
+          </div>
+          <div className="search-box">
+            <svg className="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Buscar restaurantes ou pratos"
+            />
+          </div>
         </div>
       </header>
 
@@ -40,16 +92,11 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Categorias */}
-      <div className="flex gap-4 overflow-x-auto pb-4 mb-2 mt-8 scrollbar-hide">
+      <div className="categories-row">
         {categories.map((cat, i) => (
-          <div key={i} className="flex flex-col items-center gap-2 min-w-[70px]">
-            <div className="w-16 h-16 bg-brand-surface rounded-[16px] flex items-center justify-center text-2xl shadow-sm border border-brand-border">
-              {cat.icon}
-            </div>
-            <span className="text-xs font-semibold text-brand-muted">
-              {cat.name}
-            </span>
+          <div key={i} className="cat-item">
+            <div className="cat-icon">{cat.icon}</div>
+            <span className="cat-label">{cat.name}</span>
           </div>
         ))}
       </div>

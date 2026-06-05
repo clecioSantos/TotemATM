@@ -1,29 +1,25 @@
 :root {
-  /* Brand Colors - Bora De Delivery Style */
-  --primary-color: #ffbc0d;     /* Amarelo McDonald's */
-  --secondary-color: #db0007;   /* Vermelho McDonald's */
-  --success-color: #22c55e;
-  --warning-color: #a16207;
-  --danger-color: #b91c1c;
-  
-  /* Neutrals */
-  --white: #ffffff;
-  --bg-light: #fafafa;
-  --border-light: #f1f1f1;
-  --text-primary: #18181b;
-  --text-secondary: #71717a;
-  --text-muted: #a1a1aa;
+  --primary: oklch(60% 0.18 25);
+  --primary-hover: oklch(55% 0.18 25);
+  --bg: #F7F7F7;
+  --surface: #FFFFFF;
+  --fg: #202020;
+  --fg-muted: #666666;
+  --border: #EAEAEA;
 
-  /* UI Patterns (Project Rules) */
-  --radius-lg: 18px;
-  --radius-md: 12px;
+  --success: #00A650;
+  --alert: #FFB800;
+  --error: #FF4D4F;
+
   --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-premium: 18px;
   --radius-pill: 999px;
 
-  /* Elevation */
-  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.04);
-  --shadow-card: 0 4px 15px rgba(0, 0, 0, 0.05);
+  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.05);
   --shadow-modal: 0 20px 40px rgba(0, 0, 0, 0.1);
-  
+
   --transition-default: all 0.2s ease;
 }
