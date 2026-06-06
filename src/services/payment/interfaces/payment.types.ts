@@ -1,4 +1,4 @@
-export type PaymentProviderName = "pagbank" | "abacatepay";
+export type PaymentProviderName = "pagbank" | "abacatepay" | "mercadopago";
 
 export type PaymentStatus = "PENDING" | "PAID" | "EXPIRED" | "CANCELLED" | "REFUNDED" | "FAILED";
 

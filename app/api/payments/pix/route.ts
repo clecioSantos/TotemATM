@@ -117,6 +117,60 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (provider.name === "mercadopago") {
+      const isSandbox = process.env.MERCADOPAGO_ENVIRONMENT?.toLowerCase() === "sandbox" || process.env.MERCADOPAGO_ENVIRONMENT?.toLowerCase() === "test";
+      if (isSandbox) {
+        logger.info("MERCADOPAGO_MOCK", `[${requestId}] Mock payment scheduled — will call webhook in 5s`, {
+          paymentId: payment.paymentId,
+          orderId: cleanOrderId,
+          delay: 5000,
+        });
+
+        const mockPayload = {
+          action: "payment.created",
+          data: { id: payment.paymentId },
+          external_reference: cleanOrderId,
+        };
+
+        const timeoutId = setTimeout(async () => {
+          try {
+            const protocol = req.headers.get("x-forwarded-proto") || "http";
+            const host = req.headers.get("host") || "localhost:3000";
+            const webhookUrl = `${protocol}://${host}/api/webhooks/mercadopago`;
+
+            const response = await fetch(webhookUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(mockPayload),
+            });
+
+            if (response.ok) {
+              logger.info("MERCADOPAGO_MOCK", `[${requestId}] Mock payment approved — webhook responded OK`, {
+                paymentId: payment.paymentId,
+                orderId: cleanOrderId,
+                status: response.status,
+              });
+            } else {
+              logger.warn("MERCADOPAGO_MOCK", `[${requestId}] Mock webhook returned non-OK`, {
+                paymentId: payment.paymentId,
+                orderId: cleanOrderId,
+                status: response.status,
+              });
+            }
+          } catch (err) {
+            logger.error("MERCADOPAGO_MOCK", `[${requestId}] Mock payment failed`, err, {
+              paymentId: payment.paymentId,
+              orderId: cleanOrderId,
+            });
+          }
+        }, 5000);
+
+        if (typeof timeoutId === "object" && "unref" in timeoutId) {
+          (timeoutId as any).unref();
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       provider: payment.provider,
