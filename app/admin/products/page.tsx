@@ -26,9 +26,9 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="products-page-view">
+    <div className="condiments-page-container">
       <header className="page-header">
-        <div className="page-title-area">
+        <div className="header-text">
           <h1 className="page-title">Produtos</h1>
           <p className="page-subtitle">Gerencie o cardápio e a disponibilidade dos seus itens</p>
         </div>
@@ -41,14 +41,14 @@ export default function ProductsPage() {
         </button>
       </header>
 
-      <section className="products-content">
+      <main className="page-content">
         {productsLoading || categoriesLoading ? (
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
+          <div className="loading-state">
+            <div className="spinner"></div>
             <p>Carregando cardápio...</p>
           </div>
         ) : productsError || categoriesError ? (
-          <div className="error-container">
+          <div className="empty-state">
             <p>Ocorreu um erro ao carregar os dados.</p>
           </div>
         ) : (
@@ -59,7 +59,7 @@ export default function ProductsPage() {
             onEdit={handleEdit} 
           />
         )}
-      </section>
+      </main>
 
       <Modal 
         isOpen={isModalOpen} 

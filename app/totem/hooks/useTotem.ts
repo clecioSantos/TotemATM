@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, addDoc, serverTimestamp, doc, getDoc, orderBy } from 'firebase/firestore';
 import { firestore as db } from '@/src/services/firebase';
-import { Product, Category, CartItem, Condiment } from '@totem/shared/types';
+import { Product, Category, CartItem, Condiment, CategoryFlavor, SelectedSize, SelectedFlavor } from '@totem/shared/types';
 import { useAuth } from '@totem/shared/types/AuthProvider';
 import { authService } from '@totem/shared/types/auth.service';
 
@@ -11,6 +11,7 @@ export const useTotem = (companyId: string) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [condiments, setCondiments] = useState<Condiment[]>([]);
+  const [flavors, setFlavors] = useState<CategoryFlavor[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [companyName, setCompanyName] = useState<string>("");
@@ -22,24 +23,26 @@ export const useTotem = (companyId: string) => {
   useEffect(() => {
     if (!db.app.options.projectId || !companyId) return;
 
-    // Busca nome e banner da empresa
     const fetchCompany = async () => {
+      try {
         const docRef = doc(db, 'companies', companyId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-            const data = docSnap.data();
-            setCompanyName(data.name);
-            setCompanyBanner(data.banner || "");
-            setTempoPreparoMin(data.tempoPreparoMin || 0);
-            setTempoPreparoMax(data.tempoPreparoMax || 0);
-            setCompanyOpen(data.open !== undefined ? data.open : null);
+          const data = docSnap.data();
+          setCompanyName(data.name);
+          setCompanyBanner(data.banner || "");
+          setTempoPreparoMin(data.tempoPreparoMin || 0);
+          setTempoPreparoMax(data.tempoPreparoMax || 0);
+          setCompanyOpen(data.open !== undefined ? data.open : null);
         }
+      } catch (error) {
+        console.error("🔥 Erro ao buscar empresa:", error);
+      }
     }
-    fetchCompany();
+    fetchCompany().catch(err => console.error("🔥 fetchCompany falhou:", err));
     
     setLoading(true);
 
-    // Escuta apenas categorias da empresa atual
     const categoryRef = collection(db, 'categories');
     const qCat = query(categoryRef, where('companyId', '==', companyId));
     
@@ -49,14 +52,12 @@ export const useTotem = (companyId: string) => {
         ...doc.data() 
       })) as Category[];
       
-      console.log(`[Firebase] ${catData.length} categorias carregadas`);
       setCategories(catData);
     }, (error) => {
       console.error("❌ Erro ao carregar categorias:", error);
       setLoading(false);
     });
 
-    // Escuta apenas produtos ativos da empresa atual
     const productRef = collection(db, 'products');
     const q = query(
       productRef, 
@@ -70,7 +71,6 @@ export const useTotem = (companyId: string) => {
         ...doc.data() 
       })) as Product[];
 
-      console.log(`[Firebase] ${prodData.length} produtos ativos carregados`);
       setProducts(prodData);
       setLoading(false);
     }, (error) => {
@@ -78,7 +78,6 @@ export const useTotem = (companyId: string) => {
       setLoading(false);
     });
 
-    // Escuta apenas condimentos da empresa atual
     const condimentRef = collection(db, 'condiments');
     const qCond = query(condimentRef, where('companyId', '==', companyId));
 
@@ -87,25 +86,50 @@ export const useTotem = (companyId: string) => {
         id: doc.id,
         ...doc.data()
       })) as Condiment[];
-      console.log(`[Firebase] ${condData.length} condimentos carregados`);
       setCondiments(condData);
     }, (error) => {
       console.error("❌ Erro ao carregar adicionais:", error);
       setLoading(false);
     });
 
+    const flavorRef = collection(db, 'flavors');
+    const qFlavors = query(
+      flavorRef,
+      where('companyId', '==', companyId)
+    );
+
+    const unsubFlavors = onSnapshot(qFlavors, (snapshot) => {
+      const allFlavors = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as CategoryFlavor[];
+      setFlavors(allFlavors
+        .filter(f => f.ativo !== false)
+        .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
+      );
+    }, (error) => {
+      console.error("❌ Erro ao carregar sabores:", error);
+    });
+
     return () => {
       unsubCat();
       unsubProd();
       unsubCond();
+      unsubFlavors();
     };
   }, [companyId]);
 
-  const addToCart = (product: Product, selectedCondiments: Condiment[] = []) => {
+  const addToCart = (
+    product: Product,
+    selectedCondiments: Condiment[] = [],
+    tamanhoSelecionado?: SelectedSize,
+    saboresSelecionados?: SelectedFlavor[]
+  ) => {
     setCart(prev => {
-      // Cria uma chave única baseada no ID do produto e nos condimentos selecionados
       const condimentsKey = selectedCondiments.map(c => c.id).sort().join(',');
-      const cartItemId = `${product.id}-${condimentsKey}`;
+      const sizeKey = tamanhoSelecionado?.id || '';
+      const flavorsKey = (saboresSelecionados || []).map(f => f.id).sort().join(',');
+      const cartItemId = `${product.id}-${sizeKey}-${flavorsKey}-${condimentsKey}`;
 
       const existing = prev.find(item => item.id === cartItemId);
       if (existing) {
@@ -114,10 +138,12 @@ export const useTotem = (companyId: string) => {
       
       return [...prev, { 
         ...product, 
-        id: cartItemId, // ID único para controle na listagem do carrinho
-        productId: product.id, // Preserva o ID original do produto para o banco de dados
+        id: cartItemId,
+        productId: product.id,
         quantity: 1, 
-        condiments: selectedCondiments 
+        condiments: selectedCondiments,
+        tamanhoSelecionado,
+        saboresSelecionados,
       } as CartItem];
     });
   };
@@ -171,7 +197,9 @@ export const useTotem = (companyId: string) => {
       // Calcula o total considerando (preço base + soma dos condimentos) * quantidade
       const itemsTotal = cart.reduce((acc, item) => {
         const condimentsTotal = item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0;
-        return acc + ((item.price + condimentsTotal) * item.quantity);
+        const sizePrice = item.tamanhoSelecionado?.preco || 0;
+        const flavorsTotal = item.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0;
+        return acc + ((item.price + sizePrice + flavorsTotal + condimentsTotal) * item.quantity);
       }, 0);
 
       const deliveryFee = identification.deliveryFee || 0;
@@ -193,7 +221,9 @@ export const useTotem = (companyId: string) => {
           price: i.price,
           quantity: i.quantity,
           observation: i.observation || "",
-          condiments: i.condiments || []
+          condiments: i.condiments || [],
+          tamanhoSelecionado: i.tamanhoSelecionado || null,
+          saboresSelecionados: i.saboresSelecionados || null,
         })),
         total,
         status: 'pending',
@@ -216,7 +246,8 @@ export const useTotem = (companyId: string) => {
   return { 
     products, 
     categories, 
-    condiments, 
+    condiments,
+    flavors,
     companyName,
     companyBanner,
     companyOpen,

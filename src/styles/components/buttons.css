@@ -1,23 +1,25 @@
 .primary-button, .btn-primary {
   height: 48px;
   padding: 0 28px;
-  background-color: var(--primary);
+  background-color: #09090b;
   color: white;
   border: none;
   border-radius: var(--radius-md);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: 8px;
   transition: var(--transition-default);
+  white-space: nowrap;
 }
 
 .primary-button:hover, .btn-primary:hover {
-  background-color: var(--primary-hover);
+  background-color: #27272a;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .primary-button:active, .btn-primary:active {
@@ -25,6 +27,101 @@
 }
 
 .primary-button:disabled, .btn-primary:disabled {
-  background-color: var(--fg-muted);
+  background-color: var(--bg-muted);
+  color: var(--text-muted);
   cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-action {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.btn-edit {
+  color: #09090b;
+  background: #f4f4f5;
+}
+
+.btn-edit:hover {
+  background: #e4e4e7;
+}
+
+.btn-delete {
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+.btn-delete:hover {
+  background: #fee2e2;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.actions-cell .btn-action {
+  white-space: nowrap;
+}
+
+.actions-cell .btn-action-text {
+  white-space: nowrap;
+}
+
+.btn-action-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.btn-action-text.btn-active {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.btn-action-text.btn-active:hover {
+  background: #bbf7d0;
+}
+
+.btn-action-text.btn-inactive {
+  background: #f1f5f9;
+  color: #64748b;
+  border-color: #e2e8f0;
+}
+
+.btn-action-text.btn-inactive:hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.btn-action-text.btn-price {
+  background: #ecfdf5;
+  color: #10b981;
+  border-color: #a7f3d0;
+}
+
+.btn-action-text.btn-price:hover {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
 }

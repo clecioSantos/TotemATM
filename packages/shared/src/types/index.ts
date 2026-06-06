@@ -10,7 +10,14 @@ export interface Product {
   categoryId: string;
   active: boolean;
   featured: boolean;
+  sizes?: ProductSize[];
   createdAt: Date | { seconds: number; nanoseconds: number };
+}
+
+export interface ProductSize {
+  nome: string;
+  preco: number;
+  quantidadeSabores: number;
 }
 
 export interface Condiment {
@@ -29,6 +36,30 @@ export interface Category {
   id: string;
   companyId: string;
   name: string;
+  possuiTamanhos?: boolean;
+  possuiSabores?: boolean;
+}
+
+export interface CategoryFlavor {
+  id: string;
+  companyId: string;
+  categoryId: string;
+  nome: string;
+  preco: number;
+  ordem: number;
+  ativo: boolean;
+}
+
+export interface SelectedSize {
+  id: string;
+  nome: string;
+  preco: number;
+}
+
+export interface SelectedFlavor {
+  id: string;
+  nome: string;
+  preco: number;
 }
 
 export interface CartItem extends Product {
@@ -36,6 +67,8 @@ export interface CartItem extends Product {
   quantity: number;
   observation?: string;
   condiments?: Condiment[];
+  tamanhoSelecionado?: SelectedSize;
+  saboresSelecionados?: SelectedFlavor[];
 }
 
 export interface OrderLineItem {
@@ -45,6 +78,8 @@ export interface OrderLineItem {
   quantity: number;
   observation?: string;
   condiments?: Condiment[];
+  tamanhoSelecionado?: SelectedSize;
+  saboresSelecionados?: SelectedFlavor[];
 }
 
 export interface Address {

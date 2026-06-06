@@ -35,9 +35,9 @@ export default function OrdersPage() {
     : orders.filter(order => order.status === statusFilter);
 
   return (
-    <div className="orders-page-view">
+    <div className="condiments-page-container">
       <header className="page-header">
-        <div className="page-title-area">
+        <div className="header-text">
           <h1 className="page-title">Pedidos</h1>
           <p className="page-subtitle">Acompanhe e gerencie a fila de produção em tempo real</p>
         </div>
@@ -62,10 +62,10 @@ export default function OrdersPage() {
         })}
       </div>
 
-      <section className="orders-content">
+      <main className="page-content">
         {loading ? (
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
+          <div className="loading-state">
+            <div className="spinner"></div>
             <p>Sincronizando com a cozinha...</p>
           </div>
         ) : filteredOrders.length === 0 ? (
@@ -84,7 +84,7 @@ export default function OrdersPage() {
             ))}
           </div>
         )}
-      </section>
+      </main>
 
       <Modal
         isOpen={isModalOpen}

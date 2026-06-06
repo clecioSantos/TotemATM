@@ -181,15 +181,13 @@ export default function ConfigurationsPage() {
   };
 
   return (
-    <div className="configurations-view">
-      <header className="header">
-        <div className="page-title-area">
-          <h2 className="page-title">Configurações</h2>
+    <div className="condiments-page-container">
+      <header className="page-header">
+        <div className="header-text">
+          <h1 className="page-title">Configurações</h1>
           <p className="page-subtitle">Gerencie as preferências da sua conta e do sistema</p>
         </div>
       </header>
-
-      <div className="settings-container">
         <div className="settings-card">
           <div className="totem-link-section">
             <header className="section-header">
@@ -404,7 +402,6 @@ export default function ConfigurationsPage() {
               <LogOut size={18} /> Sair da Conta
             </button>
           </div>
-        </div>
       </div>
     </div>
   );
