@@ -125,10 +125,10 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
                   </td>
                   <td style={{ textAlign: 'center' }}>{item.quantity}x</td>
                   <td style={{ textAlign: 'right' }}>
-                    R$ {(item.price + (item.tamanhoSelecionado?.preco || 0) + (item.saboresSelecionados?.reduce((s: number, f: any) => s + f.preco, 0) || 0) + (item.condiments?.reduce((s: number, c: any) => s + c.price, 0) || 0)).toFixed(2)}
+                    R$ {(item.price + (item.saboresSelecionados?.reduce((s: number, f: any) => s + f.preco, 0) || 0) + (item.condiments?.reduce((s: number, c: any) => s + c.price, 0) || 0)).toFixed(2)}
                   </td>
                   <td style={{ textAlign: 'right' }}>
-                    R$ {(item.quantity * (item.price + (item.tamanhoSelecionado?.preco || 0) + (item.saboresSelecionados?.reduce((s: number, f: any) => s + f.preco, 0) || 0) + (item.condiments?.reduce((s: number, c: any) => s + c.price, 0) || 0))).toFixed(2)}
+                    R$ {(item.quantity * (item.price + (item.saboresSelecionados?.reduce((s: number, f: any) => s + f.preco, 0) || 0) + (item.condiments?.reduce((s: number, c: any) => s + c.price, 0) || 0))).toFixed(2)}
                   </td>
                 </tr>
               ))}

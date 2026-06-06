@@ -114,13 +114,15 @@ export default function OrderingScreen({
     setSelectedFlavors(prev => {
       const exists = prev.find(f => f.id === flavor.id);
       if (exists) return prev.filter(f => f.id !== flavor.id);
-      if (prev.length >= maxFlavors) return prev;
+      if (maxFlavors > 0 && prev.length >= maxFlavors) return prev;
       return [...prev, flavor];
     });
   };
 
+  const effectivePrice = selectedSize ? selectedSize.preco : selectedProduct?.price || 0;
+
   const productTotal = selectedProduct 
-    ? (selectedProduct.price + (selectedSize?.preco || 0) + selectedFlavors.reduce((sum, f) => sum + (f.preco || 0), 0) + selectedCondiments.reduce((sum, c) => sum + c.price, 0)) * quantity
+    ? (effectivePrice + selectedFlavors.reduce((sum, f) => sum + (f.preco || 0), 0) + selectedCondiments.reduce((sum, c) => sum + c.price, 0)) * quantity
     : 0;
 
   const filteredProducts = activeCategory === "all" 
@@ -130,8 +132,10 @@ export default function OrderingScreen({
     : products.filter(p => p.categoryId === activeCategory);
 
   const cartTotal = cart.reduce((acc, i) => {
+    const basePrice = i.tamanhoSelecionado ? i.tamanhoSelecionado.preco : i.price;
     const condimentsPrice = i.condiments?.reduce((sum, c) => sum + c.price, 0) || 0;
-    return acc + ((i.price + condimentsPrice) * i.quantity);
+    const flavorsPrice = i.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0;
+    return acc + ((basePrice + flavorsPrice + condimentsPrice) * i.quantity);
   }, 0);
   const cartItemsCount = cart.reduce((acc, i) => acc + i.quantity, 0);
 
@@ -362,7 +366,11 @@ export default function OrderingScreen({
                       </button>
                     </div>
                     <span className="font-bold text-brand-primary text-xs">
-                      R$ {((item.price + (item.tamanhoSelecionado?.preco || 0) + (item.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0) + (item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0)) * item.quantity).toFixed(2)}
+                      R$ {((
+                        (item.tamanhoSelecionado ? item.tamanhoSelecionado.preco : item.price) +
+                        (item.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0) +
+                        (item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0)
+                      ) * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -441,7 +449,11 @@ export default function OrderingScreen({
                       </button>
                     </div>
                     <span className="font-bold text-brand-primary text-sm">
-                      R$ {((item.price + (item.tamanhoSelecionado?.preco || 0) + (item.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0) + (item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0)) * item.quantity).toFixed(2)}
+                      R$ {((
+                        (item.tamanhoSelecionado ? item.tamanhoSelecionado.preco : item.price) +
+                        (item.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0) +
+                        (item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0)
+                      ) * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -528,18 +540,20 @@ export default function OrderingScreen({
                 )}
 
                 {/* Sabores */}
-                {maxFlavors > 0 && productFlavors.length > 0 && (
+                {productFlavors.length > 0 && (
                   <div className="space-y-3">
-                    <h4 className="font-bold text-lg text-brand-dark">
-                      Escolha {maxFlavors} {maxFlavors === 1 ? "sabor" : "sabores"}
-                    </h4>
-                    <p className="text-sm text-brand-muted">
-                      {selectedFlavors.length} de {maxFlavors} selecionados
-                    </p>
+                    <h4 className="font-bold text-lg text-brand-dark">Sabores</h4>
+                    {maxFlavors > 0 ? (
+                      <p className="text-sm text-brand-muted">
+                        {selectedFlavors.length} de {maxFlavors} selecionados
+                      </p>
+                    ) : productSizes.length > 0 ? (
+                      <p className="text-sm text-brand-muted">Selecione um tamanho para escolher os sabores</p>
+                    ) : null}
                     <div className="grid grid-cols-1 gap-3">
                       {productFlavors.map(flavor => {
                         const isSelected = selectedFlavors.find(f => f.id === flavor.id);
-                        const isMaxed = selectedFlavors.length >= maxFlavors && !isSelected;
+                        const isMaxed = maxFlavors > 0 && selectedFlavors.length >= maxFlavors && !isSelected;
                         return (
                           <button
                             key={flavor.id}

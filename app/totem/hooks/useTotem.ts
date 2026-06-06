@@ -196,10 +196,10 @@ export const useTotem = (companyId: string) => {
     try {
       // Calcula o total considerando (preço base + soma dos condimentos) * quantidade
       const itemsTotal = cart.reduce((acc, item) => {
+        const basePrice = item.tamanhoSelecionado ? item.tamanhoSelecionado.preco : item.price;
         const condimentsTotal = item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0;
-        const sizePrice = item.tamanhoSelecionado?.preco || 0;
         const flavorsTotal = item.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0;
-        return acc + ((item.price + sizePrice + flavorsTotal + condimentsTotal) * item.quantity);
+        return acc + ((basePrice + flavorsTotal + condimentsTotal) * item.quantity);
       }, 0);
 
       const deliveryFee = identification.deliveryFee || 0;
@@ -218,7 +218,7 @@ export const useTotem = (companyId: string) => {
         items: cart.map(i => ({
           productId: i.productId || i.id,
           name: i.name,
-          price: i.price,
+          price: i.tamanhoSelecionado ? i.tamanhoSelecionado.preco : i.price,
           quantity: i.quantity,
           observation: i.observation || "",
           condiments: i.condiments || [],

@@ -61,10 +61,10 @@ export default function TotemPage({ params }: PageProps) {
   } = useTotem(companyId);
 
   const cartTotal = cart.reduce((acc, item) => {
+    const basePrice = item.tamanhoSelecionado ? item.tamanhoSelecionado.preco : item.price;
     const condimentsPrice = item.condiments?.reduce((sum, cond) => sum + cond.price, 0) || 0;
-    const sizePrice = item.tamanhoSelecionado?.preco || 0;
     const flavorsPrice = item.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0;
-    return acc + (item.price + sizePrice + flavorsPrice + condimentsPrice) * item.quantity;
+    return acc + (basePrice + flavorsPrice + condimentsPrice) * item.quantity;
   }, 0);
 
   const handleFinish = async (deliveryFee: number) => {
