@@ -135,15 +135,19 @@ export class MercadoPagoService {
       });
 
       if (errorMessage.includes("Timeout")) {
-        throw new Error("O serviço de pagamento está temporariamente indisponível. Tente novamente.");
+        const timeoutErr = new Error("O serviço de pagamento está temporariamente indisponível. Tente novamente.") as Error & { status: number };
+        timeoutErr.status = 504;
+        throw timeoutErr;
       }
 
-      const apiError =
-        err.status && err.responseData
-          ? `MercadoPago [${err.status}]: ${JSON.stringify(err.responseData)}`
-          : errorMessage;
+      const httpStatus = err.status || 500;
+      const apiMessage = err.responseData
+        ? `MercadoPago [${httpStatus}]: ${JSON.stringify(err.responseData)}`
+        : errorMessage;
 
-      throw new Error(apiError);
+      const finalErr = new Error(apiMessage) as Error & { status: number };
+      finalErr.status = httpStatus;
+      throw finalErr;
     }
   }
 
