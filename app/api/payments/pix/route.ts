@@ -19,13 +19,21 @@ export async function POST(req: NextRequest) {
     const pagbankOrder = await PagBankService.createPixOrder(cleanOrderId, amount, customerName) as any;
 
     if (!pagbankOrder?.qr_codes?.[0]) {
+      const hasError = !!pagbankOrder?.error_messages?.length;
       logger.error("API_PIX", "Resposta do PagBank não contém QR Code", {
         orderId: cleanOrderId,
-        response: pagbankOrder,
+        hasErrorMessages: hasError,
+        errorMessages: hasError ? pagbankOrder.error_messages : undefined,
+        responseKeys: Object.keys(pagbankOrder || {}),
       });
       return NextResponse.json(
-        { success: false, error: "QR Code não disponível. Tente novamente." },
-        { status: 502 }
+        {
+          success: false,
+          error: hasError
+            ? `PagBank: ${pagbankOrder.error_messages[0]?.description || "erro desconhecido"}`
+            : "QR Code não disponível. Tente novamente.",
+        },
+        { status: hasError ? 502 : 502 }
       );
     }
 
@@ -51,12 +59,24 @@ export async function POST(req: NextRequest) {
       pixQrCode: qrCodeImage,
     });
   } catch (error: any) {
+    const httpStatus = error?.status;
+    const responseData = error?.responseData;
+
     logger.error("API_PIX", "Erro ao criar pagamento PIX", error, {
       endpoint: "/api/payments/pix",
+      httpStatus,
+      responseData,
+      nodeEnv: process.env.NODE_ENV,
+      isSandbox: process.env.PAGBANK_API_URL?.includes("sandbox"),
     });
+
+    const userMessage = httpStatus === 401 || httpStatus === 403
+      ? "Erro de autenticação com o gateway de pagamento."
+      : "Erro ao gerar pagamento";
+
     return NextResponse.json(
-      { success: false, error: "Erro ao gerar pagamento" },
-      { status: 500 }
+      { success: false, error: userMessage },
+      { status: httpStatus || 500 }
     );
   }
 }

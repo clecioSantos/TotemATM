@@ -8,6 +8,40 @@ export class PagBankService {
   private static token = process.env.PAGBANK_TOKEN?.trim();
   private static webhookUrl = process.env.PAGBANK_WEBHOOK_URL;
 
+  static validateConfiguration(): { valid: boolean; issues: string[] } {
+    const issues: string[] = [];
+
+    if (!this.token) {
+      issues.push("PAGBANK_TOKEN ausente");
+    } else if (this.token.length < 10) {
+      issues.push(`PAGBANK_TOKEN muito curto (${this.token.length} caracteres)`);
+    }
+
+    if (!this.baseUrl) {
+      issues.push("PAGBANK_API_URL ausente");
+    } else if (!this.baseUrl.includes("pagseguro.com")) {
+      issues.push(`PAGBANK_API_URL não parece ser do PagSeguro: ${this.baseUrl}`);
+    } else if (this.baseUrl.includes("sandbox") && this.baseUrl.includes("api.") && !this.baseUrl.includes("sandbox.api.")) {
+      issues.push("PAGBANK_API_URL pode ter formato incorreto");
+    }
+
+    const isProductionUrl = this.baseUrl?.includes("api.pagseguro.com") && !this.baseUrl?.includes("sandbox");
+    if (isProductionUrl && this.token) {
+      logger.info("PAGBANK_VALIDATE", "Ambiente Produção detectado", {
+        tokenLength: this.token.length,
+        tokenPrefix: this.token.substring(0, 8) + "...",
+        url: this.baseUrl,
+      });
+    } else if (this.baseUrl?.includes("sandbox")) {
+      logger.info("PAGBANK_VALIDATE", "Ambiente Sandbox detectado", {
+        tokenLength: this.token?.length || 0,
+        url: this.baseUrl,
+      });
+    }
+
+    return { valid: issues.length === 0, issues };
+  }
+
   private static validateConfig(): void {
     const missing: string[] = [];
 
@@ -91,6 +125,7 @@ export class PagBankService {
       return data as unknown as Record<string, unknown>;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      const err = error as Error & { status?: number; responseData?: unknown };
 
       if (errorMessage.includes("Timeout")) {
         logger.error("PAGBANK", `Timeout ao criar ordem PIX para pedido ${orderId}`, error, {
@@ -102,8 +137,20 @@ export class PagBankService {
 
       logger.error("PAGBANK", `Erro ao criar ordem PIX para pedido ${orderId}`, error, {
         url,
-        httpStatus: (error as any)?.status,
+        httpStatus: err.status,
+        responseData: err.responseData,
+        tokenLength: this.token?.length,
+        tokenPrefix: this.token ? this.token.substring(0, 8) + "..." : "NONE",
+        baseUrl: this.baseUrl,
+        isSandbox: this.baseUrl?.includes("sandbox"),
       });
+
+      if (err.status === 401 || err.status === 403) {
+        const env = this.baseUrl?.includes("sandbox") ? "SANDBOX" : "PRODUÇÃO";
+        throw new Error(
+          `Pagamento temporariamente indisponível. [${env}: HTTP ${err.status}]`
+        );
+      }
 
       throw new Error("Erro ao processar pagamento. Tente novamente mais tarde.");
     }

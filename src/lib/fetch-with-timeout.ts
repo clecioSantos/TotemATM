@@ -79,10 +79,23 @@ export async function fetchJson<T = unknown>(
 
   const text = await response.text();
 
-  if (!text || text.trim().length === 0) {
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} (resposta vazia): ${url}`);
+  if (!response.ok) {
+    let responseData: unknown = undefined;
+    try {
+      responseData = JSON.parse(text);
+    } catch {
+      responseData = text.substring(0, 500);
     }
+
+    const error = new Error(
+      `HTTP ${response.status}: ${url}`
+    ) as Error & { status: number; responseData: unknown };
+    error.status = response.status;
+    error.responseData = responseData;
+    throw error;
+  }
+
+  if (!text || text.trim().length === 0) {
     return undefined as T;
   }
 

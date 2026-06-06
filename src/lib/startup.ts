@@ -2,6 +2,7 @@ import { logger } from "./logger";
 import { setupGlobalErrorHandlers } from "./global-error-handler";
 import { validateEnv } from "./env-validator";
 import { startMemoryMonitor } from "./memory-monitor";
+import { PagBankService } from "../../app/services/pagbank/pagbank.service";
 
 let started = false;
 let bootComplete = false;
@@ -15,6 +16,20 @@ function markStep(name: string): void {
 
 function elapsed(name: string): number {
   return bootTimings[name] - (bootStartTime || Date.now());
+}
+
+function validatePagBankConfig(): void {
+  try {
+    const result = PagBankService.validateConfiguration();
+    if (!result.valid) {
+      logger.warn("BOOT", `PagBank: ${result.issues.length} problema(s) de configuração`, undefined, {
+        issues: result.issues,
+        nodeEnv: process.env.NODE_ENV,
+      });
+    }
+  } catch (error) {
+    logger.error("BOOT", "Erro ao validar configuração PagBank", error);
+  }
 }
 
 function getMemoryMB(): string {
@@ -50,6 +65,11 @@ export function initializeApplication(): void {
   markStep("validateEnv");
   validateEnv();
   logger.info("BOOT", `Validação de ambiente: ${elapsed("validateEnv")}ms`);
+
+  // Fase 1b: Validação específica PagBank
+  markStep("validatePagBank");
+  validatePagBankConfig();
+  logger.info("BOOT", `Validação PagBank: ${elapsed("validatePagBank")}ms`);
 
   // Fase 2: Handlers globais de erro (leve)
   markStep("globalErrorHandlers");
