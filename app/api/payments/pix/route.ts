@@ -76,16 +76,41 @@ export async function POST(req: NextRequest) {
     }
 
     if (provider.name === "abacatepay") {
-      const isDevKey = process.env.ABACATEPAY_API_KEY?.trim()?.toLowerCase().includes("dev")
-        || process.env.ABACATEPAY_API_KEY?.trim()?.toLowerCase().includes("test");
+      const apiKey = process.env.ABACATEPAY_API_KEY?.trim() || "";
+      const isDevKey = apiKey.toLowerCase().includes("dev") || apiKey.toLowerCase().includes("test") || apiKey.toLowerCase().includes("sandbox");
       if (isDevKey) {
-        logger.info("API_PIX", `[${requestId}] Agendando simulação AbacatePay`);
-        const { AbacatePayService } = await import("../../../services/abacatepay/abacatepay.service");
-        const timeoutId = setTimeout(() => {
-          AbacatePayService.simulatePayment(payment.paymentId)
-            .then(() => logger.info("API_PIX", `[${requestId}] Simulação AbacatePay concluída para ${payment.paymentId}`))
-            .catch(err => logger.error("API_PIX", `[${requestId}] Falha na simulação AbacatePay`, err));
-        }, 10000);
+        logger.info("ABACATEPAY_MOCK", `[${requestId}] Mock payment scheduled`, {
+          paymentId: payment.paymentId,
+          orderId: cleanOrderId,
+          delay: 5000,
+        });
+
+        const timeoutId = setTimeout(async () => {
+          try {
+            const { markOrderAsPaid } = await import(
+              "@/src/services/payment/services/order-payment.service"
+            );
+            const result = await markOrderAsPaid(cleanOrderId);
+
+            if (result) {
+              logger.info("ABACATEPAY_MOCK", `[${requestId}] Mock payment approved`, {
+                paymentId: payment.paymentId,
+                orderId: cleanOrderId,
+              });
+            } else {
+              logger.warn("ABACATEPAY_MOCK", `[${requestId}] Mock payment skipped (already paid or order not found)`, {
+                paymentId: payment.paymentId,
+                orderId: cleanOrderId,
+              });
+            }
+          } catch (err) {
+            logger.error("ABACATEPAY_MOCK", `[${requestId}] Mock payment failed`, err, {
+              paymentId: payment.paymentId,
+              orderId: cleanOrderId,
+            });
+          }
+        }, 5000);
+
         if (typeof timeoutId === "object" && "unref" in timeoutId) {
           (timeoutId as any).unref();
         }
