@@ -133,7 +133,6 @@ touch packages/ui/src/components/Card.tsx
 # =========================================
 
 touch package.json
-touch turbo.json
 touch tsconfig.json
 touch .gitignore
 touch .env
