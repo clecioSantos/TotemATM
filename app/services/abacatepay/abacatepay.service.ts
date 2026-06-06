@@ -4,6 +4,10 @@ import { fetchJson } from "@/src/lib/fetch-with-timeout";
 const ABACATEPAY_TIMEOUT_MS = 20000;
 const ABACATEPAY_API_URL = "https://api.abacatepay.com/v2";
 
+function toCents(value: number): number {
+  return Math.round(value * 100);
+}
+
 interface CreatePixResponse {
   data: {
     id: string;
@@ -31,6 +35,11 @@ interface CheckStatusResponse {
   };
   success: boolean;
   error: string | null;
+}
+
+function maskApiKey(key: string): string {
+  if (key.length <= 8) return "***";
+  return key.substring(0, 4) + "..." + key.substring(key.length - 4);
 }
 
 export class AbacatePayService {
@@ -72,38 +81,49 @@ export class AbacatePayService {
     customerPhone?: string,
     description?: string
   ): Promise<CreatePixResponse["data"]> {
-    const body: Record<string, unknown> = {
-      method: "PIX",
-      data: {
-        amount: Math.round(amount * 100),
-        externalId: orderId,
-        expiresIn: 1800,
+    const amountInCents = toCents(amount);
+
+    const dataPayload: Record<string, unknown> = {
+      amount: amountInCents,
+      expiresIn: 1800,
+      metadata: {
+        pedidoId: orderId,
       },
     };
 
     if (description) {
-      (body.data as Record<string, unknown>).description = description;
+      dataPayload.description = description;
     }
 
-    const customer: Record<string, string> = {};
-    if (customerName) customer.name = customerName;
-    if (customerEmail) customer.email = customerEmail;
-    if (customerTaxId) customer.taxId = customerTaxId;
-    if (customerPhone) customer.cellphone = customerPhone;
-    if (Object.keys(customer).length > 0) {
-      (body.data as Record<string, unknown>).customer = customer;
+    const hasAllCustomerFields = !!(customerName && customerTaxId && customerEmail && customerPhone);
+    if (hasAllCustomerFields) {
+      dataPayload.customer = {
+        name: customerName,
+        taxId: customerTaxId,
+        email: customerEmail,
+        cellphone: customerPhone,
+      };
     }
 
-    (body.data as Record<string, unknown>).metadata = {
-      pedidoId: orderId,
+    const body: Record<string, unknown> = {
+      method: "PIX",
+      data: dataPayload,
     };
 
     const url = `${ABACATEPAY_API_URL}/transparents/create`;
 
-    logger.info("ABACATEPAY", `Criando checkout para pedido ${orderId}`, {
-      amount,
-      hasCustomer: !!customerName,
+    const logSafeBody = JSON.parse(JSON.stringify(body));
+    const key = process.env.ABACATEPAY_API_KEY?.trim() || "";
+    logger.info("ABACATEPAY", "Request Payload", {
       url,
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${maskApiKey(key)}`,
+        "Content-Type": "application/json",
+      },
+      body: logSafeBody,
+      amountOriginal: amount,
+      amountInCents,
     });
 
     try {
@@ -115,13 +135,11 @@ export class AbacatePayService {
         context: "ABACATEPAY_CREATE_PIX",
       });
 
-      if (!response.success || !response.data) {
-        const errorMsg = response.error || "Resposta sem sucesso da AbacatePay";
-        logger.error("ABACATEPAY", `Falha ao criar checkout: ${errorMsg}`, undefined, {
-          response,
-        });
-        throw new Error(errorMsg);
-      }
+      logger.info("ABACATEPAY", "Response Success", {
+        paymentId: response.data?.id,
+        status: response.data?.status,
+        devMode: response.data?.devMode,
+      });
 
       logger.info("ABACATEPAY", `Checkout criado com sucesso: ${orderId}`, {
         paymentId: response.data.id,
@@ -134,6 +152,14 @@ export class AbacatePayService {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const err = error as Error & { status?: number; responseData?: unknown };
 
+      logger.error("ABACATEPAY", "Response Error", error, {
+        httpStatus: err.status,
+        responseData: err.responseData,
+        sentPayload: body,
+        amountOriginal: amount,
+        amountInCents,
+      });
+
       if (errorMessage.includes("Timeout")) {
         logger.error("ABACATEPAY", `Timeout ao criar checkout para pedido ${orderId}`, error, {
           timeout: ABACATEPAY_TIMEOUT_MS,
@@ -141,16 +167,12 @@ export class AbacatePayService {
         throw new Error("O serviço de pagamento está temporariamente indisponível. Tente novamente.");
       }
 
-      logger.error("ABACATEPAY", `Erro ao criar checkout para pedido ${orderId}`, error, {
-        httpStatus: err.status,
-        responseData: err.responseData,
-      });
+      const apiError =
+        err.status && err.responseData
+          ? `AbacatePay [${err.status}]: ${JSON.stringify(err.responseData)}`
+          : errorMessage;
 
-      if (err.status === 401 || err.status === 403) {
-        throw new Error("Pagamento temporariamente indisponível. [AbacatePay: HTTP " + err.status + "]");
-      }
-
-      throw new Error("Erro ao processar pagamento. Tente novamente mais tarde.");
+      throw new Error(apiError);
     }
   }
 
@@ -180,7 +202,10 @@ export class AbacatePayService {
 
   static async simulatePayment(paymentId: string): Promise<void> {
     const apiKey = process.env.ABACATEPAY_API_KEY?.trim() || "";
-    const isDevKey = apiKey.toLowerCase().includes("dev") || apiKey.toLowerCase().includes("test") || apiKey.toLowerCase().includes("sandbox");
+    const isDevKey =
+      apiKey.toLowerCase().includes("dev") ||
+      apiKey.toLowerCase().includes("test") ||
+      apiKey.toLowerCase().includes("sandbox");
 
     if (!isDevKey) {
       logger.warn("ABACATEPAY_SIMULATE", "Simulação abortada: chave não parece ser de desenvolvimento");
@@ -204,9 +229,16 @@ export class AbacatePayService {
       if (response.ok) {
         logger.info("ABACATEPAY_SIMULATE", `Pagamento simulado para ${paymentId}`);
       } else {
-        logger.warn("ABACATEPAY_SIMULATE", `Simulação pode não ter funcionado para ${paymentId}`, undefined, {
-          status: response.status,
-        });
+        const text = await response.text().catch(() => "");
+        logger.warn(
+          "ABACATEPAY_SIMULATE",
+          `Simulação pode não ter funcionado para ${paymentId}`,
+          undefined,
+          {
+            status: response.status,
+            body: text.substring(0, 500),
+          }
+        );
       }
     } catch (error) {
       logger.error("ABACATEPAY_SIMULATE", `Erro ao simular pagamento para ${paymentId}`, error);
