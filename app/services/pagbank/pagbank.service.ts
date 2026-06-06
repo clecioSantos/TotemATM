@@ -80,6 +80,10 @@ export class PagBankService {
         context: "PAGBANK_CREATE_PIX",
       });
 
+      logger.info("PAGBANK", `Resposta completa do PagBank para pedido ${orderId}`, {
+        data: JSON.stringify(data),
+      });
+
       logger.info("PAGBANK", `Ordem PIX criada com sucesso: ${orderId}`, {
         pagbankOrderId: (data as Record<string, unknown>)?.id,
       });
