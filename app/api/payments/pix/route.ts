@@ -18,9 +18,20 @@ export async function POST(req: NextRequest) {
 
     const pagbankOrder = await PagBankService.createPixOrder(cleanOrderId, amount, customerName) as any;
 
+    if (!pagbankOrder?.qr_codes?.[0]) {
+      logger.error("API_PIX", "Resposta do PagBank não contém QR Code", {
+        orderId: cleanOrderId,
+        response: pagbankOrder,
+      });
+      return NextResponse.json(
+        { success: false, error: "QR Code não disponível. Tente novamente." },
+        { status: 502 }
+      );
+    }
+
     const qrCodeData = pagbankOrder.qr_codes[0];
     const copyPaste = qrCodeData.text;
-    const qrCodeImage = qrCodeData.links.find((l: any) => l.rel === "QRCODE.PNG")?.href;
+    const qrCodeImage = qrCodeData.links?.find((l: any) => l.rel === "QRCODE.PNG")?.href;
 
     if (process.env.PAGBANK_API_URL?.includes("sandbox")) {
       const timeoutId = setTimeout(() => {
