@@ -9,6 +9,8 @@ export interface Category {
   id: string;
   companyId: string;
   name: string;
+  possuiTamanhos?: boolean;
+  possuiSabores?: boolean;
   createdAt: Date;
 }
 
