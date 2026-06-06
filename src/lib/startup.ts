@@ -9,6 +9,12 @@ export function initializeApplication(): void {
   if (started) return;
   started = true;
 
+  // @ts-expect-error EdgeRuntime is a global provided by Next.js Edge Runtime
+  if (typeof EdgeRuntime !== "undefined") {
+    logger.info("STARTUP", "Edge Runtime detectado, pulando inicialização Node.js");
+    return;
+  }
+
   logger.info("STARTUP", "=== INICIANDO APLICAÇÃO ===", {
     nodeVersion: process.version,
     platform: process.platform,
