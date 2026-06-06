@@ -1,10 +1,14 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, addDoc, serverTimestamp, doc, getDoc, orderBy } from 'firebase/firestore';
+import {
+  collection, onSnapshot, query, where, addDoc, serverTimestamp,
+  doc, getDoc, orderBy
+} from 'firebase/firestore';
 import { firestore as db } from '@/src/services/firebase';
 import { Product, Category, CartItem, Condiment, CategoryFlavor, SelectedSize, SelectedFlavor } from '@totem/shared/types';
 import { useAuth } from '@totem/shared/types/AuthProvider';
 import { authService } from '@totem/shared/types/auth.service';
+import { logger } from '@/src/lib/logger';
 
 export const useTotem = (companyId: string) => {
   const { user } = useAuth();
@@ -21,7 +25,10 @@ export const useTotem = (companyId: string) => {
   const [companyOpen, setCompanyOpen] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!db.app.options.projectId || !companyId) return;
+    if (!db?.app?.options?.projectId || !companyId) {
+      setLoading(false);
+      return;
+    }
 
     const fetchCompany = async () => {
       try {
@@ -36,45 +43,54 @@ export const useTotem = (companyId: string) => {
           setCompanyOpen(data.open !== undefined ? data.open : null);
         }
       } catch (error) {
-        console.error("🔥 Erro ao buscar empresa:", error);
+        logger.error("useTotem", "Erro ao buscar empresa", error);
       }
-    }
-    fetchCompany().catch(err => console.error("🔥 fetchCompany falhou:", err));
-    
+    };
+    fetchCompany().catch(err => logger.error("useTotem", "fetchCompany falhou", err));
+
     setLoading(true);
 
     const categoryRef = collection(db, 'categories');
     const qCat = query(categoryRef, where('companyId', '==', companyId));
-    
+
     const unsubCat = onSnapshot(qCat, (snapshot) => {
-      const catData = snapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
-      })) as Category[];
-      
-      setCategories(catData);
-    }, (error) => {
-      console.error("❌ Erro ao carregar categorias:", error);
+      try {
+        const catData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Category[];
+        setCategories(catData);
+      } catch (mapError) {
+        logger.error("useTotem", "Erro ao processar categorias", mapError);
+      }
+    }, (err: unknown) => {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      logger.error("useTotem", `Erro ao carregar categorias: ${errMsg}`, err);
       setLoading(false);
     });
 
     const productRef = collection(db, 'products');
     const q = query(
-      productRef, 
+      productRef,
       where('active', '==', true),
       where('companyId', '==', companyId)
     );
-    
-    const unsubProd = onSnapshot(q, (snapshot) => {
-      const prodData = snapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
-      })) as Product[];
 
-      setProducts(prodData);
-      setLoading(false);
-    }, (error) => {
-      console.error("❌ Erro ao carregar produtos:", error);
+    const unsubProd = onSnapshot(q, (snapshot) => {
+      try {
+        const prodData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Product[];
+        setProducts(prodData);
+        setLoading(false);
+      } catch (mapError) {
+        logger.error("useTotem", "Erro ao processar produtos", mapError);
+        setLoading(false);
+      }
+    }, (err: unknown) => {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      logger.error("useTotem", `Erro ao carregar produtos: ${errMsg}`, err);
       setLoading(false);
     });
 
@@ -82,13 +98,19 @@ export const useTotem = (companyId: string) => {
     const qCond = query(condimentRef, where('companyId', '==', companyId));
 
     const unsubCond = onSnapshot(qCond, (snapshot) => {
-      const condData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Condiment[];
-      setCondiments(condData);
-    }, (error) => {
-      console.error("❌ Erro ao carregar adicionais:", error);
+      try {
+        const condData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Condiment[];
+        setCondiments(condData);
+      } catch (mapError) {
+        logger.error("useTotem", "Erro ao processar adicionais", mapError);
+        setLoading(false);
+      }
+    }, (err: unknown) => {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      logger.error("useTotem", `Erro ao carregar adicionais: ${errMsg}`, err);
       setLoading(false);
     });
 
@@ -99,16 +121,21 @@ export const useTotem = (companyId: string) => {
     );
 
     const unsubFlavors = onSnapshot(qFlavors, (snapshot) => {
-      const allFlavors = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as CategoryFlavor[];
-      setFlavors(allFlavors
-        .filter(f => f.ativo !== false)
-        .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
-      );
-    }, (error) => {
-      console.error("❌ Erro ao carregar sabores:", error);
+      try {
+        const allFlavors = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as CategoryFlavor[];
+        setFlavors(allFlavors
+          .filter(f => f.ativo !== false)
+          .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
+        );
+      } catch (mapError) {
+        logger.error("useTotem", "Erro ao processar sabores", mapError);
+      }
+    }, (err: unknown) => {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      logger.error("useTotem", `Erro ao carregar sabores: ${errMsg}`, err);
     });
 
     return () => {
@@ -125,27 +152,31 @@ export const useTotem = (companyId: string) => {
     tamanhoSelecionado?: SelectedSize,
     saboresSelecionados?: SelectedFlavor[]
   ) => {
-    setCart(prev => {
-      const condimentsKey = selectedCondiments.map(c => c.id).sort().join(',');
-      const sizeKey = tamanhoSelecionado?.id || '';
-      const flavorsKey = (saboresSelecionados || []).map(f => f.id).sort().join(',');
-      const cartItemId = `${product.id}-${sizeKey}-${flavorsKey}-${condimentsKey}`;
+    try {
+      setCart(prev => {
+        const condimentsKey = selectedCondiments.map(c => c.id).sort().join(',');
+        const sizeKey = tamanhoSelecionado?.id || '';
+        const flavorsKey = (saboresSelecionados || []).map(f => f.id).sort().join(',');
+        const cartItemId = `${product.id}-${sizeKey}-${flavorsKey}-${condimentsKey}`;
 
-      const existing = prev.find(item => item.id === cartItemId);
-      if (existing) {
-        return prev.map(item => item.id === cartItemId ? { ...item, quantity: item.quantity + 1 } : item);
-      }
-      
-      return [...prev, { 
-        ...product, 
-        id: cartItemId,
-        productId: product.id,
-        quantity: 1, 
-        condiments: selectedCondiments,
-        tamanhoSelecionado,
-        saboresSelecionados,
-      } as CartItem];
-    });
+        const existing = prev.find(item => item.id === cartItemId);
+        if (existing) {
+          return prev.map(item => item.id === cartItemId ? { ...item, quantity: item.quantity + 1 } : item);
+        }
+
+        return [...prev, {
+          ...product,
+          id: cartItemId,
+          productId: product.id,
+          quantity: 1,
+          condiments: selectedCondiments,
+          tamanhoSelecionado,
+          saboresSelecionados,
+        } as CartItem];
+      });
+    } catch (error) {
+      logger.error("useTotem", "Erro ao adicionar ao carrinho", error);
+    }
   };
 
   const removeFromCart = (itemId: string) => {
@@ -190,11 +221,10 @@ export const useTotem = (companyId: string) => {
       alert("Loja fechada. Não é possível realizar pedidos no momento.");
       return;
     }
-    
+
     setIsFinishing(true);
-    
+
     try {
-      // Calcula o total considerando (preço base + soma dos condimentos) * quantidade
       const itemsTotal = cart.reduce((acc, item) => {
         const basePrice = item.tamanhoSelecionado ? item.tamanhoSelecionado.preco : item.price;
         const condimentsTotal = item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0;
@@ -204,7 +234,7 @@ export const useTotem = (companyId: string) => {
 
       const deliveryFee = identification.deliveryFee || 0;
       const total = itemsTotal + deliveryFee;
-      
+
       const orderData = {
         companyId: companyId,
         customerName: user?.name || "Cliente",
@@ -228,12 +258,18 @@ export const useTotem = (companyId: string) => {
         total,
         status: 'pending',
         source: 'totem',
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
       };
 
       const docRef = await addDoc(collection(db, 'orders'), orderData);
+      logger.info("useTotem", `Pedido finalizado: ${docRef.id}`);
       clearCart();
       return docRef.id;
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error("useTotem", `Erro ao finalizar pedido: ${errMsg}`, error);
+      alert("Erro ao processar pedido. Tente novamente.");
+      return undefined;
     } finally {
       setIsFinishing(false);
     }
@@ -243,13 +279,13 @@ export const useTotem = (companyId: string) => {
     try {
       await authService.signOut();
     } catch (error) {
-      console.error("🔥 Erro no logout:", error);
+      logger.error("useTotem", "Erro ao fazer logout", error);
     }
   };
 
-  return { 
-    products, 
-    categories, 
+  return {
+    products,
+    categories,
     condiments,
     flavors,
     companyName,
@@ -257,14 +293,14 @@ export const useTotem = (companyId: string) => {
     companyOpen,
     tempoPreparoMin,
     tempoPreparoMax,
-    cart, 
-    addToCart, 
-    removeFromCart, 
-    updateQuantity, 
-    updateItemObservation, 
-    finishOrder, 
-    clearCart, 
-    loading, 
-    logout 
+    cart,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    updateItemObservation,
+    finishOrder,
+    clearCart,
+    loading,
+    logout,
   };
 };

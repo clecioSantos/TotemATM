@@ -6,9 +6,11 @@ import { useCategoriesStore } from "../categories/hooks/useCategories";
 import CondimentTable from "./components/CondimentTable";
 import CondimentForm from "./components/CondimentForm";
 import Modal from "../components/Modal";
+import { ErrorBoundary } from "@/src/components/ErrorBoundary";
+import { logger } from "@/src/lib/logger";
 import "./page.css";
 
-export default function CondimentsPage() {
+function CondimentsContent() {
   const { condiments, loading: condLoading, saveCondiment, removeCondiment } = useCondiments();
   const { categories, loading: catLoading } = useCategoriesStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -73,11 +75,19 @@ export default function CondimentsPage() {
           categories={categories} 
           initialData={editingCondiment}
           onSubmit={async (data, file) => {
-            await saveCondiment(data, file);
-            handleClose();
+            try {
+              await saveCondiment(data, file);
+              handleClose();
+            } catch (err) {
+              logger.error("CondimentsPage.saveCondiment", err);
+            }
           }}
         />
       </Modal>
     </div>
   );
+}
+
+export default function CondimentsPage() {
+  return <ErrorBoundary context="CondimentsPage"><CondimentsContent /></ErrorBoundary>;
 }

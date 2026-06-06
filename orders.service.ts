@@ -1,19 +1,30 @@
 import { Order, CreateOrderDTO, OrderStatus } from './order';
 import * as admin from 'firebase-admin';
 import { getAdminDb } from './firebase-admin.config';
+import { logger } from './src/lib/logger';
 
 export class OrdersService {
-  private get collection() {
-    return getAdminDb().collection('orders');
+  private collection: admin.firestore.CollectionReference | null = null;
+
+  private getCollection(): admin.firestore.CollectionReference {
+    if (!this.collection) {
+      try {
+        this.collection = getAdminDb().collection('orders');
+      } catch (error) {
+        logger.error("ORDERS_SERVICE", "Erro ao obter coleção de pedidos", error);
+        throw error;
+      }
+    }
+    return this.collection;
   }
 
   async createOrder(data: CreateOrderDTO): Promise<string> {
     try {
       const orderNumber = Math.floor(100 + Math.random() * 900);
-      
+
       const items = data.items.map(item => ({
         ...item,
-        totalPrice: item.unitPrice * item.quantity
+        totalPrice: item.unitPrice * item.quantity,
       }));
 
       const newOrder: Partial<Order> = {
@@ -26,34 +37,41 @@ export class OrdersService {
         updatedAt: new Date(),
       };
 
-      const docRef = await this.collection.add(newOrder);
+      const collection = this.getCollection();
+      const docRef = await collection.add(newOrder);
+
+      logger.info("ORDERS_SERVICE", `Pedido criado: ${docRef.id}`, { orderNumber });
+
       return docRef.id;
     } catch (error) {
-      console.error("🔥 Erro ao criar pedido:", error);
+      logger.error("ORDERS_SERVICE", "Erro ao criar pedido", error);
       throw error;
     }
   }
 
   async updateStatus(orderId: string, status: OrderStatus): Promise<void> {
     try {
-      await this.collection.doc(orderId).update({
+      const collection = this.getCollection();
+      await collection.doc(orderId).update({
         status,
         updatedAt: new Date(),
       });
+      logger.info("ORDERS_SERVICE", `Status do pedido ${orderId} atualizado para ${status}`);
     } catch (error) {
-      console.error(`🔥 Erro ao atualizar status do pedido ${orderId}:`, error);
+      logger.error("ORDERS_SERVICE", `Erro ao atualizar status do pedido ${orderId}`, error);
       throw error;
     }
   }
 
   async getActiveOrders(): Promise<Order[]> {
     try {
-      const snapshot = await this.collection
+      const collection = this.getCollection();
+      const snapshot = await collection
         .where('status', 'in', ['pending', 'preparing', 'ready'])
         .orderBy('createdAt', 'asc')
         .get();
 
-      return snapshot.docs.map(doc => {
+      const orders = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
           ...data,
@@ -62,9 +80,13 @@ export class OrdersService {
           updatedAt: data.updatedAt?.toDate(),
         } as Order;
       });
+
+      logger.info("ORDERS_SERVICE", `${orders.length} pedidos ativos carregados`);
+
+      return orders;
     } catch (error) {
-      console.error("🔥 Erro ao buscar pedidos ativos:", error);
-      return [];
+      logger.error("ORDERS_SERVICE", "Erro ao carregar pedidos ativos", error);
+      throw error;
     }
   }
 }

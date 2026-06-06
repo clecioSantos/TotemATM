@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, doc, addDoc, updateDoc, deleteDoc, where, orderBy } from 'firebase/firestore';
+import {
+  collection, onSnapshot, query, doc, addDoc, updateDoc,
+  deleteDoc, where, orderBy
+} from 'firebase/firestore';
 import { firestore as db } from '../../../../src/services/firebase';
 import { useAuth } from '@totem/shared/types/AuthProvider';
 import { CategoryFlavor } from '@totem/shared/types';
+import { logger } from '@/src/lib/logger';
 
 export const useFlavors = () => {
   const [flavors, setFlavors] = useState<CategoryFlavor[]>([]);
@@ -12,7 +16,10 @@ export const useFlavors = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user?.companyId) return;
+    if (!user?.companyId) {
+      setLoading(false);
+      return;
+    }
 
     const q = query(
       collection(db, 'flavors'),
@@ -21,15 +28,21 @@ export const useFlavors = () => {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as CategoryFlavor[];
+      try {
+        const items = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as CategoryFlavor[];
 
-      setFlavors(items);
-      setLoading(false);
-    }, (error) => {
-      console.error("🔥 Erro ao carregar sabores:", error);
+        setFlavors(items);
+        setLoading(false);
+      } catch (mapError) {
+        logger.error("useFlavors", "Erro ao mapear sabores", mapError);
+        setLoading(false);
+      }
+    }, (err: unknown) => {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      logger.error("useFlavors", `Erro ao carregar sabores: ${errMsg}`, err);
       setLoading(false);
     });
 
@@ -46,8 +59,9 @@ export const useFlavors = () => {
           ordem: data.ordem ?? 0,
           ativo: data.ativo ?? true,
         });
+        logger.info("useFlavors", `Sabor ${data.id} atualizado`);
       } else {
-        await addDoc(collection(db, 'flavors'), {
+        const docRef = await addDoc(collection(db, 'flavors'), {
           companyId: user?.companyId,
           categoryId: data.categoryId,
           nome: data.nome,
@@ -55,9 +69,11 @@ export const useFlavors = () => {
           ordem: data.ordem ?? 0,
           ativo: data.ativo ?? true,
         });
+        logger.info("useFlavors", `Sabor criado: ${docRef.id}`);
       }
     } catch (error) {
-      console.error("🔥 Erro ao salvar sabor:", error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error("useFlavors", `Erro ao salvar sabor: ${errMsg}`, error);
       throw error;
     }
   };
@@ -65,8 +81,10 @@ export const useFlavors = () => {
   const removeFlavor = async (id: string) => {
     try {
       await deleteDoc(doc(db, 'flavors', id));
+      logger.info("useFlavors", `Sabor ${id} removido`);
     } catch (error) {
-      console.error("🔥 Erro ao remover sabor:", error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error("useFlavors", `Erro ao remover sabor ${id}: ${errMsg}`, error);
       throw error;
     }
   };

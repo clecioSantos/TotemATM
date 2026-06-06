@@ -1,16 +1,19 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { logger } from "@/src/lib/logger";
 
 export async function POST() {
   try {
     const cookieStore = await cookies();
-    
+
     cookieStore.delete("session");
     cookieStore.delete("user-role");
-    
-    return NextResponse.json({ status: "success" });
+
+    logger.info("API_LOGOUT", "Logout realizado com sucesso");
+
+    return NextResponse.json({ success: true, status: "success" });
   } catch (error) {
-    console.error("🔥 Logout error:", error);
-    return NextResponse.json({ error: "Erro ao fazer logout" }, { status: 500 });
+    logger.error("API_LOGOUT", "Erro ao fazer logout", error);
+    return NextResponse.json({ success: false, error: "Erro interno" }, { status: 500 });
   }
 }

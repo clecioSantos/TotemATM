@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Sidebar from "./components/Sidebar";
 import { AuthProvider } from "@/app/admin/orders/AuthContext";
+import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import "../globals.css";
 
 export default function AdminLayout({
@@ -14,20 +15,21 @@ export default function AdminLayout({
 
   return (
     <AuthProvider>
-      <div className="admin-layout">
-        {/* Overlay para fechar sidebar ao clicar fora no mobile */}
-        {!collapsed && (
-          <div 
-            className="sidebar-mobile-overlay" 
-            onClick={() => setCollapsed(true)} 
-          />
-        )}
+      <ErrorBoundary context="AdminLayout">
+        <div className="admin-layout">
+          {!collapsed && (
+            <div 
+              className="sidebar-mobile-overlay" 
+              onClick={() => setCollapsed(true)} 
+            />
+          )}
 
-        <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
-        <main className={`admin-content ${collapsed ? "content-expanded" : ""}`}>
-          {children}
-        </main>
-      </div>
+          <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
+          <main className={`admin-content ${collapsed ? "content-expanded" : ""}`}>
+            {children}
+          </main>
+        </div>
+      </ErrorBoundary>
     </AuthProvider>
   );
 }

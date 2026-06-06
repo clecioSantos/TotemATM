@@ -7,9 +7,11 @@ import ProductTable from "./components/ProductTable";
 import Modal from "../components/Modal";
 import ProductForm from "./components/ProductForm"; // Keep this import
 import { Product } from '@totem/shared/types';
+import { ErrorBoundary } from "@/src/components/ErrorBoundary";
+import { logger } from "@/src/lib/logger";
 import "./page.css";
 
-export default function ProductsPage() {
+function ProductsContent() {
   const { products, loading: productsLoading, error: productsError, saveProduct, removeProduct } = useProducts();
   const { categories, loading: categoriesLoading, error: categoriesError } = useCategories();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -70,11 +72,19 @@ export default function ProductsPage() {
           categories={categories} 
           initialData={editingProduct}
           onSubmit={async (data, file) => {
-            await saveProduct(data, file);
-            handleClose();
+            try {
+              await saveProduct(data, file);
+              handleClose();
+            } catch (err) {
+              logger.error("ProductsPage.saveProduct", err);
+            }
           }}
         />
       </Modal>
     </div>
   );
+}
+
+export default function ProductsPage() {
+  return <ErrorBoundary context="ProductsPage"><ProductsContent /></ErrorBoundary>;
 }

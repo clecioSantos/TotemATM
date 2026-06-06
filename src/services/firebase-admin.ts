@@ -1,7 +1,9 @@
 import admin from "firebase-admin";
+import { logger } from "../lib/logger";
 
 function initializeFirebaseAdmin() {
   if (admin.apps.length > 0) {
+    logger.info("FIREBASE_ADMIN", "Firebase Admin já inicializado");
     return;
   }
 
@@ -9,67 +11,32 @@ function initializeFirebaseAdmin() {
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
-  console.log("🔥 Firebase Admin Initialization");
-
-  console.log({
+  logger.info("FIREBASE_ADMIN", "Inicializando Firebase Admin", {
     hasProjectId: !!projectId,
     hasClientEmail: !!clientEmail,
     hasPrivateKey: !!privateKey,
     projectId,
-    clientEmail,
-    privateKeyLength: privateKey?.length || 0,
-    cwd: process.cwd(),
     nodeEnv: process.env.NODE_ENV,
   });
 
   const missing: string[] = [];
-
   if (!projectId) missing.push("FIREBASE_PROJECT_ID");
   if (!clientEmail) missing.push("FIREBASE_CLIENT_EMAIL");
   if (!privateKey) missing.push("FIREBASE_PRIVATE_KEY");
 
   if (missing.length > 0) {
-    throw new Error(
-      `❌ Variáveis Firebase ausentes: ${missing.join(", ")}`
-    );
+    const errorMsg = `Variáveis Firebase ausentes: ${missing.join(", ")}`;
+    logger.error("FIREBASE_ADMIN", errorMsg);
+    throw new Error(errorMsg);
   }
 
   let formattedPrivateKey = privateKey;
-
-  // Corrige chaves armazenadas em uma única linha no .env
   formattedPrivateKey = process.env.FIREBASE_PRIVATE_KEY
-  ?.replace(/\\\\n/g, '\n')
-  ?.replace(/\\n/g, '\n')
-  ?.replace(/\r/g, '')
-  ?.trim();
-  console.log("🔍 Private Key Diagnostics");
-  console.log("BEGIN CHECK:", formattedPrivateKey?.substring(0, 50));
-  console.log("END CHECK:", formattedPrivateKey?.substring(formattedPrivateKey.length - 50));
-  console.log({
-    startsWithBegin: formattedPrivateKey.includes(
-      "-----BEGIN PRIVATE KEY-----"
-    ),
-    endsWithEnd: formattedPrivateKey.includes(
-      "-----END PRIVATE KEY-----"
-    ),
-    lines: formattedPrivateKey.split("\n").length,
-  });
-console.log(
-  privateKey
-    ?.split('\n')
-    .slice(0, 2)
-);
+    ?.replace(/\\\\n/g, '\n')
+    ?.replace(/\\n/g, '\n')
+    ?.replace(/\r/g, '')
+    ?.trim();
 
-console.log(
-  privateKey
-    ?.split('\n')
-    .slice(-2)
-);
-console.log(
-  JSON.stringify(
-    process.env.FIREBASE_PRIVATE_KEY?.substring(0, 50)
-  )
-);
   try {
     admin.initializeApp({
       credential: admin.credential.cert({
@@ -79,29 +46,34 @@ console.log(
       }),
     });
 
-    console.log("✅ Firebase Admin inicializado com sucesso");
+    logger.info("FIREBASE_ADMIN", "Firebase Admin inicializado com sucesso");
   } catch (error) {
-    console.error("❌ Erro ao inicializar Firebase Admin");
-
-    console.error({
-      message: error instanceof Error ? error.message : error,
+    logger.error("FIREBASE_ADMIN", "Erro ao inicializar Firebase Admin", error, {
       projectId,
       clientEmail,
-      privateKeyLength: formattedPrivateKey.length,
     });
-
     throw error;
   }
 }
 
 export function getAdminAuth() {
-  initializeFirebaseAdmin();
-  return admin.auth();
+  try {
+    initializeFirebaseAdmin();
+    return admin.auth();
+  } catch (error) {
+    logger.error("FIREBASE_ADMIN", "Erro ao obter Admin Auth", error);
+    throw error;
+  }
 }
 
 export function getAdminDb() {
-  initializeFirebaseAdmin();
-  return admin.firestore();
+  try {
+    initializeFirebaseAdmin();
+    return admin.firestore();
+  } catch (error) {
+    logger.error("FIREBASE_ADMIN", "Erro ao obter Admin Firestore", error);
+    throw error;
+  }
 }
 
 export async function setUserClaims(
@@ -111,8 +83,9 @@ export async function setUserClaims(
   try {
     const auth = getAdminAuth();
     await auth.setCustomUserClaims(uid, { role });
+    logger.info("FIREBASE_ADMIN", `Claims definidos para ${uid}: role=${role}`);
   } catch (error) {
-    console.error(`🔥 Erro ao definir claims do usuário ${uid}:`, error);
+    logger.error("FIREBASE_ADMIN", `Erro ao definir claims para ${uid}`, error);
     throw error;
   }
 }

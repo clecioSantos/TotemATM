@@ -7,9 +7,11 @@ import { CategoryFlavor } from "@totem/shared/types";
 import FlavorTable from "./components/FlavorTable";
 import FlavorForm from "./components/FlavorForm";
 import Modal from "../components/Modal";
+import { ErrorBoundary } from "@/src/components/ErrorBoundary";
+import { logger } from "@/src/lib/logger";
 import "./page.css";
 
-export default function FlavorsPage() {
+function FlavorsContent() {
   const { flavors, loading: flavLoading, saveFlavor, removeFlavor } = useFlavors();
   const { categories, loading: catLoading } = useCategoriesStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -68,11 +70,19 @@ export default function FlavorsPage() {
           categories={categories}
           initialData={editingFlavor}
           onSubmit={async (data) => {
-            await saveFlavor(data);
-            handleClose();
+            try {
+              await saveFlavor(data);
+              handleClose();
+            } catch (err) {
+              logger.error("FlavorsPage.saveFlavor", err);
+            }
           }}
         />
       </Modal>
     </div>
   );
+}
+
+export default function FlavorsPage() {
+  return <ErrorBoundary context="FlavorsPage"><FlavorsContent /></ErrorBoundary>;
 }

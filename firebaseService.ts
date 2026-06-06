@@ -1,13 +1,9 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { logger } from "./src/lib/logger";
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyC5yiYZsQbhWYPzNAKYFEpjzeT3Yl41Org",
   authDomain: "totenatm.firebaseapp.com",
@@ -15,18 +11,27 @@ const firebaseConfig = {
   storageBucket: "totenatm.firebasestorage.app",
   messagingSenderId: "919273037092",
   appId: "1:919273037092:web:1f9fa90c131f253f4aa7b1",
-  measurementId: "G-Z7H89MQCTL"
+  measurementId: "G-Z7H89MQCTL",
 };
 
-// Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+let app;
+try {
+  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  logger.info("FIREBASE_SERVICE", "Firebase Client SDK inicializado (hardcoded)");
+} catch (error) {
+  logger.error("FIREBASE_SERVICE", "Erro ao inicializar Firebase Client SDK (hardcoded)", error);
+  throw error;
+}
 
-// Initialize and export services
 export const firestore = getFirestore(app);
 export const auth = getAuth(app);
 
 let analytics;
 if (typeof window !== "undefined") {
-  analytics = getAnalytics(app);
+  try {
+    analytics = getAnalytics(app);
+  } catch (error) {
+    logger.warn("FIREBASE_SERVICE", "Erro ao inicializar Analytics (hardcoded)", error);
+  }
 }
 export { analytics };

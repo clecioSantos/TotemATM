@@ -1,9 +1,13 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, doc, addDoc, updateDoc, deleteDoc, Timestamp, where } from 'firebase/firestore';
+import {
+  collection, onSnapshot, query, doc, addDoc, updateDoc,
+  deleteDoc, Timestamp, where
+} from 'firebase/firestore';
 import { firestore } from '../../../../src/services/firebase';
 import { useAuth } from '@totem/shared/types/AuthProvider';
+import { logger } from '@/src/lib/logger';
 
 export interface Condiment {
   id: string;
@@ -24,28 +28,37 @@ export const useCondiments = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user?.companyId) return;
+    if (!user?.companyId) {
+      setLoading(false);
+      return;
+    }
 
     const q = query(
       collection(firestore, 'condiments'),
       where('companyId', '==', user.companyId)
     );
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          imageUrl: data.imageUrl || "",
-          createdAt: (data.createdAt as Timestamp)?.toDate() || new Date(),
-        };
-      }) as Condiment[];
 
-      setCondiments(items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
-      setLoading(false);
-    }, (err) => {
-      console.error("🔥 Error useCondiments:", err);
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      try {
+        const items = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            imageUrl: data.imageUrl || "",
+            createdAt: (data.createdAt as Timestamp)?.toDate() || new Date(),
+          };
+        }) as Condiment[];
+
+        setCondiments(items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
+        setLoading(false);
+      } catch (mapError) {
+        logger.error("useCondiments", "Erro ao mapear condimentos", mapError);
+        setLoading(false);
+      }
+    }, (err: unknown) => {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      logger.error("useCondiments", `Erro ao carregar condimentos: ${errMsg}`, err);
       setError('Falha ao carregar condimentos');
       setLoading(false);
     });
@@ -67,31 +80,34 @@ export const useCondiments = () => {
         if (!response.ok) throw new Error(result?.error || 'Falha no upload');
         imageUrl = result.imageUrl;
       } catch (err: any) {
-        console.warn("LOG: [useCondiments] Erro no upload", err);
+        logger.warn("useCondiments", `Upload de imagem falhou: ${err?.message || err}`, err);
       }
     }
 
-    const condimentData = {
-      ...data,
-      imageUrl,
-      price: Number(data.price),
-      enabled: data.enabled ?? true,
-      categoryIds: data.categoryIds || [],
-    };
-
     try {
+      const condimentData = {
+        ...data,
+        imageUrl,
+        price: Number(data.price),
+        enabled: data.enabled ?? true,
+        categoryIds: data.categoryIds || [],
+      };
+
       if (data.id) {
         const ref = doc(firestore, 'condiments', data.id);
         await updateDoc(ref, condimentData);
+        logger.info("useCondiments", `Condimento ${data.id} atualizado`);
       } else {
-        await addDoc(collection(firestore, 'condiments'), {
+        const docRef = await addDoc(collection(firestore, 'condiments'), {
           ...condimentData,
           companyId: user?.companyId,
           createdAt: Timestamp.now(),
         });
+        logger.info("useCondiments", `Condimento criado: ${docRef.id}`);
       }
     } catch (error) {
-      console.error("🔥 Erro ao salvar condimento:", error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error("useCondiments", `Erro ao salvar condimento: ${errMsg}`, error);
       throw error;
     }
   };
@@ -100,11 +116,17 @@ export const useCondiments = () => {
     try {
       const condiment = condiments.find(c => c.id === id);
       if (condiment?.imageUrl?.includes('res.cloudinary.com')) {
-        try { await fetch(`/api/upload?fileUrl=${encodeURIComponent(condiment.imageUrl)}`, { method: 'DELETE' }); } catch {}
+        try {
+          await fetch(`/api/upload?fileUrl=${encodeURIComponent(condiment.imageUrl)}`, { method: 'DELETE' });
+        } catch {
+          logger.warn("useCondiments", `Não foi possível deletar imagem do condimento ${id}`);
+        }
       }
       await deleteDoc(doc(firestore, 'condiments', id));
+      logger.info("useCondiments", `Condimento ${id} removido`);
     } catch (error) {
-      console.error(`🔥 Erro ao remover condimento ${id}:`, error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error("useCondiments", `Erro ao remover condimento ${id}: ${errMsg}`, error);
       throw error;
     }
   };

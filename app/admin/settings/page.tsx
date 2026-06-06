@@ -5,7 +5,9 @@ import { useAuth } from "@/app/admin/orders/AuthContext";
 import { Copy, Check, QrCode, ExternalLink, LogOut, Store, Save, Loader2 } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { firestore } from "@/src/services/firebase";
-import { doc, getDoc, updateDoc, collection, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, onSnapshot, FirestoreError } from "firebase/firestore";
+import { logger } from "@/src/lib/logger";
+import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import "./page.css";
 
 const estadosBrasileiros = [
@@ -56,7 +58,7 @@ const maskTelefone = (value: string) => {
   }
 };
 
-export default function ConfigurationsPage() {
+function ConfigurationsContent() {
   const { signOut, user } = useAuth();
   const [copied, setCopied] = useState(false);
   const [totemUrl, setTotemUrl] = useState("");
@@ -91,7 +93,7 @@ export default function ConfigurationsPage() {
           setCompanyData(data);
         }
       } catch (error) {
-        console.error("🔥 Erro ao buscar empresa:", error);
+        logger.error("SETTINGS_PAGE", "Erro ao carregar dados da empresa", error);
       } finally {
         setLoadingCompany(false);
       }
@@ -101,9 +103,13 @@ export default function ConfigurationsPage() {
 
   useEffect(() => {
     const unsub = onSnapshot(collection(firestore, "cities"), (snap) => {
-      setCities(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      try {
+        setCities(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (error) {
+        logger.error("SETTINGS_PAGE", "Erro ao processar cidades", error);
+      }
     }, (error) => {
-      console.error("🔥 Erro ao carregar cidades:", error);
+      logger.error("SETTINGS_PAGE", "Erro no listener de cidades", error);
     });
     return () => unsub();
   }, []);
@@ -411,5 +417,13 @@ export default function ConfigurationsPage() {
           </div>
       </div>
     </div>
+  );
+}
+
+export default function ConfigurationsPage() {
+  return (
+    <ErrorBoundary context="ConfigurationsPage">
+      <ConfigurationsContent />
+    </ErrorBoundary>
   );
 }

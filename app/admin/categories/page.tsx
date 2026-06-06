@@ -1,4 +1,6 @@
 "use client";
+import { ErrorBoundary } from "@/src/components/ErrorBoundary";
+import { logger } from "@/src/lib/logger";
 
 import { useState } from "react";
 import { useCategoriesStore } from "./hooks/useCategories";
@@ -8,7 +10,7 @@ import Modal from "../components/Modal";
 import CategoryForm from "./components/CategoryForm";
 import "./page.css";
 
-export default function CategoriesPage() {
+function CategoriesContent() {
   const { categories, loading, saveCategory, removeCategory } = useCategoriesStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -61,12 +63,20 @@ export default function CategoriesPage() {
               await saveCategory(data);
               setIsModalOpen(false);
             } catch (err) {
-              console.error("LOG: [CategoriesPage] Falha ao executar saveCategory:", err);
+              logger.error("CategoriesPage", "Falha ao executar saveCategory", err);
               alert("Erro ao salvar categoria. Verifique o console.");
             }
           }}
         />
       </Modal>
     </div>
+  );
+}
+
+export default function CategoriesPage() {
+  return (
+    <ErrorBoundary context="CategoriesPage">
+      <CategoriesContent />
+    </ErrorBoundary>
   );
 }

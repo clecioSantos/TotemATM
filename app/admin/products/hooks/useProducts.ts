@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, doc, addDoc, updateDoc, deleteDoc, Timestamp, where } from 'firebase/firestore';
+import {
+  collection, onSnapshot, query, orderBy, doc, addDoc,
+  updateDoc, deleteDoc, Timestamp, where
+} from 'firebase/firestore';
 import { Product } from '@totem/shared/types';
 import { firestore } from '../../../../src/services/firebase';
 import { useAuth } from '@totem/shared/types/AuthProvider';
+import { logger } from '@/src/lib/logger';
 
-// Usar a mesma aplicação Next.js para upload
 const API_BASE_URL = '';
 
 export const useProducts = () => {
@@ -16,39 +19,47 @@ export const useProducts = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user?.companyId) return;
+    if (!user?.companyId) {
+      setLoading(false);
+      return;
+    }
 
     const q = query(
       collection(firestore, 'products'),
       where('companyId', '==', user.companyId)
     );
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          imageUrl: data.imageUrl || "",
-          // Conversão segura: serverTimestamp() pode retornar null localmente antes de sincronizar
-          createdAt: (data.createdAt as Timestamp)?.toDate() || new Date(),
-        };
-      }) as Product[];
-      
-      const normalizeDate = (value: Date | { seconds: number; nanoseconds: number }) =>
-        value instanceof Date
-          ? value
-          : new Date(value.seconds * 1000 + value.nanoseconds / 1e6);
 
-      setProducts(items.sort((a, b) => {
-        const dateA = normalizeDate(a.createdAt);
-        const dateB = normalizeDate(b.createdAt);
-        return dateB.getTime() - dateA.getTime();
-      }));
-      setLoading(false);
-    }, (error) => {
-      console.error("🔥 Erro useProducts:", error);
-      setError(error?.message || 'Falha ao carregar produtos');
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      try {
+        const items = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            imageUrl: data.imageUrl || "",
+            createdAt: (data.createdAt as Timestamp)?.toDate() || new Date(),
+          };
+        }) as Product[];
+
+        const normalizeDate = (value: Date | { seconds: number; nanoseconds: number }) =>
+          value instanceof Date
+            ? value
+            : new Date(value.seconds * 1000 + value.nanoseconds / 1e6);
+
+        setProducts(items.sort((a, b) => {
+          const dateA = normalizeDate(a.createdAt);
+          const dateB = normalizeDate(b.createdAt);
+          return dateB.getTime() - dateA.getTime();
+        }));
+        setLoading(false);
+      } catch (mapError) {
+        logger.error("useProducts", "Erro ao mapear produtos", mapError);
+        setLoading(false);
+      }
+    }, (err: unknown) => {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      logger.error("useProducts", `Erro ao carregar produtos: ${errMsg}`, err);
+      setError(errMsg || 'Falha ao carregar produtos');
       setLoading(false);
     });
 
@@ -58,13 +69,11 @@ export const useProducts = () => {
   const saveProduct = async (data: Partial<Product>, file?: File) => {
     let imageUrl = data.imageUrl || "";
 
-    // 1. Se houver um novo arquivo, faz o upload para a rota API do Next.js
     if (file) {
       try {
         const formData = new FormData();
         formData.append('image', file);
-        
-        // Se for edição, envia a URL antiga para o servidor deletar o arquivo anterior
+
         if (data.imageUrl) {
           formData.append('oldImageUrl', data.imageUrl);
         }
@@ -77,25 +86,27 @@ export const useProducts = () => {
         const result = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-          console.error('LOG: [useProducts] Upload response not ok:', response.status, result);
+          logger.warn("useProducts", "Upload response not ok", undefined, {
+            status: response.status,
+            result,
+          });
           throw new Error(result?.error || 'Falha no servidor de imagens');
         }
 
         imageUrl = result.imageUrl;
-      } catch (error: any) {
-        // Se o servidor de imagens falhar, ainda permitimos salvar o produto sem imagem
-        console.warn("LOG: [useProducts] Servidor de imagens offline. Salvando sem nova imagem.", error?.message || error);
-        alert(`Aviso: A imagem não pôde ser enviada: ${error?.message || 'Erro no upload'}. Os dados do produto serão salvos sem imagem.`);
+      } catch (uploadError: any) {
+        logger.warn("useProducts", `Upload de imagem falhou: ${uploadError?.message || uploadError}`, uploadError);
+        alert(`Aviso: A imagem não pôde ser enviada. Os dados do produto serão salvos sem imagem.`);
       }
     }
 
-    // 2. Salva ou atualiza no Firestore
     try {
       if (data.id) {
         const productRef = doc(firestore, 'products', data.id);
         await updateDoc(productRef, { ...data, imageUrl });
+        logger.info("useProducts", `Produto ${data.id} atualizado`);
       } else {
-        await addDoc(collection(firestore, 'products'), {
+        const docRef = await addDoc(collection(firestore, 'products'), {
           ...data,
           companyId: user?.companyId,
           imageUrl,
@@ -103,31 +114,34 @@ export const useProducts = () => {
           featured: data.featured ?? false,
           createdAt: Timestamp.now(),
         });
+        logger.info("useProducts", `Produto criado: ${docRef.id}`);
       }
     } catch (error) {
-      console.error("🔥 Erro ao salvar produto:", error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error("useProducts", `Erro ao salvar produto: ${errMsg}`, error);
       throw error;
     }
   };
 
   const removeProduct = async (id: string) => {
-    const product = products.find(p => p.id === id);
-    
-    // 1. Solicita ao backend a exclusão do arquivo físico apenas se houver um nome de arquivo válido
-    const fileUrl = product?.imageUrl;
-    if (fileUrl && fileUrl.includes('res.cloudinary.com')) {
-      try {
-        await fetch(`/api/upload?fileUrl=${encodeURIComponent(fileUrl)}`, { method: 'DELETE' });
-      } catch (error) {
-        console.warn("LOG: [useProducts] Não foi possível deletar o arquivo físico no servidor:", error);
-      }
-    }
-
-    // 2. Remove o documento do Firestore
     try {
+      const product = products.find(p => p.id === id);
+      const fileUrl = product?.imageUrl;
+
+      if (fileUrl && fileUrl.includes('res.cloudinary.com')) {
+        try {
+          await fetch(`/api/upload?fileUrl=${encodeURIComponent(fileUrl)}`, { method: 'DELETE' });
+          logger.info("useProducts", `Imagem do produto ${id} deletada`);
+        } catch (deleteError) {
+          logger.warn("useProducts", `Não foi possível deletar a imagem do produto ${id}`, deleteError);
+        }
+      }
+
       await deleteDoc(doc(firestore, 'products', id));
+      logger.info("useProducts", `Produto ${id} removido`);
     } catch (error) {
-      console.error(`🔥 Erro ao remover produto ${id}:`, error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error("useProducts", `Erro ao remover produto ${id}: ${errMsg}`, error);
       throw error;
     }
   };

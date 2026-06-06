@@ -7,9 +7,11 @@ import OrderItem from "@/app/admin/orders/components/OrderItem";
 import OrderForm from "@/app/admin/orders/components/OrderForm";
 import Modal from "@/app/admin/components/Modal";
 import { useState } from "react";
+import { ErrorBoundary } from "@/src/components/ErrorBoundary";
+import { logger } from "@/src/lib/logger";
 import "./page.css";
 
-export default function OrdersPage() {
+function OrdersContent() {
   const { orders, loading, addOrder, updateOrderStatus, removeOrder } = useOrders();
   const { products } = useProducts();
   const { condiments } = useCondiments();
@@ -96,11 +98,19 @@ export default function OrdersPage() {
           condiments={condiments}
           onClose={() => setIsModalOpen(false)}
           onSubmit={async (data) => {
-            await addOrder(data);
-            setIsModalOpen(false);
+            try {
+              await addOrder(data);
+              setIsModalOpen(false);
+            } catch (err) {
+              logger.error("OrdersPage.addOrder", err);
+            }
           }}
         />
       </Modal>
     </div>
   );
+}
+
+export default function OrdersPage() {
+  return <ErrorBoundary context="OrdersPage"><OrdersContent /></ErrorBoundary>;
 }
