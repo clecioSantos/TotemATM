@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminDb } from "@/src/services/firebase-admin";
 import { logger } from "@/src/lib/logger";
+import { markOrderAsPaid } from "@/src/services/payment/services/order-payment.service";
 
 export async function POST(req: NextRequest) {
   try {
@@ -44,18 +44,8 @@ export async function POST(req: NextRequest) {
     }
 
     if (status === "PAID") {
-      try {
-        const db = getAdminDb();
-        await db.collection("orders").doc(orderId).update({
-          paymentStatus: "PAID",
-          status: "preparing",
-          paidAt: new Date(),
-        });
-
-        logger.info("WEBHOOK", `Pagamento confirmado para o pedido: ${orderId}`);
-      } catch (dbError) {
-        logger.error("WEBHOOK", `Erro ao atualizar pedido ${orderId} no Firestore`, dbError);
-      }
+      await markOrderAsPaid(orderId);
+      logger.info("WEBHOOK", `Pagamento confirmado para o pedido: ${orderId}`);
     } else {
       logger.info("WEBHOOK", `Status não-PAID recebido: ${status} para pedido ${orderId}`);
     }
