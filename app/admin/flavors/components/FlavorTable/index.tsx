@@ -1,6 +1,7 @@
 "use client";
 
 import { CategoryFlavor, Category } from "@totem/shared/types";
+import "../../../products/components/ProductTable/styles.css";
 import "./styles.css";
 
 interface Props {
@@ -12,8 +13,8 @@ interface Props {
 
 export default function FlavorTable({ flavors, categories, onEdit, onDelete }: Props) {
   return (
-    <div className="flavor-table-wrapper">
-      <table className="c-table">
+    <div className="product-table-wrapper">
+      <table className="p-table">
         <thead>
           <tr>
             <th>Nome</th>
