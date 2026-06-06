@@ -42,7 +42,8 @@ export default function TotemPage({ params }: PageProps) {
   const { 
     products, 
     categories, 
-    condiments, 
+    condiments,
+    flavors,
     companyName,
     companyBanner,
     companyOpen,
@@ -59,10 +60,11 @@ export default function TotemPage({ params }: PageProps) {
     logout
   } = useTotem(companyId);
 
-  // Cálculo manual do total do carrinho (Preço Base + Condimentos) * Quantidade
   const cartTotal = cart.reduce((acc, item) => {
     const condimentsPrice = item.condiments?.reduce((sum, cond) => sum + cond.price, 0) || 0;
-    return acc + (item.price + condimentsPrice) * item.quantity;
+    const sizePrice = item.tamanhoSelecionado?.preco || 0;
+    const flavorsPrice = item.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0;
+    return acc + (item.price + sizePrice + flavorsPrice + condimentsPrice) * item.quantity;
   }, 0);
 
   const handleFinish = async (deliveryFee: number) => {
@@ -165,6 +167,7 @@ export default function TotemPage({ params }: PageProps) {
             products={products}
             categories={categories}
             condiments={condiments}
+            flavors={flavors}
             cart={cart}
             actions={{ 
               addToCart, 
@@ -221,6 +224,7 @@ export default function TotemPage({ params }: PageProps) {
             products={products}
             categories={categories}
             condiments={condiments}
+            flavors={flavors}
             cart={cart}
             actions={{ 
               addToCart, 

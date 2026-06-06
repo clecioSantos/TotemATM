@@ -23,7 +23,9 @@ export const useCategories = () => {
     return onSnapshot(q, (snapshot) => {
       setCategories(snapshot.docs.map(doc => ({
         id: doc.id,
-        name: doc.data().name
+        name: doc.data().name,
+        possuiTamanhos: doc.data().possuiTamanhos,
+        possuiSabores: doc.data().possuiSabores,
       })) as Category[]);
       setLoading(false);
     }, (error) => {

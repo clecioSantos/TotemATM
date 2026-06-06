@@ -177,9 +177,9 @@ export default function AddressesManagementPage() {
   });
 
   return (
-    <div className="addresses-page-view">
+    <div className="condiments-page-container">
       <header className="page-header">
-        <div className="page-title-area">
+        <div className="header-text">
           <h1 className="page-title">Regiões Atendidas</h1>
           <p className="page-subtitle">Gerencie as cidades e bairros onde o sistema opera</p>
         </div>

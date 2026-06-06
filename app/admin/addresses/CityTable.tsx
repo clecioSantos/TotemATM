@@ -64,42 +64,23 @@ export default function CityTable({
                     </div>
                   </td>
                   {(isOwner || isAdmin) && (
-                    <td className="actions-cell" style={{ textAlign: 'right' }}>
-                      {/* Botão de Habilitar/Desativar Entrega */}
+                    <td className="actions-cell">
                       <button 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          onToggleDelivery(city.id, !isDeliveryEnabled); 
-                        }} 
-                        className="btn-action-text" 
-                        style={{ 
-                          backgroundColor: isDeliveryEnabled ? '#dcfce7' : '#f1f5f9',
-                          color: isDeliveryEnabled ? '#166534' : '#64748b',
-                          borderColor: isDeliveryEnabled ? '#16653433' : '#e2e8f0',
-                          fontWeight: isDeliveryEnabled ? 'bold' : 'normal'
-                        }}
+                        onClick={(e) => { e.stopPropagation(); onToggleDelivery(city.id, !isDeliveryEnabled); }}
+                        className={`btn-action-text ${isDeliveryEnabled ? 'btn-active' : 'btn-inactive'}`}
                       >
                         <Truck size={14} />
-                        {isDeliveryEnabled ? "Entrega Ativa" : "Ativar Entrega"}
+                        {isDeliveryEnabled ? "ENTREGA ATIVA" : "ATIVAR ENTREGA"}
                       </button>
 
-                      {/* Botão de Preço Padrão */}
                       {isOwner && (
-                        <button 
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            onSetDefaultPrice(city.id); 
-                          }} 
-                          className="btn-action-text btn-price"
-                        >
-                          <DollarSign size={14} /> Preço Padrão
+                        <button onClick={(e) => { e.stopPropagation(); onSetDefaultPrice(city.id); }} className="btn-action-text btn-price">
+                          <DollarSign size={14} /> PREÇO PADRÃO
                         </button>
                       )}
 
                       {isOwner && (
                         <>
-                          <div style={{ width: '1px', height: '20px', background: '#e2e8f0', margin: '0 8px' }} />
-                          
                           <button onClick={(e) => { e.stopPropagation(); onEditCity(city); }} className="btn-action btn-edit"><Edit2 size={14} /></button>
                           <button onClick={(e) => { e.stopPropagation(); if (confirm('Excluir cidade?')) onDeleteCity(city.id); }} className="btn-action btn-delete"><Trash2 size={14} /></button>
                         </>

@@ -100,6 +100,18 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
                 <tr key={idx}>
                   <td>
                     <strong>{item.name}</strong>
+                    {item.tamanhoSelecionado && (
+                      <p style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{item.tamanhoSelecionado.nome}</p>
+                    )}
+                    {item.saboresSelecionados && item.saboresSelecionados.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                        {item.saboresSelecionados.map((f: any) => (
+                          <span key={f.id} style={{ fontSize: '10px', background: '#fef3c7', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', color: '#92400e' }}>
+                            {f.nome}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     {item.observation && <p className="item-observation">"{item.observation}"</p>}
                     {item.condiments && item.condiments.length > 0 && (
                       <div className="item-condiments-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
@@ -113,10 +125,10 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
                   </td>
                   <td style={{ textAlign: 'center' }}>{item.quantity}x</td>
                   <td style={{ textAlign: 'right' }}>
-                    R$ {(item.price + (item.condiments?.reduce((s: number, c: any) => s + c.price, 0) || 0)).toFixed(2)}
+                    R$ {(item.price + (item.tamanhoSelecionado?.preco || 0) + (item.saboresSelecionados?.reduce((s: number, f: any) => s + f.preco, 0) || 0) + (item.condiments?.reduce((s: number, c: any) => s + c.price, 0) || 0)).toFixed(2)}
                   </td>
                   <td style={{ textAlign: 'right' }}>
-                    R$ {(item.quantity * (item.price + (item.condiments?.reduce((s: number, c: any) => s + c.price, 0) || 0))).toFixed(2)}
+                    R$ {(item.quantity * (item.price + (item.tamanhoSelecionado?.preco || 0) + (item.saboresSelecionados?.reduce((s: number, f: any) => s + f.preco, 0) || 0) + (item.condiments?.reduce((s: number, c: any) => s + c.price, 0) || 0))).toFixed(2)}
                   </td>
                 </tr>
               ))}

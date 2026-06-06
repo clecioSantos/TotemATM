@@ -2,25 +2,5 @@
   display: flex;
   flex-direction: column;
   gap: 32px;
-  animation: fadeIn 0.3s ease;
-}
-
-.products-content {
-  /* Removemos o overflow daqui, pois o ProductTable já possui o wrapper com scroll */
-  width: 100%;
-  overflow: hidden;
-}
-
-.error-container {
-  padding: 60px;
-  text-align: center;
-  color: var(--danger-color);
-  background: #fef2f2;
-  margin: 20px;
-  border-radius: 18px;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  animation: pageFadeIn 0.3s ease;
 }

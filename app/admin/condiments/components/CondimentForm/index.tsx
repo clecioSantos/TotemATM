@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Category } from '@totem/shared/types';
 import { Condiment } from "../../hooks/useCondiments";
 import "../CondimentTable/styles.css";
+import "../../../products/components/ProductForm/styles.css";
 
 interface Props {
   initialData?: Condiment | null;
@@ -52,17 +53,15 @@ export default function CondimentForm({ initialData, categories = [], onSubmit }
   };
 
   return (
-    <form className="condiment-form" onSubmit={handleSubmit}>
-      <div className="form-grid">
-        <div className="input-group">
-          <label>Nome do Condimento</label>
-          <input className="form-input" value={name} onChange={e => setName(e.target.value)} required placeholder="Ex: Bacon Extra" />
-        </div>
-        
-        <div className="input-group">
-          <label>Preço Extra (R$)</label>
-          <input className="form-input" type="number" step="0.01" value={price} onChange={e => setPrice(Number(e.target.value))} required />
-        </div>
+    <form className="form-container" onSubmit={handleSubmit}>
+      <div className="input-group">
+        <label>Nome do Condimento</label>
+        <input className="form-input" value={name} onChange={e => setName(e.target.value)} required placeholder="Ex: Bacon Extra" />
+      </div>
+      
+      <div className="input-group">
+        <label>Preço Extra (R$)</label>
+        <input className="form-input" type="number" step="0.01" value={price} onChange={e => setPrice(Number(e.target.value))} required />
       </div>
 
       <div className="input-group">
@@ -72,9 +71,6 @@ export default function CondimentForm({ initialData, categories = [], onSubmit }
 
       <div className="input-group">
         <label>Disponível nas Categorias:</label>
-        <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>
-          Toque nas categorias que podem oferecer este adicional:
-        </p>
         <div className="category-selection-grid">
           {categories.length > 0 ? (
             categories.map(cat => (

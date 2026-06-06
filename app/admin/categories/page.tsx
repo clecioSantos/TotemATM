@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useCategoriesStore } from "./hooks/useCategories";
 import { Category } from "@totem/shared/types";
 import CategoryTable from "./components/CategoryTable";
-import CategoryModal from "./components/CategoryModal";
+import Modal from "../components/Modal";
 import CategoryForm from "./components/CategoryForm";
 import "./page.css";
 
@@ -19,24 +19,26 @@ export default function CategoriesPage() {
   };
 
   return (
-    <main className="categories-container">
-      <header className="categories-header">
-        <div>
-          <h1>Categorias</h1>
-          <p>Organize seus produtos por seções</p>
+    <div className="condiments-page-container">
+      <header className="page-header">
+        <div className="header-text">
+          <h1 className="page-title">Categorias</h1>
+          <p className="page-subtitle">Organize seus produtos por seções</p>
         </div>
-        <button className="add-category-btn" onClick={() => { setEditingCategory(null); setIsModalOpen(true); }}>
-          + Nova Categoria
+        <button className="primary-button" onClick={() => { setEditingCategory(null); setIsModalOpen(true); }}>
+          <span>➕</span> Nova Categoria
         </button>
       </header>
 
-      <section>
+      <main className="page-content">
         {loading ? (
-          <p>Carregando...</p>
+          <div className="loading-state">
+            <div className="spinner"></div>
+            <p>Carregando...</p>
+          </div>
         ) : categories.length === 0 ? (
           <div className="empty-state">
-            <h3>Nenhuma categoria cadastrada</h3>
-            <p>Crie uma categoria para poder adicionar produtos ao cardápio.</p>
+            <p>Nenhuma categoria cadastrada. Crie uma categoria para poder adicionar produtos ao cardápio.</p>
           </div>
         ) : (
           <CategoryTable 
@@ -45,9 +47,9 @@ export default function CategoriesPage() {
             onDelete={removeCategory} 
           />
         )}
-      </section>
+      </main>
 
-      <CategoryModal 
+      <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
         title={editingCategory ? "Editar Categoria" : "Nova Categoria"}
@@ -55,10 +57,8 @@ export default function CategoriesPage() {
         <CategoryForm 
           initialData={editingCategory}
           onSubmit={async (data) => {
-            console.log("LOG: [CategoriesPage] Iniciando salvamento no Hook com:", data);
             try {
               await saveCategory(data);
-              console.log("LOG: [CategoriesPage] Sucesso ao salvar. Fechando modal.");
               setIsModalOpen(false);
             } catch (err) {
               console.error("LOG: [CategoriesPage] Falha ao executar saveCategory:", err);
@@ -66,7 +66,7 @@ export default function CategoriesPage() {
             }
           }}
         />
-      </CategoryModal>
-    </main>
+      </Modal>
+    </div>
   );
 }

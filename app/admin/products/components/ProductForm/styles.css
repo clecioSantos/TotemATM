@@ -83,3 +83,140 @@
   object-fit: cover;
   border-radius: 8px;
 }
+
+.sizes-section {
+  background: var(--bg-light);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  padding: 16px;
+}
+
+.sizes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.sizes-header label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.add-size-btn {
+  height: 36px;
+  padding: 0 16px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.add-size-btn:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+  background: var(--surface);
+}
+
+.sizes-empty {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 12px 0;
+}
+
+.size-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.size-entry:last-child {
+  margin-bottom: 0;
+}
+
+.size-entry-fields {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.size-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.size-field:nth-child(1) {
+  flex: 2;
+}
+
+.size-field:nth-child(2) {
+  flex: 1;
+}
+
+.size-field:nth-child(3) {
+  flex: 1;
+}
+
+.size-field-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.size-entry-fields .form-input {
+  height: 40px;
+  font-size: 14px;
+  background: var(--surface);
+}
+
+.size-entry-fields .form-input {
+  height: 40px;
+  font-size: 14px;
+  background: var(--surface);
+}
+
+.size-entry-fields .form-input:nth-child(1) {
+  flex: 2;
+}
+
+.size-entry-fields .form-input:nth-child(2) {
+  flex: 1;
+}
+
+.size-entry-fields .form-input:nth-child(3) {
+  flex: 1;
+}
+
+.remove-size-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid transparent;
+  font-size: 16px;
+  color: #ef4444;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.remove-size-btn:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
