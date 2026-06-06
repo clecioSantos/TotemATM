@@ -1,447 +1,352 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { firestore } from "@/src/services/firebase";
-import { collection, onSnapshot, query, where, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, writeBatch, getDocs, orderBy } from "firebase/firestore";
 import Link from "next/link";
-import { Search, MapPin, User, ShoppingBag, Store, X, LogOut, ChevronRight, Plus, Trash2, Home } from "lucide-react";
 import { useAuth } from "@totem/shared/types/AuthProvider";
-import { ErrorBoundary } from "@/src/components/ErrorBoundary";
-import { logger } from "@/src/lib/logger";
+import {
+  TrendingUp, ShoppingCart, DollarSign, Package, MessageCircle, BarChart3,
+  Clock, Shield, Smartphone, Zap, Layers, Star,
+  ChevronRight, ArrowRight, Menu, X
+} from "lucide-react";
 
-function HomeContent() {
-  const [stores, setStores] = useState<any[]>([]);
-  const { user, signOut } = useAuth();
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isOrdersOpen, setIsOrdersOpen] = useState(false);
-  const [isAddressesOpen, setIsAddressesOpen] = useState(false);
-  const [userOrders, setUserOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
-  
-  // Estados de Endereços
-  const [addresses, setAddresses] = useState<any[]>([]);
-  const [addressStreet, setAddressStreet] = useState("");
-  const [addressNumber, setAddressNumber] = useState("");
-  const [addressNeighborhood, setAddressNeighborhood] = useState("");
-  const [addressComplement, setAddressComplement] = useState("");
-  const [savingAddress, setSavingAddress] = useState(false);
-  const [addressCity, setAddressCity] = useState("");
-  const [availableCities, setAvailableCities] = useState<any[]>([]);
-  const [availableNeighborhoods, setAvailableNeighborhoods] = useState<any[]>([]);
-  const [isEditing, setIsEditing] = useState<string | null>(null);
+const benefits = [
+  { icon: ShoppingCart, title: "Gestão de pedidos", desc: "Acompanhe todos os pedidos em tempo real, do recebimento à entrega." },
+  { icon: DollarSign, title: "Controle financeiro", desc: "Relatórios detalhados de faturamento, taxas e lucro por período." },
+  { icon: Package, title: "Gestão de produtos", desc: "Cardápio digital com fotos, categorias, preços e promoções." },
+  { icon: TrendingUp, title: "Totem de autoatendimento", desc: "Seu cliente pede sem precisar de atendente. Mais agilidade e vendas." },
+  { icon: MessageCircle, title: "Integração WhatsApp", desc: "Receba notificações e confirmações automáticas no WhatsApp." },
+  { icon: BarChart3, title: "Relatórios em tempo real", desc: "Métricas de vendas, ticket médio e produtos mais vendidos." },
+];
 
-  const [search, setSearch] = useState("");
-  const [cityFilter, setCityFilter] = useState("");
-  const [cities, setCities] = useState<any[]>([]);
-  const [categoryFilter, setCategoryFilter] = useState("all");
+const howItWorks = [
+  { step: "01", title: "Receba pedidos", desc: "Seus clientes fazem pedidos pelo totem ou diretamente do celular." },
+  { step: "02", title: "Gerencie operações", desc: "A cozinha recebe em tempo real. Controle o preparo e a entrega." },
+  { step: "03", title: "Acompanhe resultados", desc: "Relatórios em tempo real mostram o desempenho do seu negócio." },
+  { step: "04", title: "Aumente vendas", desc: "Com autoatendimento e agilidade, seu faturamento cresce naturalmente." },
+];
 
-  const categories = [
-    { name: "Todas", icon: "★", key: "all" },
-    { name: "Lanches", icon: "🍔", key: "Lanches" },
-    { name: "Pizzas", icon: "🍕", key: "Pizzas" },
-    { name: "Pratos", icon: "🍽️", key: "Pratos" },
-    { name: "Marmitas", icon: "🥡", key: "Marmitas" },
-    { name: "Porções", icon: "🍟", key: "Porções" },
-    { name: "Bebidas", icon: "🥤", key: "Bebidas" },
-    { name: "Sobremesas", icon: "🍰", key: "Sobremesas" },
-    { name: "Açaí", icon: "🫐", key: "Açaí" },
-    { name: "Sushi", icon: "🍣", key: "Sushi" },
-    { name: "Padaria e Confeitaria", icon: "🥐", key: "Padaria e Confeitaria e mercado" },
-  ];
+const differentials = [
+  { icon: Clock, title: "Tempo real", desc: "Todas as atualizações são instantâneas, sem atrasos." },
+  { icon: Layers, title: "Multiempresa", desc: "Gerencie múltiplas unidades em um só painel." },
+  { icon: Shield, title: "Segurança", desc: "Dados protegidos com criptografia e Firebase." },
+  { icon: Zap, title: "Performance", desc: "Carregamento rápido mesmo em conexões lentas." },
+  { icon: Smartphone, title: "Mobile First", desc: "Projetado para celular, funciona em qualquer dispositivo." },
+  { icon: Star, title: "Suporte premium", desc: "Equipe dedicada para ajudar no que precisar." },
+];
 
-  const [storeCitySettings, setStoreCitySettings] = useState<any[]>([]);
+const testimonials = [
+  { name: "Carlos Silva", role: "Proprietário", text: "O sistema transformou meu delivery. Reduzi o tempo de atendimento em 60% e as vendas aumentaram 40%." },
+  { name: "Ana Oliveira", role: "Gerente", text: "O totem de autoatendimento foi um divisor de águas. Os clientes adoram a facilidade de pedir sozinhos." },
+  { name: "Ricardo Santos", role: "Empreendedor", text: "Relatórios em tempo real me ajudam a tomar decisões rápidas. Indico para qualquer restaurante." },
+];
+
+function LandingContent() {
+  const { user } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(firestore, "storeCitySettings"), (snap) => {
-        setStoreCitySettings(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
-    return () => unsub();
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const filteredStores = stores.filter(store => {
-      const matchesName = store.name.toLowerCase().includes(search.toLowerCase());
-      
-      let matchesCity = true;
-      if (cityFilter) {
-          const hasSettings = storeCitySettings.some(s => s.companyId === store.id && s.cityId === cityFilter && s.enabled);
-          matchesCity = hasSettings;
-      }
-      
-      let matchesCategory = true;
-      if (categoryFilter !== "all") {
-          matchesCategory = store.areasAtuacao?.includes(categoryFilter);
-      }
-      
-      return matchesName && matchesCity && matchesCategory;
-  });
-
-
-  useEffect(() => {
-    const q = query(collection(firestore, "companies"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setStores(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const unsubCities = onSnapshot(collection(firestore, "cities"), (snap) => {
-        const citiesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setCities(citiesData);
-        setAvailableCities(citiesData);
-    });
-    return () => unsubCities();
-  }, []);
-
-  // Sincronizar endereços do usuário
-  useEffect(() => {
-    if (!user) return;
-    const q = query(collection(firestore, "addresses"), where("userId", "==", user.uid));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      try {
-        setAddresses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      } catch (error) {
-        logger.error("HOME_PAGE", "Erro ao processar endereços", error);
-      }
-    }, (error) => {
-      logger.error("HOME_PAGE", "Erro no listener de endereços", error);
-    });
-    return () => unsubscribe();
-  }, [user]);
-
-  // Carregar bairros dinamicamente
-  useEffect(() => {
-    if (!addressCity) {
-      setAvailableNeighborhoods([]);
-      return;
-    }
-    const q = query(collection(firestore, "neighborhoods"), where("cityId", "==", addressCity), orderBy("name"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      try {
-        setAvailableNeighborhoods(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      } catch (error) {
-        logger.error("HOME_PAGE", "Erro ao processar bairros", error);
-      }
-    }, (error) => {
-      logger.error("HOME_PAGE", "Erro no listener de bairros", error);
-    });
-    return () => unsubscribe();
-  }, [addressCity]);
-
-  useEffect(() => {
-    if (!user || !isOrdersOpen) return;
-    const q = query(collection(firestore, "orders"), where("customerId", "==", user.uid));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      try {
-        setUserOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      } catch (error) {
-        logger.error("HOME_PAGE", "Erro ao processar pedidos", error);
-      }
-    }, (error) => {
-      logger.error("HOME_PAGE", "Erro no listener de pedidos", error);
-    });
-    return () => unsubscribe();
-  }, [user, isOrdersOpen]);
-
-  const handleDeleteAddress = async (addressId: string) => {
-    if (!confirm("Deseja realmente excluir este endereço?")) return;
-    try {
-      await deleteDoc(doc(firestore, "addresses", addressId));
-      if (isEditing === addressId) resetAddressForm();
-    } catch (error) {
-      console.error("Erro ao deletar endereço:", error);
-    }
-  };
-
-  const resetAddressForm = () => {
-    setIsEditing(null);
-    setAddressStreet("");
-    setAddressNumber("");
-    setAddressNeighborhood("");
-    setAddressComplement("");
-    setAddressCity("");
-  };
-
-  const handleAddAddress = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !addressStreet || !addressNumber || !addressNeighborhood || !addressCity) return;
-    setSavingAddress(true);
-    const neighborhoodObj = availableNeighborhoods.find(n => n.id === addressNeighborhood);
-    const neighborhoodName = neighborhoodObj?.name || addressNeighborhood;
-    try {
-        if (isEditing) {
-            await updateDoc(doc(firestore, "addresses", isEditing), {
-                street: addressStreet,
-                number: addressNumber,
-                cityId: addressCity,
-                neighborhood: neighborhoodName,
-                neighborhoodId: neighborhoodObj?.id || "",
-                complement: addressComplement,
-            });
-            setIsEditing(null);
-            alert("Endereço atualizado!");
-        } else {
-            await addDoc(collection(firestore, "addresses"), {
-                userId: user.uid,
-                street: addressStreet,
-                number: addressNumber,
-                cityId: addressCity,
-                neighborhood: neighborhoodName,
-                neighborhoodId: neighborhoodObj?.id || "",
-                complement: addressComplement,
-                enabled: true,
-                createdAt: serverTimestamp(),
-            });
-            alert("Endereço adicionado!");
-        }
-        resetAddressForm();
-    } finally { setSavingAddress(false); }
-  };
-
-
-
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-brand-light flex items-center justify-center">
-        <div className="flex flex-col items-center">
-          <img src="/Logo.png" alt="Logo" className="h-24 w-auto mb-6 animate-pulse" />
-          <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+  if (user) {
+    const role = (user as any)?.role;
+    if (role === "admin" || role === "owner") {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
+          <div className="text-center p-8">
+            <img src="/Logo.png" alt="Bora De Delivery" className="h-16 mx-auto mb-6" />
+            <h1 className="text-2xl font-bold mb-4">Você já está logado</h1>
+            <Link href="/admin" className="inline-flex items-center gap-2 h-12 px-6 bg-[#FF6B00] text-white font-bold rounded-xl hover:bg-[#E65C00] transition-all">
+              Ir para o painel <ArrowRight size={18} />
+            </Link>
+          </div>
         </div>
-      </main>
+      );
+    }
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
+        <div className="text-center p-8">
+          <img src="/Logo.png" alt="Bora De Delivery" className="h-16 mx-auto mb-6" />
+          <h1 className="text-2xl font-bold mb-4">Você já está logado</h1>
+          <Link href="/totem" className="inline-flex items-center gap-2 h-12 px-6 bg-[#FF6B00] text-white font-bold rounded-xl hover:bg-[#E65C00] transition-all">
+            Ir para o totem <ArrowRight size={18} />
+          </Link>
+        </div>
+      </div>
     );
   }
 
-  const statusLabels: Record<string, string> = {
-    pending: "Pendente",
-    paid: "Pago",
-    preparing: "Preparando",
-    ready: "Pronto",
-    delivering: "Em entrega",
-    finished: "Finalizado",
-    cancelled: "Cancelado",
-  };
+  return (
+    <>
+      <style>{`
+        @keyframes fadeUp { from { opacity:0; transform:translateY(24px) } to { opacity:1; transform:translateY(0) } }
+        @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+        @keyframes float { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-12px) } }
+        .animate-fade-up { animation: fadeUp 0.6s ease-out both }
+        .animate-fade-in { animation: fadeIn 0.8s ease-out both }
+        .animate-float { animation: float 4s ease-in-out infinite }
+        .delay-1 { animation-delay:0.1s }
+        .delay-2 { animation-delay:0.2s }
+        .delay-3 { animation-delay:0.3s }
+        .delay-4 { animation-delay:0.4s }
+        .delay-5 { animation-delay:0.5s }
 
-  const finishedOrders = userOrders
-    .filter(o => o.status === 'finished' || o.status === 'cancelled')
-    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        @media (min-width: 1280px) {
+          .landing-scaler {
+            transform: scale(3);
+            transform-origin: top center;
+            width: calc(100% / 3);
+            margin: 0 auto;
+          }
+          .landing-outer {
+            height: 100vh;
+            overflow-y: auto;
+            width: 100vw;
+            position: relative;
+          }
+          .landing-outer::-webkit-scrollbar { width: 6px; }
+          .landing-outer::-webkit-scrollbar-track { background: transparent; }
+          .landing-outer::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        }
+        @media (min-width: 1280px) {
+          .landing-scaler .fixed-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+          }
+        }
+      `}</style>
 
-  const activeOrders = userOrders
-    .filter(o => o.status !== 'finished' && o.status !== 'cancelled')
-    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-
-  const OrderItem = ({ o }: { o: any }) => {
-    const store = stores.find(s => s.id === o.companyId);
-    
-    return (
-      <div className="bg-brand-surface border border-brand-border rounded-lg mb-2 overflow-hidden">
-        <div 
-          className="p-3 flex justify-between items-center cursor-pointer"
-          onClick={() => setExpandedOrderId(expandedOrderId === o.id ? null : o.id)}
-        >
-          <div>
-            <div className="font-bold text-sm">{store?.name || o.companyName || "Loja"}</div>
-            <div className="text-xs text-brand-muted">{o.createdAt ? new Date(o.createdAt.seconds * 1000).toLocaleString() : 'Data indisponível'}</div>
-          </div>
-          <div className="text-right">
-            <div className="font-bold text-sm text-brand-primary">R$ {o.total?.toFixed(2)}</div>
-            <div className="text-[10px] uppercase font-bold text-brand-muted">{statusLabels[o.status] || o.status}</div>
-          </div>
+      {/* Header */}
+      <header className={`fixed-header fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-lg shadow-sm' : 'bg-transparent'}`}>
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <img src="/Logo.png" alt="Bora De Delivery" className="h-9 w-auto" />
+          </Link>
+          <nav className="hidden md:flex items-center gap-6">
+            <a href="#benefits" className="text-sm font-medium text-[#666] hover:text-[#1F1F1F] transition-colors">Recursos</a>
+            <a href="#how-it-works" className="text-sm font-medium text-[#666] hover:text-[#1F1F1F] transition-colors">Como funciona</a>
+            <a href="#differentials" className="text-sm font-medium text-[#666] hover:text-[#1F1F1F] transition-colors">Diferenciais</a>
+            <a href="#testimonials" className="text-sm font-medium text-[#666] hover:text-[#1F1F1F] transition-colors">Depoimentos</a>
+            <Link href="/login" className="h-10 px-5 bg-[#FF6B00] text-white text-sm font-bold rounded-xl hover:bg-[#E65C00] transition-all flex items-center">Entrar</Link>
+          </nav>
+          <button className="md:hidden w-10 h-10 flex items-center justify-center rounded-lg hover:bg-black/5 transition-colors" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
-        {expandedOrderId === o.id && (
-          <div className="p-3 bg-brand-light text-xs space-y-2 border-t border-brand-border">
-            <p><strong>Status:</strong> {statusLabels[o.status] || o.status}</p>
-            <p><strong>Pedido:</strong> #{o.id.slice(-6).toUpperCase()}</p>
-            <p><strong>Endereço:</strong> {o.address?.street}, {o.address?.number} {o.address?.complement ? `- ${o.address.complement}` : ''}</p>
-            <p><strong>Bairro:</strong> {o.address?.neighborhood}</p>
-            <div className="pt-2 border-t border-brand-border">
-              <p className="font-bold mb-1">Itens:</p>
-              {o.items?.map((item: any, idx: number) => (
-                <p key={idx}>{item.quantity}x {item.name}</p>
-              ))}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white border-t border-[#EAEAEA] px-4 py-4 animate-fade-in">
+            <div className="flex flex-col gap-3">
+              <a href="#benefits" onClick={() => setMobileMenuOpen(false)} className="py-2 text-sm font-medium text-[#666]">Recursos</a>
+              <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="py-2 text-sm font-medium text-[#666]">Como funciona</a>
+              <a href="#differentials" onClick={() => setMobileMenuOpen(false)} className="py-2 text-sm font-medium text-[#666]">Diferenciais</a>
+              <a href="#testimonials" onClick={() => setMobileMenuOpen(false)} className="py-2 text-sm font-medium text-[#666]">Depoimentos</a>
+              <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="h-12 bg-[#FF6B00] text-white text-sm font-bold rounded-xl flex items-center justify-center">Entrar</Link>
             </div>
           </div>
         )}
-      </div>
-    );
-  };
-
-  return (
-    <main className="min-h-screen bg-brand-light pb-20">
-      <header className="sticky top-0 bg-white z-10 border-b border-brand-border">
-        <div className="flex items-center justify-between px-4 pt-3 pb-2">
-          <div className="flex items-center gap-2">
-            <img src="/Logo.png" alt="Bora De Delivery" className="h-[42px] w-auto" />
-          </div>
-          <div className="flex items-center gap-1">
-            <button onClick={() => setIsOrdersOpen(true)} className="w-9 h-9 rounded-full flex items-center justify-center text-brand-muted hover:bg-gray-100 transition-colors">
-              <ShoppingBag className="h-5 w-5" />
-            </button>
-            <button onClick={() => setIsProfileOpen(true)} className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-brand-muted hover:bg-gray-200 transition-colors">
-              <User className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-        <div className="px-4 pb-3 flex items-center gap-2">
-          <select className="h-11 bg-[#F0F0F0] rounded-[12px] px-3 text-sm font-semibold text-brand-dark outline-none cursor-pointer min-w-[120px] appearance-none" value={cityFilter} onChange={e => setCityFilter(e.target.value)} style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center", paddingRight: "32px" }}>
-            <option value="">Todas as cidades</option>
-            {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-muted pointer-events-none" />
-            <input className="w-full h-11 bg-[#F0F0F0] rounded-[12px] pl-9 pr-4 text-sm text-brand-dark outline-none placeholder:text-[#999]" placeholder="Buscar lojas..." value={search} onChange={e => setSearch(e.target.value)} />
-          </div>
-        </div>
       </header>
 
-      {/* Modais de Perfil e Pedidos (Simplificados) */}
-        {(isProfileOpen || isOrdersOpen || isAddressesOpen) && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm" onClick={() => {setIsProfileOpen(false); setIsOrdersOpen(false); setIsAddressesOpen(false);}}>
-          <div className="bg-brand-surface w-full max-w-[430px] rounded-t-[24px] p-6 shadow-2xl animate-in slide-in-from-bottom" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold text-lg">
-                {isProfileOpen ? "Meu Perfil" : isAddressesOpen ? "Meus Endereços" : "Meus Pedidos"}
-              </h3>
-              <button onClick={() => {setIsProfileOpen(false); setIsOrdersOpen(false); setIsAddressesOpen(false);}}><X className="h-5 w-5" /></button>
+      {/* Hero */}
+      <section className="relative pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 to-transparent pointer-events-none" />
+        <div className="max-w-6xl mx-auto px-4 relative z-10">
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 h-8 px-4 bg-orange-50 border border-orange-200 rounded-full text-xs font-bold text-[#FF6B00] mb-6 animate-fade-up">
+              Plataforma completa para delivery
             </div>
-            <div className="flex-1 overflow-y-auto max-h-[70vh] p-1">
-              {isProfileOpen ? (
-                <div className="space-y-4">
-                  <p className="text-sm">Olá, {user?.name || "Usuário"}</p>
-                  <button 
-                    onClick={() => {setIsProfileOpen(false); setIsAddressesOpen(true);}}
-                    className="w-full flex items-center gap-3 p-3 bg-brand-light rounded-lg font-bold text-sm"
-                  >
-                    <MapPin size={18} /> Meus Endereços
-                  </button>
-                  {(user?.role === 'admin' || user?.role === 'owner') && (
-                    <Link href="/admin" className="block p-3 bg-brand-primary text-white text-center rounded-lg font-bold">Acessar Painel Admin</Link>
-                  )}
-                  <button onClick={() => signOut()} className="flex items-center gap-2 text-red-500 font-bold w-full"><LogOut size={18} /> Sair</button>
-                </div>
-              ) : isAddressesOpen ? (
-                <div className="space-y-4">
-                  <div className="flex flex-col gap-3 max-h-[40vh] overflow-y-auto">
-                    {addresses.map(addr => (
-                      <div key={addr.id} className="p-3 bg-brand-light rounded-lg flex justify-between items-center border border-brand-border">
-                        <div>
-                          <p className="font-bold text-xs">{addr.street}, {addr.number}</p>
-                          <p className="text-[10px] text-brand-muted">{addr.neighborhood}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button onClick={() => { 
-                            setIsEditing(addr.id); 
-                            setAddressStreet(addr.street); 
-                            setAddressNumber(addr.number); 
-                          setAddressCity(addr.cityId || "");
-                          setAddressNeighborhood(addr.neighborhoodId || addr.neighborhood); 
-                            setAddressComplement(addr.complement || ""); 
-                          }} className="p-1 hover:bg-brand-surface rounded-lg"><ChevronRight className="h-4 w-4" /></button>
-                          <button onClick={() => handleDeleteAddress(addr.id)} className="p-1 hover:bg-red-50 text-red-600 rounded-lg"><Trash2 className="h-4 w-4" /></button>
-                        </div>
-                      </div>
-                    ))}
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-[1.1] mb-6 animate-fade-up delay-1 tracking-[-0.02em]">
+              Transforme seu delivery com uma{" "}
+              <span className="text-[#FF6B00]">plataforma moderna</span>
+              <br />rápida e integrada.
+            </h1>
+            <p className="text-lg md:text-xl text-[#666] leading-relaxed mb-10 max-w-2xl mx-auto animate-fade-up delay-2">
+              Receba pedidos, gerencie operações e acompanhe resultados em tempo real.
+              Tudo que seu restaurante precisa em um só lugar.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up delay-3">
+              <Link href="/login" className="h-12 px-8 bg-[#FF6B00] text-white font-bold rounded-xl hover:bg-[#E65C00] transition-all text-sm flex items-center gap-2 shadow-lg shadow-orange-200">
+                Entrar agora <ArrowRight size={18} />
+              </Link>
+              <a href="#benefits" className="h-12 px-8 bg-white text-[#1F1F1F] font-bold rounded-xl hover:bg-gray-50 transition-all text-sm border border-[#EAEAEA] flex items-center gap-2">
+                Conhecer plataforma <ChevronRight size={18} />
+              </a>
+            </div>
+          </div>
+          <div className="mt-16 max-w-4xl mx-auto animate-fade-up delay-4">
+            <div className="bg-white rounded-2xl shadow-xl border border-[#EAEAEA] overflow-hidden">
+              <div className="aspect-video bg-gradient-to-br from-[#FF6B00]/5 to-orange-50 flex items-center justify-center p-8">
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#FF6B00] flex items-center justify-center animate-float">
+                    <Smartphone size={32} className="text-white" />
                   </div>
-                  <form onSubmit={handleAddAddress} className="space-y-2 pt-4 border-t border-brand-border mt-2">
-                    <div className="grid grid-cols-4 gap-2">
-                      <input required className="col-span-3 p-2 bg-brand-light rounded-lg border border-brand-border text-xs" placeholder="Rua" value={addressStreet} onChange={e => setAddressStreet(e.target.value)} />
-                      <input required className="col-span-1 p-2 bg-brand-light rounded-lg border border-brand-border text-xs" placeholder="Nº" value={addressNumber} onChange={e => setAddressNumber(e.target.value)} />
-                    </div>
-                    <select required className="w-full p-2 bg-brand-light rounded-lg border border-brand-border text-xs" value={addressCity} onChange={e => setAddressCity(e.target.value)}>
-                        <option value="">Selecione a cidade</option>
-                        {availableCities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                    <select required className="w-full p-2 bg-brand-light rounded-lg border border-brand-border text-xs" value={addressNeighborhood} onChange={e => setAddressNeighborhood(e.target.value)} disabled={!addressCity}>
-                        <option value="">Selecione o bairro</option>
-                        {availableNeighborhoods.map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
-                    </select>
-                    <input className="w-full p-2 bg-brand-light rounded-lg border border-brand-border text-xs" placeholder="Complemento" value={addressComplement} onChange={e => setAddressComplement(e.target.value)} />
-                    <button type="submit" className="w-full p-3 bg-brand-primary text-white font-bold rounded-xl flex items-center justify-center gap-2 text-xs" disabled={savingAddress}>
-                        {savingAddress ? "Salvando..." : isEditing ? <><Plus className="h-4 w-4"/> Salvar Alterações</> : <><Plus className="h-4 w-4"/> Adicionar Endereço</>}
-                    </button>
-                    {isEditing && <button type="button" onClick={resetAddressForm} className="w-full p-1 text-xs text-brand-muted underline text-center">Cancelar edição</button>}
-                  </form>
+                  <p className="text-[#666] text-sm">Interface moderna e responsiva</p>
                 </div>
-              ) : (
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="font-bold text-sm mb-2 text-brand-muted">Em andamento</h4>
-                    {activeOrders.length === 0 ? <p className="text-xs text-brand-muted italic">Nenhum pedido ativo.</p> : activeOrders.map(o => <OrderItem key={o.id} o={o} />)}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-sm mb-2 text-brand-muted">Finalizados</h4>
-                    {finishedOrders.length === 0 ? <p className="text-xs text-brand-muted italic">Nenhum pedido finalizado.</p> : finishedOrders.map(o => <OrderItem key={o.id} o={o} />)}
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
-      )}
+      </section>
 
-      <div className="p-4">
-        {/* Banner de Promoção */}
-        <div className="w-full h-32 rounded-[16px] bg-gradient-to-r from-brand-primary to-brand-primaryHover p-6 text-white flex flex-col justify-center mb-6 shadow-sm">
-          <h2 className="text-xl font-bold">Ofertas da Semana</h2>
-          <p className="text-sm opacity-90">Confira nossas promoções exclusivas!</p>
-        </div>
-
-        {/* Categorias */}
-        <div className="flex gap-4 overflow-x-auto pb-4 mb-2 scrollbar-hide">
-          {categories.map((cat, i) => (
-            <button key={i} onClick={() => setCategoryFilter(cat.key)} className="flex flex-col items-center gap-2 min-w-[70px]">
-              <div className={`w-16 h-16 rounded-[16px] flex items-center justify-center text-2xl shadow-sm border ${categoryFilter === cat.key ? 'bg-brand-primary text-white border-brand-primary' : 'bg-brand-surface border-brand-border'}`}>
-                {cat.icon}
-              </div>
-              <span className={`text-xs font-semibold ${categoryFilter === cat.key ? 'text-brand-primary' : 'text-brand-muted'}`}>{cat.name}</span>
-            </button>
-          ))}
-        </div>
-
-        <h3 className="text-xl font-bold mb-4 mt-2">Unidades Disponíveis</h3>
-        
-        <div className="flex flex-col gap-4">
-          {filteredStores.map((store) => {
-            const closed = store.open === false;
-            return (
-            <Link 
-              key={store.id} 
-              href={`/totem/${store.id}`}
-              className={`bg-brand-surface rounded-[16px] p-4 flex gap-4 items-center shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-brand-border transition-transform active:scale-[0.98] ${closed ? 'store-closed' : ''}`}
-              style={closed ? { filter: 'grayscale(0.6)', opacity: 0.75 } : {}}
-            >
-              <div className="relative w-16 h-16 bg-[#eee] rounded-[12px] flex items-center justify-center overflow-hidden">
-                {store.logo ? <img src={store.logo} alt={store.name} className="w-full h-full object-cover" /> : <span className="text-2xl font-bold">{store.name.charAt(0)}</span>}
-                {closed && <div className="absolute inset-0 bg-black/10 rounded-[12px]" />}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h4 className="text-base font-bold text-brand-dark">{store.name}</h4>
-                  {closed && <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">Fechada</span>}
+      {/* Benefits */}
+      <section id="benefits" className="py-20 md:py-28">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl md:text-4xl font-black mb-4">Tudo que você precisa</h2>
+            <p className="text-lg text-[#666] max-w-xl mx-auto">Funcionalidades completas para gerenciar seu delivery com eficiência.</p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {benefits.map((b, i) => (
+              <div key={i} className="bg-white rounded-2xl p-6 border border-[#EAEAEA] shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center mb-4">
+                  <b.icon size={22} className="text-[#FF6B00]" />
                 </div>
-                <div className="flex items-center text-xs text-brand-muted gap-2">
-                  {closed ? (
-                    <span className="text-red-500 font-semibold">Toque para ver o cardápio</span>
-                  ) : (
-                    <><span className="text-brand-alert font-bold">⭐ 4.8</span> <span>• 30-40 min</span></>
-                  )}
+                <h3 className="text-lg font-bold mb-2">{b.title}</h3>
+                <p className="text-sm text-[#666] leading-relaxed">{b.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section id="how-it-works" className="py-20 md:py-28 bg-white">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl md:text-4xl font-black mb-4">Como funciona</h2>
+            <p className="text-lg text-[#666] max-w-xl mx-auto">Em apenas 4 passos seu delivery está no ar.</p>
+          </div>
+          <div className="grid md:grid-cols-4 gap-6">
+            {howItWorks.map((h, i) => (
+              <div key={i} className="relative text-center">
+                <div className="w-14 h-14 rounded-2xl bg-[#FF6B00] text-white flex items-center justify-center mx-auto mb-4 text-lg font-black">{h.step}</div>
+                {i < howItWorks.length - 1 && (
+                  <div className="hidden md:block absolute top-7 left-[60%] w-[80%] h-[2px] bg-orange-200">
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#FF6B00]" />
+                  </div>
+                )}
+                <h3 className="text-lg font-bold mb-2">{h.title}</h3>
+                <p className="text-sm text-[#666] leading-relaxed">{h.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Differentials */}
+      <section id="differentials" className="py-20 md:py-28">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl md:text-4xl font-black mb-4">Por que escolher o Bora de Delivery?</h2>
+            <p className="text-lg text-[#666] max-w-xl mx-auto">Diferenciais que fazem a diferença no seu dia a dia.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-5">
+            {differentials.map((d, i) => (
+              <div key={i} className="bg-white rounded-2xl p-6 border border-[#EAEAEA] shadow-sm hover:shadow-md transition-all duration-300">
+                <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center mb-4">
+                  <d.icon size={22} className="text-[#FF6B00]" />
+                </div>
+                <h3 className="text-lg font-bold mb-2">{d.title}</h3>
+                <p className="text-sm text-[#666] leading-relaxed">{d.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section id="testimonials" className="py-20 md:py-28 bg-white">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl md:text-4xl font-black mb-4">Quem usa recomenda</h2>
+            <p className="text-lg text-[#666] max-w-xl mx-auto">Veja o que nossos clientes estão falando.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {testimonials.map((t, i) => (
+              <div key={i} className="bg-[#FAFAFA] rounded-2xl p-6 border border-[#EAEAEA]">
+                <div className="flex gap-1 mb-4">
+                  {[...Array(5)].map((_, j) => <Star key={j} size={16} className="text-[#FFB800] fill-[#FFB800]" />)}
+                </div>
+                <p className="text-sm text-[#666] leading-relaxed mb-6 italic">&ldquo;{t.text}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#FF6B00] flex items-center justify-center text-white text-sm font-bold">{t.name.charAt(0)}</div>
+                  <div>
+                    <p className="font-bold text-sm">{t.name}</p>
+                    <p className="text-xs text-[#666]">{t.role}</p>
+                  </div>
                 </div>
               </div>
-              <Store className={`h-5 w-5 ${closed ? 'text-red-400' : 'text-brand-primary'}`} />
-            </Link>
-            );
-          })}
+            ))}
+          </div>
         </div>
-      </div>
-    </main>
+      </section>
+
+      {/* CTA */}
+      <section className="py-20 md:py-28">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="bg-gradient-to-br from-[#FF6B00] to-[#E65C00] rounded-3xl p-10 md:p-16 text-center text-white shadow-2xl">
+            <h2 className="text-3xl md:text-4xl font-black mb-4">Pronto para modernizar seu delivery?</h2>
+            <p className="text-lg opacity-90 mb-8 max-w-lg mx-auto">Comece agora e transforme a forma como seu restaurante recebe pedidos.</p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link href="/login" className="h-12 px-8 bg-white text-[#FF6B00] font-bold rounded-xl hover:bg-gray-100 transition-all text-sm flex items-center gap-2">
+                Entrar agora <ArrowRight size={18} />
+              </Link>
+              <a href="#" className="h-12 px-8 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 transition-all text-sm border border-white/30 flex items-center gap-2">
+                Solicitar demonstração
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-12 border-t border-[#EAEAEA] bg-white">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-3">
+              <img src="/Logo.png" alt="Bora De Delivery" className="h-8 w-auto" />
+              <span className="text-xs text-[#666]">© 2026 Bora De Delivery. Todos os direitos reservados.</span>
+            </div>
+            <div className="flex items-center gap-6 text-xs text-[#666]">
+              <span>v1.0.0</span>
+              <span>Termos de uso</span>
+              <span>Privacidade</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </>
   );
 }
 
-export default function HomePage() {
+export default function LandingPage() {
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1280px)");
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  if (isDesktop) {
+    return (
+      <div className="landing-outer bg-[#FAFAFA] font-['Inter',sans-serif] text-[#1F1F1F]">
+        <div className="landing-scaler">
+          <LandingContent />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <ErrorBoundary context="HomePage">
-      <HomeContent />
-    </ErrorBoundary>
+    <div className="min-h-screen bg-[#FAFAFA] font-['Inter',sans-serif] text-[#1F1F1F]">
+      <LandingContent />
+    </div>
   );
 }

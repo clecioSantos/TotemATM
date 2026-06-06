@@ -3,35 +3,21 @@
 import { useEffect } from "react";
 import { useAuth } from "@totem/shared/types/AuthProvider";
 import { usePathname, useRouter } from "next/navigation";
-import { auth } from "@/src/services/firebase";
 import { Loader2 } from "lucide-react";
-import "../globals.css";
 
-export default function TotemLayout({
-  children,
-}: {
+interface AuthGuardProps {
   children: React.ReactNode;
-}) {
+}
+
+export default function AuthGuard({ children }: AuthGuardProps) {
   const { user, loading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
-    if (loading) return;
-
-    if (!user) {
+    if (!loading && !user) {
       const redirectPath = encodeURIComponent(pathname);
       router.replace(`/login?redirect=${redirectPath}`);
-      return;
-    }
-
-    const role = (user as any)?.role;
-    if (role !== "admin" && role !== "owner") {
-      const currentUser = auth.currentUser;
-      if (currentUser && !currentUser.emailVerified) {
-        router.replace("/verify-email");
-        return;
-      }
     }
   }, [user, loading, pathname, router]);
 
@@ -50,5 +36,5 @@ export default function TotemLayout({
     return null;
   }
 
-  return <div className="totem-wrapper">{children}</div>;
+  return <>{children}</>;
 }
