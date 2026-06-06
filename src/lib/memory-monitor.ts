@@ -44,7 +44,16 @@ export function logMemoryUsage(): void {
     const rssMB = Math.round((usage.rss / 1024 / 1024) * 100) / 100;
     const externalMB = Math.round((usage.external / 1024 / 1024) * 100) / 100;
 
-    const payload = {
+    let cpuUser = 0;
+    let cpuSystem = 0;
+    try {
+      const cpu = process.cpuUsage();
+      cpuUser = Math.round(cpu.user / 1000);
+      cpuSystem = Math.round(cpu.system / 1000);
+    } catch {
+    }
+
+    const payload: Record<string, unknown> = {
       heapUsedMB,
       heapTotalMB,
       rssMB,
@@ -53,6 +62,11 @@ export function logMemoryUsage(): void {
         ? Math.round((heapUsedMB / heapTotalMB) * 10000) / 100
         : 0,
     };
+
+    if (cpuUser > 0 || cpuSystem > 0) {
+      payload.cpuUserMs = cpuUser;
+      payload.cpuSystemMs = cpuSystem;
+    }
 
     if (heapUsedMB > MEMORY_WARN_HEAP_USAGE_MB) {
       logger.warn("MEMORY_MONITOR", `Uso de memória elevado: ${heapUsedMB}MB`, undefined, payload);

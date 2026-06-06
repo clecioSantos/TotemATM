@@ -1,6 +1,6 @@
 import { Order, CreateOrderDTO, OrderStatus } from './order';
 import * as admin from 'firebase-admin';
-import { getAdminDb } from './firebase-admin.config';
+import { getAdminDb } from './src/services/firebase-admin';
 import { logger } from './src/lib/logger';
 
 export class OrdersService {

@@ -2,9 +2,10 @@
   "name": "nexorder",
   "private": true,
   "scripts": {
-  "dev": "next dev -p 3000",
+  "dev": "next dev",
   "build": "next build",
-  "start": "next start -p 3000"
+  "start": "next start",
+  "start:prod": "next start"
 },
   "devDependencies": {
     "@types/node": "^22.0.0",

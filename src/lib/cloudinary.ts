@@ -1,44 +1,44 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { logger } from './logger';
 
-const {
-  CLOUDINARY_CLOUD_NAME,
-  CLOUDINARY_API_KEY,
-  CLOUDINARY_API_SECRET,
-  CLOUDINARY_FOLDER: CLOUDINARY_FOLDER_ENV,
-} = process.env;
+let configured = false;
 
-logger.info('CLOUDINARY', 'Verificando configuração do Cloudinary', {
-  hasCloudName: !!CLOUDINARY_CLOUD_NAME,
-  hasApiKey: !!CLOUDINARY_API_KEY,
-  hasApiSecret: !!CLOUDINARY_API_SECRET,
-  hasFolder: !!CLOUDINARY_FOLDER_ENV,
-  nodeEnv: process.env.NODE_ENV,
-});
+function ensureConfigured(): void {
+  if (configured) return;
 
-if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
-  logger.error(
-    'CLOUDINARY',
-    'Variáveis de ambiente Cloudinary ausentes'
-  );
-  throw new Error(
-    'Cloudinary environment variables not set: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET'
-  );
-}
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
-try {
+  if (!cloudName || !apiKey || !apiSecret) {
+    const missing: string[] = [];
+    if (!cloudName) missing.push('CLOUDINARY_CLOUD_NAME');
+    if (!apiKey) missing.push('CLOUDINARY_API_KEY');
+    if (!apiSecret) missing.push('CLOUDINARY_API_SECRET');
+    const msg = `Cloudinary config ausente: ${missing.join(', ')}`;
+    logger.error('CLOUDINARY', msg);
+    throw new Error(msg);
+  }
+
   cloudinary.config({
-    cloud_name: CLOUDINARY_CLOUD_NAME,
-    api_key: CLOUDINARY_API_KEY,
-    api_secret: CLOUDINARY_API_SECRET,
+    cloud_name: cloudName,
+    api_key: apiKey,
+    api_secret: apiSecret,
   });
-  logger.info('CLOUDINARY', 'Cloudinary configurado com sucesso', {
-    cloud_name: CLOUDINARY_CLOUD_NAME,
+
+  configured = true;
+  logger.info('CLOUDINARY', 'Cloudinary configurado sob demanda', {
+    cloud_name: cloudName,
   });
-} catch (error) {
-  logger.error('CLOUDINARY', 'Erro ao configurar Cloudinary', error);
-  throw error;
 }
 
-export const CLOUDINARY_FOLDER = CLOUDINARY_FOLDER_ENV || 'nexorder';
+export const CLOUDINARY_FOLDER = (() => {
+  return process.env.CLOUDINARY_FOLDER || 'nexorder';
+})();
+
+export function getCloudinary(): typeof cloudinary {
+  ensureConfigured();
+  return cloudinary;
+}
+
 export { cloudinary };

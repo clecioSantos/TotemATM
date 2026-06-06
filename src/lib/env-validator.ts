@@ -30,52 +30,44 @@ const CLIENT_VARS: EnvVarRule[] = [
   { name: "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID", required: false, description: "Firebase Client Measurement ID" },
 ];
 
-function checkVars(rules: EnvVarRule[], environment: string): string[] {
+function checkVars(rules: EnvVarRule[], environment: string): { missing: string[]; optionalMissing: string[] } {
   const missing: string[] = [];
+  const optionalMissing: string[] = [];
 
   for (const rule of rules) {
     const value = process.env[rule.name];
-
-    if (rule.required && (!value || value.trim() === "")) {
-      missing.push(rule.name);
-      logger.error(
-        "ENV_VALIDATOR",
-        `Variável de ambiente obrigatória ausente: ${rule.name} (${rule.description}) - ambiente: ${environment}`
-      );
-    } else if (value) {
-      logger.info(
-        "ENV_VALIDATOR",
-        `Variável ${rule.name} presente (${rule.description}) - ambiente: ${environment}`
-      );
-    } else {
-      logger.warn(
-        "ENV_VALIDATOR",
-        `Variável opcional ausente: ${rule.name} (${rule.description}) - ambiente: ${environment}`
-      );
+    if (!value || value.trim() === "") {
+      if (rule.required) {
+        missing.push(rule.name);
+      } else {
+        optionalMissing.push(rule.name);
+      }
     }
   }
 
-  return missing;
+  return { missing, optionalMissing };
 }
 
 export function validateEnv(): void {
   const runtime = process.env.NEXT_RUNTIME;
 
-  logger.info("ENV_VALIDATOR", `Iniciando validação de variáveis de ambiente (NODE_ENV=${process.env.NODE_ENV}, NEXT_RUNTIME=${runtime || "nodejs"})`);
+  const server = checkVars(SERVER_VARS, "server");
+  const client = checkVars(CLIENT_VARS, "client");
 
-  const missingServer = checkVars(SERVER_VARS, "server");
-  const missingClient = checkVars(CLIENT_VARS, "client");
-
-  const allMissing = [...missingServer, ...missingClient];
+  const allMissing = [...server.missing, ...client.missing];
+  const allOptionalMissing = [...server.optionalMissing, ...client.optionalMissing];
 
   if (allMissing.length > 0) {
     logger.error(
       "ENV_VALIDATOR",
-      `${allMissing.length} variável(is) obrigatória(s) ausente(s). A aplicação pode não funcionar corretamente.`,
+      `${allMissing.length} variável(is) obrigatória(s) ausente(s): ${allMissing.join(", ")}`,
       undefined,
-      { missing: allMissing }
+      { missing: allMissing, environment: `${runtime || "nodejs"}` }
     );
   } else {
-    logger.info("ENV_VALIDATOR", "Todas as variáveis de ambiente obrigatórias estão presentes");
+    logger.info("ENV_VALIDATOR", "Todas as variáveis obrigatórias presentes", {
+      environment: runtime || "nodejs",
+      optionalMissing: allOptionalMissing.length > 0 ? allOptionalMissing : undefined,
+    });
   }
 }

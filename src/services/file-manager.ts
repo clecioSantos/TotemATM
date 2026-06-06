@@ -1,4 +1,4 @@
-import { cloudinary, CLOUDINARY_FOLDER } from '../lib/cloudinary';
+import { getCloudinary, CLOUDINARY_FOLDER } from '../lib/cloudinary';
 import { logger } from '../lib/logger';
 
 export const saveFile = async (file: {
@@ -11,7 +11,6 @@ export const saveFile = async (file: {
       bufferLength: file.buffer?.length ?? 0,
       folder: CLOUDINARY_FOLDER,
       nodeEnv: process.env.NODE_ENV ?? 'unknown',
-      hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
     };
 
     logger.info('FILE_MANAGER', 'Iniciando upload', fileInfo);
@@ -21,6 +20,14 @@ export const saveFile = async (file: {
       resource_type: 'auto',
       timeout: 60000,
     };
+
+    let cloudinary;
+    try {
+      cloudinary = getCloudinary();
+    } catch (err) {
+      logger.error('FILE_MANAGER', 'Cloudinary não configurado', err);
+      return reject(err);
+    }
 
     const stream = cloudinary.uploader.upload_stream(
       uploadOptions,
@@ -69,6 +76,14 @@ export const deleteFile = async (fileUrlOrPublicId: string | undefined): Promise
 
   const cloudinaryUrlRegex = /\/image\/upload\/(?:v\d+\/)?(.+)\.[a-zA-Z0-9]+$/;
   const match = fileUrlOrPublicId.match(cloudinaryUrlRegex);
+
+  let cloudinary;
+  try {
+    cloudinary = getCloudinary();
+  } catch {
+    logger.warn('FILE_MANAGER', 'Cloudinary não configurado, pulando deleção');
+    return;
+  }
 
   try {
     if (match?.[1]) {
