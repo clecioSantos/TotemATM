@@ -180,7 +180,7 @@ function TotemContent({ params }: PageProps) {
             clearCart,
           }}
           onFinish={() => setStep('IDENTIFICATION')}
-          onCancel={() => router.push('/')}
+          onCancel={() => router.push('/totem')}
         />
       );
 
@@ -237,13 +237,12 @@ function TotemContent({ params }: PageProps) {
             clearCart,
           }}
           onFinish={() => setStep('IDENTIFICATION')}
-          onCancel={() => router.push('/')}
+          onCancel={() => router.push('/totem')}
         />
       );
+    }
   }
-}
 
-export default function TotemPage(props: PageProps) {
   return (
     <ErrorBoundary context="TotemPage">
       <TotemContent {...props} />

@@ -16,6 +16,11 @@ function FlavorsContent() {
   const { categories, loading: catLoading } = useCategoriesStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFlavor, setEditingFlavor] = useState<CategoryFlavor | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+
+  const filteredFlavors = categoryFilter === "all"
+    ? flavors
+    : flavors.filter((f) => f.categoryId === categoryFilter);
 
   const handleEdit = (flavor: CategoryFlavor) => {
     setEditingFlavor(flavor);
@@ -36,9 +41,22 @@ function FlavorsContent() {
           <h1 className="page-title">Sabores</h1>
           <p className="page-subtitle">Configure os sabores disponíveis por categoria</p>
         </div>
-        <button className="primary-button" onClick={() => { setEditingFlavor(null); setIsModalOpen(true); }}>
-          <span>➕</span> Novo Sabor
-        </button>
+        <div className="header-actions">
+          <select
+            className="filter-select"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            aria-label="Filtrar por categoria"
+          >
+            <option value="all">Todas as categorias</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+          <button className="primary-button" onClick={() => { setEditingFlavor(null); setIsModalOpen(true); }}>
+            <span>➕</span> Novo Sabor
+          </button>
+        </div>
       </header>
 
       <main className="page-content">
@@ -53,7 +71,7 @@ function FlavorsContent() {
           </div>
         ) : (
           <FlavorTable
-            flavors={flavors}
+            flavors={filteredFlavors}
             categories={categories}
             onDelete={(id) => { if (window.confirm("Deseja excluir este sabor?")) removeFlavor(id); }}
             onEdit={handleEdit}
