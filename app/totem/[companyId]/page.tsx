@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTotem } from "@totem/hooks/useTotem"; 
 import OrderingScreen from "../components/OrderingScreen";
@@ -11,15 +11,14 @@ import PaymentScreen from "../components/PaymentScreen";
 import "@/page.css";
 
 interface PageProps {
-  params: Promise<{ companyId: string }>;
+  params: { companyId: string };
 }
 
 type TotemStep = 'WELCOME' | 'ORDERING' | 'IDENTIFICATION' | 'PAYMENT' | 'FINISHED';
 
 export default function TotemPage({ params }: PageProps) {
   const router = useRouter();
-  // No Next.js 15, params é uma Promise que deve ser resolvida com 'use'
-  const { companyId } = use(params);
+  const { companyId } = params;
 
   useEffect(() => {
     if (!companyId) {

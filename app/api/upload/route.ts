@@ -3,14 +3,6 @@ import { saveFile, deleteFile } from '../../../src/services/file-manager';
 
 export const runtime = 'nodejs';
 
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
-};
-
 export async function POST(request: NextRequest) {
   var formData;
   try {
