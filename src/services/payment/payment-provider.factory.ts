@@ -17,6 +17,10 @@ export class PaymentProviderFactory {
 
   static createForName(name: PaymentProviderName): PaymentProvider {
     switch (name) {
+      case "mercadopago": {
+        const { MercadoPagoProvider } = require("../../../app/services/mercadopago/mercadopago.provider");
+        return new MercadoPagoProvider();
+      }
       case "abacatepay": {
         const { AbacatePayProvider } = require("../../../app/services/abacatepay/abacatepay.provider");
         return new AbacatePayProvider();
