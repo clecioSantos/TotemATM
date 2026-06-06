@@ -16,6 +16,11 @@ function ProductsContent() {
   const { categories, loading: categoriesLoading, error: categoriesError } = useCategories();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+
+  const filteredProducts = categoryFilter === "all"
+    ? products
+    : products.filter((p) => p.categoryId === categoryFilter);
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
@@ -35,12 +40,26 @@ function ProductsContent() {
           <p className="page-subtitle">Gerencie o cardápio e a disponibilidade dos seus itens</p>
         </div>
 
-        <button className="primary-button" onClick={() => {
-          setEditingProduct(null);
-          setIsModalOpen(true);
-        }}>
-          <span>➕</span> Novo Produto
-        </button>
+        <div className="header-actions">
+          <select
+            className="filter-select"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            aria-label="Filtrar por categoria"
+          >
+            <option value="all">Todas as categorias</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+
+          <button className="primary-button" onClick={() => {
+            setEditingProduct(null);
+            setIsModalOpen(true);
+          }}>
+            <span>➕</span> Novo Produto
+          </button>
+        </div>
       </header>
 
       <main className="page-content">
@@ -55,7 +74,7 @@ function ProductsContent() {
           </div>
         ) : (
           <ProductTable 
-            products={products} 
+            products={filteredProducts} 
             categories={categories}
             onDelete={removeProduct}
             onEdit={handleEdit} 
