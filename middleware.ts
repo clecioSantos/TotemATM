@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_ROUTES = ["/login", "/register"];
+const PUBLIC_ROUTES = ["/login", "/register", "/forgot-password", "/verify-email"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    if (session && isPublicRoute) {
+    if (session && isPublicRoute && pathname !== "/forgot-password" && pathname !== "/verify-email") {
       if (userRole === 'admin' || userRole === 'owner') {
         return NextResponse.redirect(new URL('/admin', request.url));
       }
