@@ -8,7 +8,13 @@ export async function POST(req: NextRequest) {
 
   try {
     requestBody = await req.json();
-    const { orderId, amount, customerName, customerEmail, customerTaxId, customerPhone, description } = requestBody;
+    const orderId = requestBody.orderId as string | undefined;
+    const amount = requestBody.amount as number | undefined;
+    const customerName = requestBody.customerName as string | undefined;
+    const customerEmail = requestBody.customerEmail as string | undefined;
+    const customerTaxId = requestBody.customerTaxId as string | undefined;
+    const customerPhone = requestBody.customerPhone as string | undefined;
+    const description = requestBody.description as string | undefined;
 
     logger.info("API_PIX", `[${requestId}] Iniciando criação de pagamento`, {
       orderId,
