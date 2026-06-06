@@ -3,13 +3,19 @@
 import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
-import { QrCode, Copy, CheckCircle, Loader2, Clock, Smartphone } from "lucide-react";
+import { Copy, CheckCircle, Loader2 } from "lucide-react";
 import { logger } from "@/src/lib/logger";
 import "./styles.css";
 
+interface PaymentData {
+  qrCode: string;
+  copyPaste: string;
+  provider?: string;
+}
+
 interface PaymentScreenProps {
   orderId: string;
-  pixData: { qrCode: string; copyPaste: string };
+  pixData: PaymentData;
   total: number;
   onPaymentConfirmed: () => void;
 }
@@ -26,7 +32,9 @@ export default function PaymentScreen({ orderId, pixData, total, onPaymentConfir
         try {
           const data = snapshot.data();
           if (data?.paymentStatus === "PAID") {
-            logger.info("PaymentScreen", `Pagamento confirmado para pedido ${orderId}`);
+            logger.info("PaymentScreen", `Pagamento confirmado para pedido ${orderId}`, {
+              provider: data?.paymentProvider,
+            });
             onPaymentConfirmed();
           }
         } catch (error) {

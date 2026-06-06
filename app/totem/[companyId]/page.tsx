@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { doc, updateDoc } from "firebase/firestore";
+import { firestore } from "@/src/services/firebase";
 import { useTotem } from "@totem/hooks/useTotem";
 import OrderingScreen from "../components/OrderingScreen";
 import IdentificationScreen from "../components/IdentificationScreen";
@@ -16,6 +18,14 @@ interface PageProps {
 }
 
 type TotemStep = 'WELCOME' | 'ORDERING' | 'IDENTIFICATION' | 'PAYMENT' | 'FINISHED';
+
+export default function TotemPage({ params }: PageProps) {
+  return (
+    <ErrorBoundary context="TotemPage">
+      <TotemContent params={params} />
+    </ErrorBoundary>
+  );
+}
 
 function TotemContent({ params }: PageProps) {
   const router = useRouter();
@@ -121,7 +131,23 @@ function TotemContent({ params }: PageProps) {
 
       const data = await res.json();
 
-      setPixData({ qrCode: data.pixQrCode, copyPaste: data.pixCopyPaste });
+      setPixData({ qrCode: data.qrCode || data.pixQrCode, copyPaste: data.pixCode || data.pixCopyPaste });
+
+      try {
+        await updateDoc(doc(firestore, "orders", orderId), {
+          paymentProvider: data.provider || "pagbank",
+          paymentExternalId: data.paymentId,
+          paymentStatus: "WAITING_PAYMENT",
+          paymentPayload: {
+            provider: data.provider,
+            paymentId: data.paymentId,
+            status: data.status,
+          },
+        });
+      } catch (updateError) {
+        logger.error("TotemPage", "Erro ao salvar dados de pagamento no pedido", updateError);
+      }
+
       setCurrentOrderId(orderId);
       setStep('PAYMENT');
     } catch (error) {
@@ -242,10 +268,3 @@ function TotemContent({ params }: PageProps) {
       );
     }
   }
-
-  return (
-    <ErrorBoundary context="TotemPage">
-      <TotemContent {...props} />
-    </ErrorBoundary>
-  );
-}
