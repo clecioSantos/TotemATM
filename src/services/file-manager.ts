@@ -1,69 +1,45 @@
-import { cloudinary, CLOUDINARY_FOLDER, ensureCloudinary } from '../lib/cloudinary';
+import { cloudinary, CLOUDINARY_FOLDER } from '../lib/cloudinary';
+import { logger } from '../lib/logger';
 
 export const saveFile = async (file: {
   buffer: Buffer;
   originalname: string;
 }): Promise<{ imageUrl: string; publicId: string }> => {
-  ensureCloudinary();
   return new Promise((resolve, reject) => {
     const fileInfo = {
       originalname: file.originalname,
       bufferLength: file.buffer?.length ?? 0,
-      bufferType: file.buffer?.constructor?.name ?? 'unknown',
       folder: CLOUDINARY_FOLDER,
       nodeEnv: process.env.NODE_ENV ?? 'unknown',
       hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
-      hasApiKey: !!process.env.CLOUDINARY_API_KEY,
-      hasApiSecret: !!process.env.CLOUDINARY_API_SECRET,
     };
 
-    console.log('🔍 saveFile - starting upload with details:', fileInfo);
+    logger.info('FILE_MANAGER', 'Iniciando upload', fileInfo);
 
     const uploadOptions: any = {
       folder: CLOUDINARY_FOLDER,
-      // Force detailed error response from Cloudinary
       resource_type: 'auto',
-      timeout: 60000, // 60 second timeout
+      timeout: 60000,
     };
 
     const stream = cloudinary.uploader.upload_stream(
       uploadOptions,
       (error, result) => {
         if (error) {
-          const e: any = error;
-          const errorDetails = {
-            name: e.name ?? 'unknown',
-            message: typeof e.message === 'string' ? e.message.slice(0, 500) : String(e.message),
-            http_code: e.http_code ?? e.statusCode ?? null,
-            http_body: e.http_body ? String(e.http_body).slice(0, 500) : undefined,
-            fullErrorKeys: Object.keys(e).slice(0, 20),
-          };
-
-          console.error('🔴 saveFile - Upload failed with error:', errorDetails);
-          console.error('🔴 saveFile - Full error stack:', e.stack ?? 'no stack');
-
-          // Log entire error object for inspection
-          if (typeof e === 'object') {
-            try {
-              console.error('🔴 saveFile - Error object JSON:', JSON.stringify(e, null, 2).slice(0, 1000));
-            } catch (jsonErr) {
-              console.error('🔴 saveFile - Could not stringify error:', jsonErr);
-            }
-          }
-
+          const errObj = error as any;
+          logger.error('FILE_MANAGER', 'Upload falhou', error, {
+            http_code: errObj.http_code ?? errObj.statusCode ?? null,
+          });
           return reject(error);
         }
 
         if (!result) {
-          console.error('🔴 saveFile - Cloudinary returned no result (result is null/undefined)');
+          logger.error('FILE_MANAGER', 'Cloudinary retornou resultado nulo');
           return reject(new Error('No result from Cloudinary'));
         }
 
-        console.log('✅ saveFile - Upload successful:', {
-          secure_url: result.secure_url,
+        logger.info('FILE_MANAGER', 'Upload bem-sucedido', {
           public_id: result.public_id,
-          width: result.width,
-          height: result.height,
           bytes: result.bytes,
         });
 
@@ -71,27 +47,25 @@ export const saveFile = async (file: {
       }
     );
 
-    // Log stream setup
-    console.log('🔍 saveFile - stream created, about to write buffer of', file.buffer.length, 'bytes');
-
-    // Handle stream errors before calling end()
     stream.on('error', (streamError) => {
-      console.error('🔴 saveFile - stream emitted error event:', streamError);
+      logger.error('FILE_MANAGER', 'Erro no stream de upload', streamError);
       reject(streamError);
     });
 
     try {
       stream.end(file.buffer);
-      console.log('🔍 saveFile - buffer written to stream, waiting for response...');
     } catch (err) {
-      console.error('🔴 saveFile - Error calling stream.end():', err);
+      logger.error('FILE_MANAGER', 'Erro ao escrever buffer no stream', err);
       reject(err);
     }
   });
 };
 
 export const deleteFile = async (fileUrlOrPublicId: string | undefined): Promise<void> => {
-  if (!fileUrlOrPublicId) return;
+  if (!fileUrlOrPublicId) {
+    logger.warn('FILE_MANAGER', 'deleteFile chamado sem URL/publicId');
+    return;
+  }
 
   const cloudinaryUrlRegex = /\/image\/upload\/(?:v\d+\/)?(.+)\.[a-zA-Z0-9]+$/;
   const match = fileUrlOrPublicId.match(cloudinaryUrlRegex);
@@ -99,16 +73,18 @@ export const deleteFile = async (fileUrlOrPublicId: string | undefined): Promise
   try {
     if (match?.[1]) {
       await cloudinary.uploader.destroy(match[1]);
+      logger.info('FILE_MANAGER', `Arquivo deletado: ${match[1]}`);
       return;
     }
 
     if (!fileUrlOrPublicId.startsWith('http')) {
       await cloudinary.uploader.destroy(fileUrlOrPublicId);
+      logger.info('FILE_MANAGER', `Arquivo deletado: ${fileUrlOrPublicId}`);
       return;
     }
 
-    console.warn('deleteFile skipped unsupported URL:', fileUrlOrPublicId);
+    logger.warn('FILE_MANAGER', `URL não suportada para deleção: ${fileUrlOrPublicId}`);
   } catch (error) {
-    console.error('Erro ao deletar arquivo na Cloudinary:', error);
+    logger.error('FILE_MANAGER', `Erro ao deletar arquivo: ${fileUrlOrPublicId}`, error);
   }
 };

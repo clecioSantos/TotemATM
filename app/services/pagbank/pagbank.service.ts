@@ -1,22 +1,34 @@
+import { logger } from "@/src/lib/logger";
+import { fetchJson } from "@/src/lib/fetch-with-timeout";
+
+const PAGBANK_TIMEOUT_MS = 20000;
+
 export class PagBankService {
   private static baseUrl = process.env.PAGBANK_API_URL?.replace(/\/+$/, "");
   private static token = process.env.PAGBANK_TOKEN?.trim();
   private static webhookUrl = process.env.PAGBANK_WEBHOOK_URL;
+
+  private static validateConfig(): void {
+    const missing: string[] = [];
+
+    if (!this.baseUrl) missing.push("PAGBANK_API_URL");
+    if (!this.token) missing.push("PAGBANK_TOKEN");
+
+    if (missing.length > 0) {
+      const errorMsg = `PagBank config ausente: ${missing.join(", ")}`;
+      logger.error("PAGBANK", errorMsg);
+      throw new Error(errorMsg);
+    }
+  }
 
   static async createPixOrder(
     orderId: string,
     amount: number,
     customerName: string
   ) {
-    if (!this.baseUrl) {
-      throw new Error("PAGBANK_API_URL não configurada");
-    }
+    this.validateConfig();
 
-    if (!this.token) {
-      throw new Error("PAGBANK_TOKEN não configurado");
-    }
-
-    const payload = {
+    const payload: Record<string, unknown> = {
       reference_id: orderId,
       customer: {
         name: customerName || "Cliente Teste",
@@ -27,91 +39,98 @@ export class PagBankService {
             country: "55",
             area: "11",
             number: "999999999",
-            type: "MOBILE"
-          }
-        ]
+            type: "MOBILE",
+          },
+        ],
       },
       qr_codes: [
         {
           amount: {
-            value: Math.round(amount * 100)
+            value: Math.round(amount * 100),
           },
           expiration_date: new Date(
             Date.now() + 30 * 60 * 1000
-          ).toISOString()
-        }
-      ]
+          ).toISOString(),
+        },
+      ],
     };
 
     if (this.webhookUrl) {
-      Object.assign(payload, {
-        notification_urls: [this.webhookUrl]
-      });
+      payload.notification_urls = [this.webhookUrl];
     }
 
-    console.log("=== PAGBANK REQUEST ===");
-    console.log("URL:", `${this.baseUrl}/orders`);
-    console.log("PAYLOAD:");
-    console.log(JSON.stringify(payload, null, 2));
+    const url = `${this.baseUrl}/orders`;
 
-    const response = await fetch(`${this.baseUrl}/orders`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-        "Content-Type": "application/json",
-        Accept: "application/json"
-      },
-      body: JSON.stringify(payload)
+    logger.info("PAGBANK", `Criando ordem PIX para pedido ${orderId}`, {
+      url,
+      amount,
+      hasWebhook: !!this.webhookUrl,
     });
 
-    const responseText = await response.text();
-
-    console.log("=== PAGBANK RESPONSE ===");
-    console.log("STATUS:", response.status);
-    console.log("BODY:", responseText);
-
-    let data;
-
     try {
-      data = JSON.parse(responseText);
-    } catch {
-      data = responseText;
-    }
-
-    if (!response.ok) {
-      throw new Error(
-        `PagBank Error (${response.status}): ${JSON.stringify(data, null, 2)}`
-      );
-    }
-
-    return data;
-  }
-
-  static async simulateSandboxPayment(orderId: string) {
-    if (!this.baseUrl?.includes("sandbox")) {
-      console.warn("Simulação abortada: O ambiente atual não é Sandbox.");
-      return;
-    }
-
-    console.log(`[Mock] Iniciando simulação de pagamento para: ${orderId}`);
-
-    try {
-      const response = await fetch(`${this.baseUrl}/orders/${orderId}/pay`, {
+      const data = await fetchJson(url, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${this.token}`,
           "Content-Type": "application/json",
-          Accept: "application/json"
+          Accept: "application/json",
         },
-        body: JSON.stringify({
-          // No sandbox do PagBank, chamar o endpoint /pay sem corpo 
-          // costuma autorizar o pedido automaticamente.
-        })
+        body: JSON.stringify(payload),
+        timeout: PAGBANK_TIMEOUT_MS,
+        context: "PAGBANK_CREATE_PIX",
       });
 
-      console.log(`[Mock] Status da simulação: ${response.status}`);
+      logger.info("PAGBANK", `Ordem PIX criada com sucesso: ${orderId}`, {
+        pagbankOrderId: (data as Record<string, unknown>)?.id,
+      });
+
+      return data as unknown as Record<string, unknown>;
     } catch (error) {
-      console.error("[Mock] Erro ao simular pagamento:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      if (errorMessage.includes("Timeout")) {
+        logger.error("PAGBANK", `Timeout ao criar ordem PIX para pedido ${orderId}`, error, {
+          url,
+          timeout: PAGBANK_TIMEOUT_MS,
+        });
+        throw new Error("O serviço de pagamento está temporariamente indisponível. Tente novamente.");
+      }
+
+      logger.error("PAGBANK", `Erro ao criar ordem PIX para pedido ${orderId}`, error, {
+        url,
+        httpStatus: (error as any)?.status,
+      });
+
+      throw new Error("Erro ao processar pagamento. Tente novamente mais tarde.");
+    }
+  }
+
+  static async simulateSandboxPayment(orderId: string) {
+    if (!this.baseUrl?.includes("sandbox")) {
+      logger.warn("PAGBANK_SIMULATE", "Simulação abortada: ambiente não é Sandbox");
+      return;
+    }
+
+    logger.info("PAGBANK_SIMULATE", `Iniciando simulação de pagamento para: ${orderId}`);
+
+    try {
+      const url = `${this.baseUrl}/orders/${orderId}/pay`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({}),
+      });
+
+      logger.info("PAGBANK_SIMULATE", `Simulação concluída para ${orderId}`, {
+        status: response.status,
+      });
+    } catch (error) {
+      logger.error("PAGBANK_SIMULATE", `Erro ao simular pagamento para ${orderId}`, error);
     }
   }
 }

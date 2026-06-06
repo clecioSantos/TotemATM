@@ -2,14 +2,13 @@
   display: flex;
   flex-direction: column;
   gap: 32px;
-  animation: fadeIn 0.3s ease;
+  animation: pageFadeIn 0.3s ease;
 }
 
 .filters-container {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  margin-top: -8px; /* Ajuste para aproximar do header */
 }
 
 .filter-btn {
@@ -51,18 +50,4 @@
 .filter-btn.active .filter-count {
   background: rgba(255, 255, 255, 0.2);
   color: var(--white);
-}
-
-.empty-state {
-  text-align: center;
-  padding: 100px;
-  background: var(--white);
-  border-radius: 24px;
-  border: 2px dashed var(--border-light);
-  color: var(--text-secondary);
-  font-size: 18px;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
 }

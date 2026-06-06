@@ -3,15 +3,72 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Regras de acesso para a coleção de endereços (addresses)
+    // Leitura pública para todas as coleções (totem/cliente)
+    // Escrita apenas para usuários autenticados
+    // A autorização de admin/owner é feita via API routes (server-side) e middleware
+
     match /addresses/{addressId} {
-      // O usuário precisa estar autenticado para ler, criar, atualizar ou excluir endereços
       allow read, delete: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow update: if request.auth != null 
-                    && request.auth.uid == resource.data.userId 
+      allow update: if request.auth != null
+                    && request.auth.uid == resource.data.userId
                     && request.auth.uid == request.resource.data.userId;
     }
 
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /condiments/{condimentId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /flavors/{flavorId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /orders/{orderId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null;
+    }
+
+    match /companies/{companyId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /deliveryCosts/{costId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /storeCitySettings/{settingId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /neighborhoods/{neighborhoodId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /cities/{cityId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
   }
 }

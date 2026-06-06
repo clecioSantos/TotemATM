@@ -5,6 +5,8 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../src/services/firebase";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { logger } from "@/src/lib/logger";
+import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import "./page.css";
 
 function LoginForm() {
@@ -47,11 +49,20 @@ function LoginForm() {
       } else {
         const errorData = await res.json().catch(() => ({}));
         setError(errorData.message || "Erro ao criar sessão segura no servidor.");
-        console.error("❌ Erro na API de Sessão:", errorData);
+        logger.error("LOGIN_PAGE", "Erro na API de Sessão", undefined, errorData);
       }
-    } catch (err) {
-      console.error("🔥 Erro Firebase:", err);
-      setError("Falha no login: verifique suas credenciais ou se o provedor está ativo no console.");
+    } catch (error: any) {
+      const errorMessages: Record<string, string> = {
+        "auth/invalid-credential": "E-mail ou senha inválidos.",
+        "auth/user-not-found": "Usuário não encontrado.",
+        "auth/wrong-password": "Senha incorreta.",
+        "auth/invalid-email": "E-mail inválido.",
+        "auth/too-many-requests": "Muitas tentativas. Tente novamente mais tarde.",
+      };
+
+      const firebaseError = error?.code || "auth/unknown";
+      setError(errorMessages[firebaseError] || "Erro ao fazer login. Verifique suas credenciais.");
+      logger.error("LOGIN_PAGE", `Erro no login: ${firebaseError}`, error);
     } finally {
       setLoading(false);
     }
@@ -95,8 +106,10 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={null}>
-      <LoginForm />
-    </Suspense>
+    <ErrorBoundary context="LoginPage">
+      <Suspense fallback={null}>
+        <LoginForm />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

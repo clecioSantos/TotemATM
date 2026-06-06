@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Product, Category, CartItem, Condiment } from "@totem/shared/types";
+import { Product, Category, CartItem, Condiment, CategoryFlavor, SelectedSize, SelectedFlavor, ProductSize } from "@totem/shared/types";
 import { ShoppingBag, Trash2, Plus, Minus, X, ArrowLeft, Store } from "lucide-react";
 import { firestore } from "@/src/services/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
@@ -15,9 +15,10 @@ interface OrderingScreenProps {
   products: Product[];
   categories: Category[];
   condiments: Condiment[];
+  flavors: CategoryFlavor[];
   cart: CartItem[];
   actions: {
-    addToCart: (product: Product, selectedCondiments?: Condiment[]) => void;
+    addToCart: (product: Product, selectedCondiments?: Condiment[], tamanhoSelecionado?: SelectedSize, saboresSelecionados?: SelectedFlavor[]) => void;
     removeFromCart: (id: string) => void;
     updateQuantity: (id: string, delta: number) => void;
     updateItemObservation: (id: string, obs: string) => void;
@@ -38,7 +39,8 @@ export default function OrderingScreen({
   tempoPreparoMax,
   products = [], 
   categories = [], 
-  condiments = [], 
+  condiments = [],
+  flavors = [],
   cart = [], 
   actions, 
   onFinish, 
@@ -50,6 +52,8 @@ export default function OrderingScreen({
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedCondiments, setSelectedCondiments] = useState<Condiment[]>([]);
+  const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null);
+  const [selectedFlavors, setSelectedFlavors] = useState<CategoryFlavor[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [deliveryCosts, setDeliveryCosts] = useState<any[]>([]);
 
@@ -80,6 +84,20 @@ export default function OrderingScreen({
   const parallaxOffset = Math.min(scrollY * 0.4, 56);
   const bannerOpacity = Math.max(1 - scrollY / BANNER_HEIGHT, 0.3);
 
+  const productCategory = selectedProduct 
+    ? categories.find(c => c.id === selectedProduct.categoryId) 
+    : null;
+
+  const productSizes: ProductSize[] = selectedProduct && productCategory?.possuiTamanhos
+    ? selectedProduct.sizes || []
+    : [];
+
+  const productFlavors = selectedProduct
+    ? flavors.filter(f => f.categoryId === selectedProduct.categoryId)
+    : [];
+
+  const maxFlavors = selectedSize?.quantidadeSabores || 0;
+
   const productCondiments = selectedProduct 
     ? condiments.filter(c => c.categoryIds?.includes(selectedProduct.categoryId)) 
     : [];
@@ -92,8 +110,19 @@ export default function OrderingScreen({
     );
   };
 
+  const toggleFlavor = (flavor: CategoryFlavor) => {
+    setSelectedFlavors(prev => {
+      const exists = prev.find(f => f.id === flavor.id);
+      if (exists) return prev.filter(f => f.id !== flavor.id);
+      if (maxFlavors > 0 && prev.length >= maxFlavors) return prev;
+      return [...prev, flavor];
+    });
+  };
+
+  const effectivePrice = selectedSize ? selectedSize.preco : selectedProduct?.price || 0;
+
   const productTotal = selectedProduct 
-    ? (selectedProduct.price + selectedCondiments.reduce((sum, c) => sum + c.price, 0)) * quantity
+    ? (effectivePrice + selectedFlavors.reduce((sum, f) => sum + (f.preco || 0), 0) + selectedCondiments.reduce((sum, c) => sum + c.price, 0)) * quantity
     : 0;
 
   const filteredProducts = activeCategory === "all" 
@@ -103,8 +132,10 @@ export default function OrderingScreen({
     : products.filter(p => p.categoryId === activeCategory);
 
   const cartTotal = cart.reduce((acc, i) => {
+    const basePrice = i.tamanhoSelecionado ? i.tamanhoSelecionado.preco : i.price;
     const condimentsPrice = i.condiments?.reduce((sum, c) => sum + c.price, 0) || 0;
-    return acc + ((i.price + condimentsPrice) * i.quantity);
+    const flavorsPrice = i.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0;
+    return acc + ((basePrice + flavorsPrice + condimentsPrice) * i.quantity);
   }, 0);
   const cartItemsCount = cart.reduce((acc, i) => acc + i.quantity, 0);
 
@@ -299,7 +330,17 @@ export default function OrderingScreen({
               {cart.map(item => (
                 <div key={item.id} className="bg-brand-surface rounded-[8px] p-3 border border-brand-border/40 flex flex-col gap-2">
                   <div className="flex justify-between items-start gap-2">
-                    <span className="font-bold text-brand-dark text-sm leading-tight">{item.name}</span>
+                    <div>
+                      <span className="font-bold text-brand-dark text-sm leading-tight">{item.name}</span>
+                      {item.tamanhoSelecionado && (
+                        <p className="text-xs text-brand-muted mt-0.5">{item.tamanhoSelecionado.nome}</p>
+                      )}
+                      {item.saboresSelecionados && item.saboresSelecionados.length > 0 && (
+                        <p className="text-xs text-brand-muted">
+                          {item.saboresSelecionados.map(f => f.nome).join(', ')}
+                        </p>
+                      )}
+                    </div>
                     <button
                       className="text-brand-muted hover:text-brand-primary transition-colors p-1"
                       onClick={() => actions.removeFromCart(item.id)}
@@ -325,7 +366,11 @@ export default function OrderingScreen({
                       </button>
                     </div>
                     <span className="font-bold text-brand-primary text-xs">
-                      R$ {((item.price + (item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0)) * item.quantity).toFixed(2)}
+                      R$ {((
+                        (item.tamanhoSelecionado ? item.tamanhoSelecionado.preco : item.price) +
+                        (item.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0) +
+                        (item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0)
+                      ) * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -368,7 +413,17 @@ export default function OrderingScreen({
               {cart.map(item => (
                 <div key={item.id} className="bg-brand-light rounded-[12px] p-4 border border-brand-border/40 flex flex-col gap-3">
                   <div className="flex justify-between items-start gap-2">
-                    <span className="font-bold text-brand-dark text-sm leading-tight">{item.name}</span>
+                    <div>
+                      <span className="font-bold text-brand-dark text-sm leading-tight">{item.name}</span>
+                      {item.tamanhoSelecionado && (
+                        <p className="text-xs text-brand-muted mt-0.5">{item.tamanhoSelecionado.nome}</p>
+                      )}
+                      {item.saboresSelecionados && item.saboresSelecionados.length > 0 && (
+                        <p className="text-xs text-brand-muted">
+                          {item.saboresSelecionados.map(f => f.nome).join(', ')}
+                        </p>
+                      )}
+                    </div>
                     <button
                       className="text-brand-muted hover:text-brand-primary transition-colors p-1"
                       onClick={() => actions.removeFromCart(item.id)}
@@ -394,7 +449,11 @@ export default function OrderingScreen({
                       </button>
                     </div>
                     <span className="font-bold text-brand-primary text-sm">
-                      R$ {((item.price + (item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0)) * item.quantity).toFixed(2)}
+                      R$ {((
+                        (item.tamanhoSelecionado ? item.tamanhoSelecionado.preco : item.price) +
+                        (item.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0) +
+                        (item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0)
+                      ) * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -424,7 +483,13 @@ export default function OrderingScreen({
           <div className="relative w-full h-full flex flex-col md:flex-row overflow-hidden">
             <button
               className="absolute top-6 left-6 z-20 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
-              onClick={() => setSelectedProduct(null)}
+              onClick={() => {
+                setSelectedProduct(null);
+                setSelectedCondiments([]);
+                setSelectedSize(null);
+                setSelectedFlavors([]);
+                setQuantity(1);
+              }}
             >
               <ArrowLeft className="h-6 w-6 text-gray-900" />
             </button>
@@ -440,10 +505,83 @@ export default function OrderingScreen({
               <div className="mb-6 shrink-0">
                 <h2 className="text-4xl font-bold text-brand-dark mb-2">{selectedProduct.name}</h2>
                 <p className="text-brand-muted text-lg">{selectedProduct.description}</p>
+                <p className="text-2xl font-bold text-brand-primary mt-2">
+                  R$ {selectedProduct.price.toFixed(2)}
+                </p>
               </div>
-              <div className="flex-1 min-h-0 overflow-y-auto">
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-6">
+                {/* Tamanhos */}
+                {productSizes.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-bold text-lg text-brand-dark">Escolha o Tamanho</h4>
+                    <div className="grid grid-cols-1 gap-3">
+                      {productSizes.map((size, idx) => {
+                        const isSelected = selectedSize?.nome === size.nome;
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              setSelectedSize(size);
+                              setSelectedFlavors([]);
+                            }}
+                            className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
+                              isSelected ? "border-brand-primary bg-brand-light" : "border-gray-200/60 bg-gray-50"
+                            }`}
+                          >
+                            <span className="font-medium text-brand-dark">{size.nome}</span>
+                            <span className="font-bold text-brand-muted">
+                              {size.preco > 0 ? `R$ ${size.preco.toFixed(2)}` : "Grátis"}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sabores */}
+                {productFlavors.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-bold text-lg text-brand-dark">Sabores</h4>
+                    {maxFlavors > 0 ? (
+                      <p className="text-sm text-brand-muted">
+                        {selectedFlavors.length} de {maxFlavors} selecionados
+                      </p>
+                    ) : productSizes.length > 0 ? (
+                      <p className="text-sm text-brand-muted">Selecione um tamanho para escolher os sabores</p>
+                    ) : null}
+                    <div className="grid grid-cols-1 gap-3">
+                      {productFlavors.map(flavor => {
+                        const isSelected = selectedFlavors.find(f => f.id === flavor.id);
+                        const isMaxed = maxFlavors > 0 && selectedFlavors.length >= maxFlavors && !isSelected;
+                        return (
+                          <button
+                            key={flavor.id}
+                            onClick={() => toggleFlavor(flavor)}
+                            disabled={isMaxed}
+                            className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
+                              isSelected
+                                ? "border-brand-primary bg-brand-light"
+                                : isMaxed
+                                ? "border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed"
+                                : "border-gray-200/60 bg-gray-50"
+                            }`}
+                          >
+                            <span className="font-medium text-brand-dark">{flavor.nome}</span>
+                            <span className="font-bold text-brand-muted">
+                              {flavor.preco > 0 ? `+ R$ ${flavor.preco.toFixed(2)}` : ""}
+                              {isSelected && <span className="ml-2 text-brand-primary">✓</span>}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Condimentos */}
                 {productCondiments.length > 0 && (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <h4 className="font-bold text-lg text-brand-dark">Adicionais</h4>
                     <div className="grid grid-cols-1 gap-3">
                       {productCondiments.map(cond => {
@@ -482,12 +620,21 @@ export default function OrderingScreen({
                   </div>
                 </div>
                 <button
-                  className="w-full h-[64px] flex items-center justify-between px-8 bg-brand-primary hover:bg-brand-primaryHover text-white rounded-[16px] font-bold text-lg transition-all"
+                  className="w-full h-[64px] flex items-center justify-between px-8 bg-brand-primary hover:bg-brand-primaryHover text-white rounded-[16px] font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={productSizes.length > 0 && !selectedSize}
                   onClick={() => {
-                    actions.addToCart(selectedProduct, selectedCondiments);
+                    const selectedSizeData: SelectedSize | undefined = selectedSize
+                      ? { id: `size-${selectedProduct.id}-${selectedSize.nome}`, nome: selectedSize.nome, preco: selectedSize.preco }
+                      : undefined;
+                    const selectedFlavorsData: SelectedFlavor[] | undefined = selectedFlavors.length > 0
+                      ? selectedFlavors.map(f => ({ id: f.id, nome: f.nome, preco: f.preco }))
+                      : undefined;
+                    actions.addToCart(selectedProduct, selectedCondiments, selectedSizeData, selectedFlavorsData);
                     setSelectedProduct(null);
                     setQuantity(1);
                     setSelectedCondiments([]);
+                    setSelectedSize(null);
+                    setSelectedFlavors([]);
                   }}
                 >
                   <span>Adicionar ao Pedido</span>

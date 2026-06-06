@@ -8,6 +8,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
   ResponsiveContainer, AreaChart, Area
 } from "recharts";
+import { logger } from "@/src/lib/logger";
+import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import {
   TrendingUp, TrendingDown, Clock, ShoppingBag, DollarSign, Users,
   UtensilsCrossed, Package, AlertTriangle, Store, CheckCircle2, XCircle,
@@ -500,7 +502,7 @@ function WeeklyPerformance({ thisWeek, lastWeek }: { thisWeek: any[]; lastWeek: 
 
 // ─── Main Dashboard ────────────────────────────────────────────────────────
 
-export default function AdminDashboard() {
+function AdminDashboardContent() {
   const { user } = useAuth();
 
   const [company, setCompany] = useState<any>(null);
@@ -516,9 +518,13 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!user?.companyId) return;
     const unsub = onSnapshot(doc(firestore, "companies", user.companyId), snap => {
-      if (snap.exists()) setCompany({ id: snap.id, ...snap.data() });
-    }, (error) => {
-      console.error("🔥 Erro ao carregar empresa:", error);
+      try {
+        if (snap.exists()) setCompany({ id: snap.id, ...snap.data() });
+      } catch (error) {
+        logger.error("DASHBOARD", "Erro ao processar dados da empresa", error);
+      }
+    }, error => {
+      logger.error("DASHBOARD", "Erro no listener da empresa", error);
     });
     return () => unsub();
   }, [user?.companyId]);
@@ -530,7 +536,9 @@ export default function AdminDashboard() {
       .then(snap => {
         setAllProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       })
-      .catch(error => console.error("🔥 Erro ao carregar produtos:", error));
+      .catch(error => {
+        logger.error("DASHBOARD", "Erro ao carregar produtos", error);
+      });
   }, [user?.companyId]);
 
   // Today's orders (real-time)
@@ -543,10 +551,15 @@ export default function AdminDashboard() {
       orderBy("createdAt", "desc")
     );
     const unsub = onSnapshot(q, snap => {
-      setTodayOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
+      try {
+        setTodayOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        setLoading(false);
+      } catch (error) {
+        logger.error("DASHBOARD", "Erro ao processar pedidos do dia", error);
+        setLoading(false);
+      }
     }, err => {
-      console.error("Dashboard orders error:", err);
+      logger.error("DASHBOARD", "Erro no listener de pedidos do dia", err);
       setLoading(false);
     });
     return () => unsub();
@@ -565,7 +578,9 @@ export default function AdminDashboard() {
       orderBy("createdAt", "desc")
     )).then(snap => {
       setYesterdayOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }).catch(error => console.error("🔥 Erro ao carregar pedidos de ontem:", error));
+    }).catch(error => {
+      logger.error("DASHBOARD", "Erro ao carregar pedidos de ontem", error);
+    });
   }, [user?.companyId]);
 
   // This week (static)
@@ -578,7 +593,9 @@ export default function AdminDashboard() {
       orderBy("createdAt", "desc")
     )).then(snap => {
       setThisWeekOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }).catch(error => console.error("🔥 Erro ao carregar pedidos da semana:", error));
+    }).catch(error => {
+      logger.error("DASHBOARD", "Erro ao carregar pedidos da semana", error);
+    });
   }, [user?.companyId]);
 
   // Last week (static)
@@ -597,7 +614,9 @@ export default function AdminDashboard() {
       orderBy("createdAt", "desc")
     )).then(snap => {
       setLastWeekOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }).catch(error => console.error("🔥 Erro ao carregar pedidos da semana passada:", error));
+    }).catch(error => {
+      logger.error("DASHBOARD", "Erro ao carregar pedidos da semana anterior", error);
+    });
   }, [user?.companyId]);
 
   // Previous customers (before today - for new vs returning)
@@ -612,7 +631,9 @@ export default function AdminDashboard() {
       orderBy("createdAt", "desc")
     )).then(snap => {
       setPrevCustomerIds(new Set(snap.docs.map(d => d.data().customerId).filter(Boolean)));
-    }).catch(error => console.error("🔥 Erro ao carregar clientes anteriores:", error));
+    }).catch(error => {
+      logger.error("DASHBOARD", "Erro ao carregar clientes anteriores", error);
+    });
   }, [user?.companyId]);
 
   // ── KPIs ──
@@ -715,9 +736,14 @@ export default function AdminDashboard() {
 
   const handleToggleOpen = async () => {
     if (!company?.id) return;
-    await updateDoc(doc(firestore, "companies", company.id), {
-      open: company.open === false ? true : false,
-    });
+    try {
+      await updateDoc(doc(firestore, "companies", company.id), {
+        open: company.open === false ? true : false,
+      });
+      logger.info("DASHBOARD", `Loja ${company.open === false ? 'aberta' : 'fechada'}`);
+    } catch (error) {
+      logger.error("DASHBOARD", "Erro ao alternar status da loja", error);
+    }
   };
 
   if (loading) {
@@ -789,5 +815,13 @@ export default function AdminDashboard() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminDashboard() {
+  return (
+    <ErrorBoundary context="AdminDashboard">
+      <AdminDashboardContent />
+    </ErrorBoundary>
   );
 }

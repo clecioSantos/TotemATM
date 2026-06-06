@@ -11,4 +11,3 @@ public/uploads/*
 *.webp
 .env.local
 *.log
-.turbo

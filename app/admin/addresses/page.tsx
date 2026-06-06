@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/app/admin/orders/AuthContext";
 import { ShieldAlert } from "lucide-react";
-import { collection, onSnapshot, query, where, deleteDoc, doc, addDoc, updateDoc, getDocs, writeBatch } from "firebase/firestore";
+import { collection, onSnapshot, query, where, deleteDoc, doc, addDoc, updateDoc, getDocs, writeBatch, FirestoreError } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
+import { logger } from "@/src/lib/logger";
+import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 
 import CityTable from "./CityTable";
 import NeighborhoodTable from "./NeighborhoodTable";
@@ -15,7 +17,7 @@ import PriceForm from "./PriceForm";
 
 import "./page.css";
 
-export default function AddressesManagementPage() {
+function AddressesManagementContent() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const isOwner = user?.role === 'owner';
@@ -31,9 +33,13 @@ export default function AddressesManagementPage() {
   // Carregar Cidades
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(firestore, "cities"), (snapshot) => {
-      setCities(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      try {
+        setCities(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (error) {
+        logger.error("ADDRESSES_PAGE", "Erro ao processar cidades", error);
+      }
     }, (error) => {
-      console.error("🔥 Erro ao carregar cidades:", error);
+      logger.error("ADDRESSES_PAGE", "Erro no listener de cidades", error);
     });
     return () => unsubscribe();
   }, []);
@@ -44,10 +50,16 @@ export default function AddressesManagementPage() {
       const unsubscribe = onSnapshot(
         query(collection(firestore, "neighborhoods"), where("cityId", "==", selectedCityId)),
         (snapshot) => {
-        setNeighborhoods(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-      }, (error) => {
-        console.error("🔥 Erro ao carregar bairros:", error);
-      });
+          try {
+            setNeighborhoods(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+          } catch (error) {
+            logger.error("ADDRESSES_PAGE", "Erro ao processar bairros", error);
+          }
+        },
+        (error) => {
+          logger.error("ADDRESSES_PAGE", "Erro no listener de bairros", error);
+        }
+      );
       return () => unsubscribe();
     }
     setNeighborhoods([]);
@@ -58,9 +70,13 @@ export default function AddressesManagementPage() {
     if (!user?.companyId) return;
     const q = query(collection(firestore, "storeCitySettings"), where("companyId", "==", user.companyId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setCitySettings(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      try {
+        setCitySettings(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (error) {
+        logger.error("ADDRESSES_PAGE", "Erro ao processar configurações de cidade", error);
+      }
     }, (error) => {
-      console.error("🔥 Erro ao carregar configurações de cidade:", error);
+      logger.error("ADDRESSES_PAGE", "Erro no listener de configurações de cidade", error);
     });
     return () => unsubscribe();
   }, [user?.companyId]);
@@ -70,9 +86,13 @@ export default function AddressesManagementPage() {
     if (!user?.companyId) return;
     const q = query(collection(firestore, "deliveryCosts"), where("companyId", "==", user.companyId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setDeliveryCosts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      try {
+        setDeliveryCosts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (error) {
+        logger.error("ADDRESSES_PAGE", "Erro ao processar custos de entrega", error);
+      }
     }, (error) => {
-      console.error("🔥 Erro ao carregar custos de entrega:", error);
+      logger.error("ADDRESSES_PAGE", "Erro no listener de custos de entrega", error);
     });
     return () => unsubscribe();
   }, [user?.companyId]);
@@ -82,8 +102,9 @@ export default function AddressesManagementPage() {
     try {
       await deleteDoc(doc(firestore, "cities", id));
       if (selectedCityId === id) setSelectedCityId("");
+      logger.info("ADDRESSES_PAGE", `Cidade ${id} removida`);
     } catch (error) {
-      console.error("🔥 Erro ao remover cidade:", error);
+      logger.error("ADDRESSES_PAGE", `Erro ao remover cidade ${id}`, error);
       alert("Erro ao remover cidade.");
     }
   }
@@ -95,7 +116,6 @@ export default function AddressesManagementPage() {
     }
 
     try {
-      // Procura se já existe uma configuração para esta cidade e empresa
       const settingDoc = citySettings.find(s => s.cityId === cityId && s.companyId === user.companyId);
       
       if (settingDoc) {
@@ -103,8 +123,12 @@ export default function AddressesManagementPage() {
       } else {
         await addDoc(collection(firestore, "storeCitySettings"), { cityId, enabled, companyId: user.companyId });
       }
+      logger.info("ADDRESSES_PAGE", `Delivery toggle para cidade ${cityId}: ${enabled}`);
     } catch (error) {
-      console.error("Erro ao alternar entrega:", error);
+      const errMsg = error instanceof FirestoreError
+        ? `Firestore (${error.code}): ${error.message}`
+        : error instanceof Error ? error.message : String(error);
+      logger.error("ADDRESSES_PAGE", `Erro ao alternar entrega: ${errMsg}`, error);
       alert("Falha ao atualizar configuração de entrega. Verifique suas permissões.");
     }
   }
@@ -139,16 +163,20 @@ export default function AddressesManagementPage() {
         }
       });
       await batch.commit();
+      logger.info("ADDRESSES_PAGE", `Preços padronizados para cidade ${cityId}: R$${price}`);
       alert("Preços atualizados com sucesso em todos os bairros!");
     } catch (error) {
-      console.error("Erro ao definir preço padrão:", error);
+      const errMsg = error instanceof FirestoreError
+        ? `Firestore (${error.code}): ${error.message}`
+        : error instanceof Error ? error.message : String(error);
+      logger.error("ADDRESSES_PAGE", `Erro ao definir preço padrão: ${errMsg}`, error);
       alert("Falha ao atualizar preços. Apenas proprietários podem realizar esta ação.");
     }
   };
 
   const handleToggleNb = async (nbId: string, enabled: boolean) => {
+    if (!user?.companyId) return;
     try {
-      if (!user?.companyId) return;
       const costSetting = deliveryCosts.find(c => c.neighborhoodId === nbId);
       if (costSetting) {
         await updateDoc(doc(firestore, "deliveryCosts", costSetting.id), { enabled });
@@ -160,8 +188,9 @@ export default function AddressesManagementPage() {
           deliveryPrice: 0
         });
       }
+      logger.info("ADDRESSES_PAGE", `Toggle bairro ${nbId}: ${enabled}`);
     } catch (error) {
-      console.error("🔥 Erro ao alternar bairro:", error);
+      logger.error("ADDRESSES_PAGE", `Erro ao alternar bairro ${nbId}`, error);
     }
   };
 
@@ -177,9 +206,9 @@ export default function AddressesManagementPage() {
   });
 
   return (
-    <div className="addresses-page-view">
+    <div className="condiments-page-container">
       <header className="page-header">
-        <div className="page-title-area">
+        <div className="header-text">
           <h1 className="page-title">Regiões Atendidas</h1>
           <p className="page-subtitle">Gerencie as cidades e bairros onde o sistema opera</p>
         </div>
@@ -303,5 +332,13 @@ export default function AddressesManagementPage() {
         )}
       </Modal>
     </div>
+  );
+}
+
+export default function AddressesManagementPage() {
+  return (
+    <ErrorBoundary context="AddressesManagementPage">
+      <AddressesManagementContent />
+    </ErrorBoundary>
   );
 }

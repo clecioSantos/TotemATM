@@ -7,6 +7,8 @@ export default function CategoryTable({ categories, onEdit, onDelete }) {
         <thead>
           <tr>
             <th>Nome da Categoria</th>
+            <th>Tamanhos</th>
+            <th>Sabores</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -14,6 +16,16 @@ export default function CategoryTable({ categories, onEdit, onDelete }) {
           {categories.map(cat => (
             <tr key={cat.id}>
               <td>{cat.name}</td>
+              <td>
+                <span className={`badge ${cat.possuiTamanhos ? 'badge-active' : 'badge-inactive'}`}>
+                  {cat.possuiTamanhos ? 'Sim' : 'Não'}
+                </span>
+              </td>
+              <td>
+                <span className={`badge ${cat.possuiSabores ? 'badge-active' : 'badge-inactive'}`}>
+                  {cat.possuiSabores ? 'Sim' : 'Não'}
+                </span>
+              </td>
               <td>
                 <button onClick={() => onEdit(cat)}>Editar</button>
                 <button onClick={() => onDelete(cat.id)} style={{color: 'red', marginLeft: '10px'}}>Excluir</button>

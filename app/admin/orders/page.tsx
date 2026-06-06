@@ -7,9 +7,11 @@ import OrderItem from "@/app/admin/orders/components/OrderItem";
 import OrderForm from "@/app/admin/orders/components/OrderForm";
 import Modal from "@/app/admin/components/Modal";
 import { useState } from "react";
+import { ErrorBoundary } from "@/src/components/ErrorBoundary";
+import { logger } from "@/src/lib/logger";
 import "./page.css";
 
-export default function OrdersPage() {
+function OrdersContent() {
   const { orders, loading, addOrder, updateOrderStatus, removeOrder } = useOrders();
   const { products } = useProducts();
   const { condiments } = useCondiments();
@@ -35,9 +37,9 @@ export default function OrdersPage() {
     : orders.filter(order => order.status === statusFilter);
 
   return (
-    <div className="orders-page-view">
+    <div className="condiments-page-container">
       <header className="page-header">
-        <div className="page-title-area">
+        <div className="header-text">
           <h1 className="page-title">Pedidos</h1>
           <p className="page-subtitle">Acompanhe e gerencie a fila de produção em tempo real</p>
         </div>
@@ -62,10 +64,10 @@ export default function OrdersPage() {
         })}
       </div>
 
-      <section className="orders-content">
+      <main className="page-content">
         {loading ? (
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
+          <div className="loading-state">
+            <div className="spinner"></div>
             <p>Sincronizando com a cozinha...</p>
           </div>
         ) : filteredOrders.length === 0 ? (
@@ -84,7 +86,7 @@ export default function OrdersPage() {
             ))}
           </div>
         )}
-      </section>
+      </main>
 
       <Modal
         isOpen={isModalOpen}
@@ -96,11 +98,19 @@ export default function OrdersPage() {
           condiments={condiments}
           onClose={() => setIsModalOpen(false)}
           onSubmit={async (data) => {
-            await addOrder(data);
-            setIsModalOpen(false);
+            try {
+              await addOrder(data);
+              setIsModalOpen(false);
+            } catch (err) {
+              logger.error("OrdersPage.addOrder", err);
+            }
           }}
         />
       </Modal>
     </div>
   );
+}
+
+export default function OrdersPage() {
+  return <ErrorBoundary context="OrdersPage"><OrdersContent /></ErrorBoundary>;
 }

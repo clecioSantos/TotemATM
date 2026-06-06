@@ -1,6 +1,7 @@
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { firestore } from "../../../../src/services/firebase";
 import { UserProfile } from "@totem/shared/types/auth";
+import { logger } from "@/src/lib/logger";
 
 export const userRepository = {
   async getById(uid: string): Promise<UserProfile | null> {
@@ -18,7 +19,8 @@ export const userRepository = {
       }
       return null;
     } catch (error) {
-      console.error(`🔥 Erro ao buscar usuário ${uid}:`, error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error("userRepository", `Erro ao buscar usuário ${uid}: ${errMsg}`, error);
       return null;
     }
   },
@@ -30,10 +32,11 @@ export const userRepository = {
         ...profile,
         createdAt: serverTimestamp(),
       });
-      console.log("✅ Usuário criado no Firestore:", profile.uid);
+      logger.info("userRepository", `Usuário criado: ${profile.uid}`);
     } catch (error) {
-      console.error("🔥 Erro ao criar usuário no Firestore:", error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error("userRepository", `Erro ao criar usuário ${profile.uid}: ${errMsg}`, error);
       throw error;
     }
-  }
+  },
 };

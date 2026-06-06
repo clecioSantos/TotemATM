@@ -1,11 +1,32 @@
 import * as admin from 'firebase-admin';
+import { logger } from './src/lib/logger';
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-    // databaseURL: process.env.FIREBASE_DATABASE_URL
-  });
+try {
+  if (!admin.apps.length) {
+    admin.initializeApp({
+      credential: admin.credential.applicationDefault(),
+    });
+    logger.info("FIREBASE_ADMIN_CONFIG", "Firebase Admin inicializado (applicationDefault)");
+  }
+} catch (error) {
+  logger.error("FIREBASE_ADMIN_CONFIG", "Erro ao inicializar Firebase Admin (applicationDefault)", error);
+  throw error;
 }
 
-export const getAdminDb = () => admin.firestore();
-export const getAdminAuth = () => admin.auth();
+export const getAdminDb = () => {
+  try {
+    return admin.firestore();
+  } catch (error) {
+    logger.error("FIREBASE_ADMIN_CONFIG", "Erro ao obter Firestore Admin", error);
+    throw error;
+  }
+};
+
+export const getAdminAuth = () => {
+  try {
+    return admin.auth();
+  } catch (error) {
+    logger.error("FIREBASE_ADMIN_CONFIG", "Erro ao obter Auth Admin", error);
+    throw error;
+  }
+};

@@ -4,6 +4,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/src/services/firebase";
 import { userRepository } from "@totem/shared/types/user.repository";
 import { UserProfile } from "@totem/shared/types/auth";
+import { logger } from "@/src/lib/logger";
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -19,13 +20,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const refreshProfile = useCallback(async () => {
-    try {
-      if (auth.currentUser) {
+    if (auth.currentUser) {
+      try {
         const profile = await userRepository.getById(auth.currentUser.uid);
         setUser(profile);
+      } catch (error) {
+        logger.error("AuthProvider", "Erro ao atualizar perfil", error);
       }
-    } catch (error) {
-      console.error("🔥 Erro ao atualizar perfil:", error);
     }
   }, []);
 
@@ -36,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       window.location.href = "/login";
     } catch (error) {
-      console.error("Erro ao sair:", error);
+      logger.error("AuthProvider", "Erro ao sair", error);
     }
   };
 
@@ -50,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(null);
         }
       } catch (error) {
-        console.error("Erro ao carregar perfil:", error);
+        logger.error("AuthProvider", "Erro ao carregar perfil", error);
         setUser(null);
       } finally {
         setLoading(false);
@@ -69,6 +70,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within AuthProvider");
+  if (!context) {
+    logger.error("AuthProvider", "useAuth usado fora de AuthProvider");
+    throw new Error("useAuth must be used within AuthProvider");
+  }
   return context;
 };

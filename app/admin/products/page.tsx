@@ -7,9 +7,11 @@ import ProductTable from "./components/ProductTable";
 import Modal from "../components/Modal";
 import ProductForm from "./components/ProductForm"; // Keep this import
 import { Product } from '@totem/shared/types';
+import { ErrorBoundary } from "@/src/components/ErrorBoundary";
+import { logger } from "@/src/lib/logger";
 import "./page.css";
 
-export default function ProductsPage() {
+function ProductsContent() {
   const { products, loading: productsLoading, error: productsError, saveProduct, removeProduct } = useProducts();
   const { categories, loading: categoriesLoading, error: categoriesError } = useCategories();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,9 +28,9 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="products-page-view">
+    <div className="condiments-page-container">
       <header className="page-header">
-        <div className="page-title-area">
+        <div className="header-text">
           <h1 className="page-title">Produtos</h1>
           <p className="page-subtitle">Gerencie o cardápio e a disponibilidade dos seus itens</p>
         </div>
@@ -41,14 +43,14 @@ export default function ProductsPage() {
         </button>
       </header>
 
-      <section className="products-content">
+      <main className="page-content">
         {productsLoading || categoriesLoading ? (
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
+          <div className="loading-state">
+            <div className="spinner"></div>
             <p>Carregando cardápio...</p>
           </div>
         ) : productsError || categoriesError ? (
-          <div className="error-container">
+          <div className="empty-state">
             <p>Ocorreu um erro ao carregar os dados.</p>
           </div>
         ) : (
@@ -59,7 +61,7 @@ export default function ProductsPage() {
             onEdit={handleEdit} 
           />
         )}
-      </section>
+      </main>
 
       <Modal 
         isOpen={isModalOpen} 
@@ -70,11 +72,19 @@ export default function ProductsPage() {
           categories={categories} 
           initialData={editingProduct}
           onSubmit={async (data, file) => {
-            await saveProduct(data, file);
-            handleClose();
+            try {
+              await saveProduct(data, file);
+              handleClose();
+            } catch (err) {
+              logger.error("ProductsPage.saveProduct", err);
+            }
           }}
         />
       </Modal>
     </div>
   );
+}
+
+export default function ProductsPage() {
+  return <ErrorBoundary context="ProductsPage"><ProductsContent /></ErrorBoundary>;
 }

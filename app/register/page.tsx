@@ -6,6 +6,8 @@ import { auth } from "@/src/services/firebase";
 import Link from "next/link";
 import { userRepository } from "@totem/shared/types/user.repository";
 import { useSearchParams } from "next/navigation";
+import { logger } from "@/src/lib/logger";
+import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import "./page.css";
 
 function RegisterForm() {
@@ -52,15 +54,22 @@ function RegisterForm() {
         window.location.href = redirectPath || "/";
       } else {
         setError("Conta criada, mas houve um erro ao iniciar sessão.");
+        const errorText = await res.text().catch(() => "unknown");
+        logger.error("REGISTER_PAGE", "Erro na API de Sessão (register)", undefined, errorText);
       }
     } catch (err: any) {
-      if (err.code === 'auth/configuration-not-found') {
-        setError("Erro: Provedor de E-mail/Senha não ativado no Console do Firebase.");
-      } else if (err.code === 'auth/email-already-in-use') {
-        setError("Este e-mail já está em uso.");
-      } else {
-        setError("Erro ao criar conta. Verifique os dados.");
-      }
+      const errorMessages: Record<string, string> = {
+        "auth/configuration-not-found": "Erro: Provedor de E-mail/Senha não ativado no Console do Firebase.",
+        "auth/email-already-in-use": "Este e-mail já está cadastrado.",
+        "auth/invalid-email": "E-mail inválido.",
+        "auth/weak-password": "Senha muito fraca. Mínimo de 6 caracteres.",
+        "auth/operation-not-allowed": "Cadastro desabilitado temporariamente.",
+        "auth/too-many-requests": "Muitas tentativas. Tente novamente mais tarde.",
+      };
+
+      const firebaseError = err?.code || "auth/unknown";
+      setError(errorMessages[firebaseError] || "Erro ao cadastrar. Verifique os dados.");
+      logger.error("REGISTER_PAGE", `Erro no register: ${firebaseError}`, err);
     } finally {
       setLoading(false);
     }
@@ -100,8 +109,10 @@ function RegisterForm() {
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={null}>
-      <RegisterForm />
-    </Suspense>
+    <ErrorBoundary context="RegisterPage">
+      <Suspense fallback={null}>
+        <RegisterForm />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

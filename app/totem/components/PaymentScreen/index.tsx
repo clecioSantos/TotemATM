@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
 import { QrCode, Copy, CheckCircle, Loader2, Clock, Smartphone } from "lucide-react";
+import { logger } from "@/src/lib/logger";
 import "./styles.css";
 
 interface PaymentScreenProps {
@@ -19,28 +20,42 @@ export default function PaymentScreen({ orderId, pixData, total, onPaymentConfir
   useEffect(() => {
     if (!orderId) return;
 
-    const unsubscribe = onSnapshot(doc(firestore, "orders", orderId), (snapshot) => {
-      const data = snapshot.data();
-      if (data?.paymentStatus === "PAID") {
-        onPaymentConfirmed();
+    const unsubscribe = onSnapshot(
+      doc(firestore, "orders", orderId),
+      (snapshot) => {
+        try {
+          const data = snapshot.data();
+          if (data?.paymentStatus === "PAID") {
+            logger.info("PaymentScreen", `Pagamento confirmado para pedido ${orderId}`);
+            onPaymentConfirmed();
+          }
+        } catch (error) {
+          logger.error("PaymentScreen", "Erro ao processar snapshot do pedido", error);
+        }
+      },
+      (error: unknown) => {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        logger.error("PaymentScreen", `Erro no listener do pedido ${orderId}: ${errMsg}`, error);
       }
-    }, (error) => {
-      console.error(`🔥 Erro ao escutar pedido ${orderId}:`, error);
-    });
+    );
 
     return () => unsubscribe();
   }, [orderId, onPaymentConfirmed]);
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(pixData.copyPaste);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 3000);
+    try {
+      navigator.clipboard.writeText(pixData.copyPaste);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 3000);
+    } catch (error) {
+      logger.error("PaymentScreen", "Erro ao copiar PIX", error);
+    }
   };
 
   return (
     <div className="min-h-screen w-screen bg-brand-light flex items-center justify-center p-4">
       <div className="bg-brand-surface w-full max-w-md rounded-[24px] border border-brand-border p-8 shadow-[0_4px_24px_rgba(0,0,0,0.05)] text-center">
-        
+
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-brand-dark">Pagamento via PIX</h2>
           <p className="text-sm text-brand-muted mt-2">Aponte a câmera para o QR Code abaixo</p>
@@ -55,11 +70,11 @@ export default function PaymentScreen({ orderId, pixData, total, onPaymentConfir
           <p className="text-3xl font-black text-brand-primary mt-1">R$ {total.toFixed(2).replace(".", ",")}</p>
         </div>
 
-        <button 
+        <button
           onClick={copyToClipboard}
           className={`w-full flex items-center justify-center gap-2 py-4 rounded-[12px] font-bold text-sm transition-all ${
-            isCopied 
-              ? 'bg-brand-muted text-white' 
+            isCopied
+              ? 'bg-brand-muted text-white'
               : 'bg-brand-primary text-white hover:bg-brand-primaryHover'
           }`}
         >

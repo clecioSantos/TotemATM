@@ -6,8 +6,10 @@ import { collection, onSnapshot, query, where, addDoc, serverTimestamp, deleteDo
 import Link from "next/link";
 import { Search, MapPin, User, ShoppingBag, Store, X, LogOut, ChevronRight, Plus, Trash2, Home } from "lucide-react";
 import { useAuth } from "@totem/shared/types/AuthProvider";
+import { ErrorBoundary } from "@/src/components/ErrorBoundary";
+import { logger } from "@/src/lib/logger";
 
-export default function HomePage() {
+function HomeContent() {
   const [stores, setStores] = useState<any[]>([]);
   const { user, signOut } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -98,7 +100,13 @@ export default function HomePage() {
     if (!user) return;
     const q = query(collection(firestore, "addresses"), where("userId", "==", user.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setAddresses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      try {
+        setAddresses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (error) {
+        logger.error("HOME_PAGE", "Erro ao processar endereços", error);
+      }
+    }, (error) => {
+      logger.error("HOME_PAGE", "Erro no listener de endereços", error);
     });
     return () => unsubscribe();
   }, [user]);
@@ -111,7 +119,13 @@ export default function HomePage() {
     }
     const q = query(collection(firestore, "neighborhoods"), where("cityId", "==", addressCity), orderBy("name"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setAvailableNeighborhoods(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      try {
+        setAvailableNeighborhoods(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (error) {
+        logger.error("HOME_PAGE", "Erro ao processar bairros", error);
+      }
+    }, (error) => {
+      logger.error("HOME_PAGE", "Erro no listener de bairros", error);
     });
     return () => unsubscribe();
   }, [addressCity]);
@@ -120,7 +134,13 @@ export default function HomePage() {
     if (!user || !isOrdersOpen) return;
     const q = query(collection(firestore, "orders"), where("customerId", "==", user.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setUserOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      try {
+        setUserOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (error) {
+        logger.error("HOME_PAGE", "Erro ao processar pedidos", error);
+      }
+    }, (error) => {
+      logger.error("HOME_PAGE", "Erro no listener de pedidos", error);
     });
     return () => unsubscribe();
   }, [user, isOrdersOpen]);
@@ -415,5 +435,13 @@ export default function HomePage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <ErrorBoundary context="HomePage">
+      <HomeContent />
+    </ErrorBoundary>
   );
 }
