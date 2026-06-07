@@ -122,10 +122,18 @@ export class MercadoPagoService {
         context: "MERCADOPAGO_CREATE_PIX",
       });
 
+      const rawB64 = response.point_of_interaction?.transaction_data?.qr_code_base64 || "";
+      const rawQrCode = response.point_of_interaction?.transaction_data?.qr_code || "";
       logger.info("MERCADOPAGO", "Response Success", {
         paymentId: response.id,
         status: response.status,
-        hasQrCode: !!response.point_of_interaction?.transaction_data?.qr_code,
+        hasQrCode: !!rawQrCode,
+        hasBase64: !!rawB64,
+        base64Length: rawB64.length,
+        base64Preview: rawB64.substring(0, 30),
+        qrCodeLength: rawQrCode.length,
+        qrCodePreview: rawQrCode.substring(0, 30),
+        hasDataUriPrefix: rawB64.startsWith("data:image/"),
       });
 
       return response;

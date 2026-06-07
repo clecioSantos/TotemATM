@@ -24,12 +24,25 @@ export class MercadoPagoProvider implements PaymentProvider {
     );
 
     const txData = response.point_of_interaction?.transaction_data;
+    let rawB64 = txData?.qr_code_base64 || "";
+    const pixCode = txData?.qr_code || "";
+
+    if (rawB64 && !rawB64.startsWith("data:image/")) {
+      rawB64 = `data:image/png;base64,${rawB64}`;
+    }
+
+    logger.info("MERCADOPAGO_PROVIDER", "QR Code dados", {
+      base64Length: rawB64.length,
+      base64Prefix: rawB64.startsWith("data:image/") ? "data:image/..." : "sem prefixo",
+      pixCodeLength: pixCode.length,
+      pixCodePreview: pixCode.substring(0, 20),
+    });
 
     return {
       provider: "mercadopago",
       paymentId: String(response.id),
-      qrCode: txData?.qr_code_base64 || "",
-      pixCode: txData?.qr_code || "",
+      qrCode: rawB64,
+      pixCode,
       status: MercadoPagoService.mapStatus(response.status) as any,
       expiresAt: response.date_of_expiration,
       externalId: params.orderId,
