@@ -92,6 +92,7 @@ export class MercadoPagoService {
       external_reference: orderId,
     };
 
+    const idempotencyKey = orderId;
     const url = `${this.getBaseUrl()}/payments`;
 
     const logSafeBody = JSON.parse(JSON.stringify(body));
@@ -101,6 +102,7 @@ export class MercadoPagoService {
       method: "POST",
       headers: {
         Authorization: `Bearer ${maskToken(token)}`,
+        "X-Idempotency-Key": idempotencyKey,
       },
       body: logSafeBody,
       amountOriginal: amount,
@@ -111,7 +113,10 @@ export class MercadoPagoService {
     try {
       const response = await fetchJson<CreatePixResponse>(url, {
         method: "POST",
-        headers: this.getHeaders(),
+        headers: {
+          ...this.getHeaders(),
+          "X-Idempotency-Key": idempotencyKey,
+        },
         body: JSON.stringify(body),
         timeout: MERCADOPAGO_TIMEOUT_MS,
         context: "MERCADOPAGO_CREATE_PIX",
