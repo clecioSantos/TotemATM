@@ -3,45 +3,33 @@ import { MercadoPagoProvider } from "@/app/services/mercadopago/mercadopago.prov
 import { markOrderAsPaid } from "@/src/services/payment/services/order-payment.service";
 import { logger } from "@/src/lib/logger";
 
-function verifySignature(rawBody: string, signatureHeader: string | null): boolean {
-  const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
-  const env = (process.env.MERCADOPAGO_ENVIRONMENT || "production").toLowerCase();
-  const isSandbox = env === "sandbox" || env === "test" || env === "dev";
-  
-  if (!secret || isSandbox) {
-    if (isSandbox) {
-      logger.info("MERCADOPAGO_WEBHOOK", "Ambiente sandbox: validacao de assinatura desabilitada");
-    }
-    return true;
+function parseSignatureHeader(signatureHeader: string): { ts: string; v1: string } | null {
+  const parts = signatureHeader.split(",");
+  let ts = "";
+  let v1 = "";
+  for (const part of parts) {
+    const eqIndex = part.indexOf("=");
+    if (eqIndex === -1) continue;
+    const key = part.substring(0, eqIndex).trim();
+    const value = part.substring(eqIndex + 1).trim();
+    if (key === "ts") ts = value;
+    if (key === "v1") v1 = value;
   }
+  if (!ts || !v1) return null;
+  return { ts, v1 };
+}
 
-  if (!signatureHeader) {
-    logger.warn("MERCADOPAGO_WEBHOOK", "Assinatura ausente mas secret configurado");
-    return false;
-  }
+function verifySignature(dataId: string, ts: string, receivedSig: string): boolean {
+  const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+  if (!secret) return true;
 
   try {
-    const parts = signatureHeader.split(",");
-    let ts = "";
-    let receivedSig = "";
-
-    for (const part of parts) {
-      const eqIndex = part.indexOf("=");
-      if (eqIndex === -1) continue;
-      const key = part.substring(0, eqIndex).trim();
-      const value = part.substring(eqIndex + 1).trim();
-      if (key === "ts") ts = value;
-      if (key === "v1") receivedSig = value;
-    }
-
-    if (!ts || !receivedSig) return false;
-
     const mod = require("crypto") as typeof import("crypto");
+    const dataToSign = `id:${dataId};ts:${ts};`;
     const expectedSig = mod
       .createHmac("sha256", secret)
-      .update(rawBody)
+      .update(dataToSign)
       .digest("hex");
-
     return mod.timingSafeEqual(Buffer.from(expectedSig), Buffer.from(receivedSig));
   } catch {
     return false;
@@ -67,25 +55,6 @@ export async function POST(req: NextRequest) {
       signatureHeader: signatureHeader || "(ausente)",
       bodyCompleto: rawBody,
     });
-
-    logger.info("MERCADOPAGO_WEBHOOK", "Iniciando validacao de assinatura");
-
-    const signatureValid = verifySignature(rawBody, signatureHeader);
-
-    logger.info("MERCADOPAGO_WEBHOOK", "Resultado da validacao", {
-      signatureValid,
-      hasSecret: !!process.env.MERCADOPAGO_WEBHOOK_SECRET,
-      environment: process.env.MERCADOPAGO_ENVIRONMENT,
-    });
-
-    if (!signatureValid) {
-      logger.warn("MERCADOPAGO_WEBHOOK", "Webhook rejeitado por assinatura invalida");
-      logger.info("MERCADOPAGO_WEBHOOK", "Retornando Unauthorized");
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
 
     let payload: Record<string, unknown>;
 
@@ -118,6 +87,48 @@ export async function POST(req: NextRequest) {
       });
       logger.info("MERCADOPAGO_WEBHOOK", "Retornando received=true apos acao invalida");
       return NextResponse.json({ received: true });
+    }
+
+    const dataId = String(data.id);
+    const parsedSig = signatureHeader ? parseSignatureHeader(signatureHeader) : null;
+
+    logger.info("MERCADOPAGO_WEBHOOK", "Iniciando validacao de assinatura", {
+      dataId,
+      ts: parsedSig?.ts,
+      hasSecret: !!process.env.MERCADOPAGO_WEBHOOK_SECRET,
+      environment: process.env.MERCADOPAGO_ENVIRONMENT,
+    });
+
+    const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+    const env = (process.env.MERCADOPAGO_ENVIRONMENT || "production").toLowerCase();
+    const isSandbox = env === "sandbox" || env === "test" || env === "dev";
+
+    let signatureValid = true;
+
+    if (!secret || isSandbox) {
+      if (isSandbox) {
+        logger.info("MERCADOPAGO_WEBHOOK", "Ambiente sandbox: validacao de assinatura desabilitada");
+      }
+    } else if (!parsedSig) {
+      logger.warn("MERCADOPAGO_WEBHOOK", "Assinatura ausente mas secret configurado");
+      signatureValid = false;
+    } else {
+      signatureValid = verifySignature(dataId, parsedSig.ts, parsedSig.v1);
+    }
+
+    logger.info("MERCADOPAGO_WEBHOOK", "Resultado da validacao", {
+      signatureValid,
+      hasSecret: !!secret,
+      environment: env,
+    });
+
+    if (!signatureValid) {
+      logger.warn("MERCADOPAGO_WEBHOOK", "Webhook rejeitado por assinatura invalida");
+      logger.info("MERCADOPAGO_WEBHOOK", "Retornando Unauthorized");
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
     const headers: Record<string, string | string[] | undefined> = {};
