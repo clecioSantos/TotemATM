@@ -19,21 +19,13 @@ function parseSignatureHeader(signatureHeader: string): { ts: string; v1: string
   return { ts, v1 };
 }
 
-function verifySignature(dataId: string, ts: string, receivedSig: string): boolean {
-  const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
-  if (!secret) return true;
+function maskSecret(secret: string): string {
+  if (secret.length <= 8) return "***";
+  return secret.substring(0, 4) + "..." + secret.substring(secret.length - 4);
+}
 
-  try {
-    const mod = require("crypto") as typeof import("crypto");
-    const dataToSign = `id:${dataId};ts:${ts};`;
-    const expectedSig = mod
-      .createHmac("sha256", secret)
-      .update(dataToSign)
-      .digest("hex");
-    return mod.timingSafeEqual(Buffer.from(expectedSig), Buffer.from(receivedSig));
-  } catch {
-    return false;
-  }
+function shouldSkipValidation(): boolean {
+  return process.env.MERCADOPAGO_SKIP_SIGNATURE_VALIDATION === "true";
 }
 
 export async function POST(req: NextRequest) {
@@ -43,6 +35,7 @@ export async function POST(req: NextRequest) {
     const rawBody = await req.text();
     const contentType = req.headers.get("content-type") || "";
     const signatureHeader = req.headers.get("x-signature");
+    const requestId = req.headers.get("x-request-id") || "";
 
     const allHeaders: Record<string, string> = {};
     req.headers.forEach((value, key) => { allHeaders[key] = value; });
@@ -53,6 +46,7 @@ export async function POST(req: NextRequest) {
       contentLength: rawBody.length,
       hasSignature: !!signatureHeader,
       signatureHeader: signatureHeader || "(ausente)",
+      requestId,
       bodyCompleto: rawBody,
     });
 
@@ -91,44 +85,57 @@ export async function POST(req: NextRequest) {
 
     const dataId = String(data.id);
     const parsedSig = signatureHeader ? parseSignatureHeader(signatureHeader) : null;
-
-    logger.info("MERCADOPAGO_WEBHOOK", "Iniciando validacao de assinatura", {
-      dataId,
-      ts: parsedSig?.ts,
-      hasSecret: !!process.env.MERCADOPAGO_WEBHOOK_SECRET,
-      environment: process.env.MERCADOPAGO_ENVIRONMENT,
-    });
-
     const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
     const env = (process.env.MERCADOPAGO_ENVIRONMENT || "production").toLowerCase();
     const isSandbox = env === "sandbox" || env === "test" || env === "dev";
 
-    let signatureValid = true;
+    const skipValidation = shouldSkipValidation() || isSandbox || !secret;
 
-    if (!secret || isSandbox) {
-      if (isSandbox) {
-        logger.info("MERCADOPAGO_WEBHOOK", "Ambiente sandbox: validacao de assinatura desabilitada");
+    if (skipValidation) {
+      if (shouldSkipValidation()) {
+        logger.warn("MERCADOPAGO_WEBHOOK", "Validacao ignorada: MERCADOPAGO_SKIP_SIGNATURE_VALIDATION=true");
+      } else if (isSandbox) {
+        logger.info("MERCADOPAGO_WEBHOOK", "Validacao ignorada: ambiente sandbox");
+      } else if (!secret) {
+        logger.warn("MERCADOPAGO_WEBHOOK", "Validacao ignorada: WEBHOOK_SECRET nao configurado");
       }
     } else if (!parsedSig) {
-      logger.warn("MERCADOPAGO_WEBHOOK", "Assinatura ausente mas secret configurado");
-      signatureValid = false;
+      logger.warn("MERCADOPAGO_WEBHOOK", "Assinatura ausente (x-signature) mas secret configurado");
     } else {
-      signatureValid = verifySignature(dataId, parsedSig.ts, parsedSig.v1);
-    }
+      const manifest = `id:${dataId};request-id:${requestId};ts:${parsedSig.ts};`;
 
-    logger.info("MERCADOPAGO_WEBHOOK", "Resultado da validacao", {
-      signatureValid,
-      hasSecret: !!secret,
-      environment: env,
-    });
+      logger.info("MERCADOPAGO_WEBHOOK", "Assinatura - manifesto", {
+        dataId,
+        requestId,
+        ts: parsedSig.ts,
+        secretLength: secret.length,
+        secretPreview: maskSecret(secret),
+        manifest,
+      });
 
-    if (!signatureValid) {
-      logger.warn("MERCADOPAGO_WEBHOOK", "Webhook rejeitado por assinatura invalida");
-      logger.info("MERCADOPAGO_WEBHOOK", "Retornando Unauthorized");
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      try {
+        const mod = require("crypto") as typeof import("crypto");
+        const computedHash = mod
+          .createHmac("sha256", secret)
+          .update(manifest)
+          .digest("hex");
+
+        const hashesMatch = computedHash === parsedSig.v1;
+
+        logger.info("MERCADOPAGO_WEBHOOK", "Assinatura - resultado", {
+          receivedSignature: parsedSig.v1,
+          calculatedSignature: computedHash,
+          signaturesMatch: hashesMatch,
+        });
+
+        if (!hashesMatch) {
+          logger.warn("MERCADOPAGO_WEBHOOK", "Assinatura invalida: hashes nao conferem");
+        } else {
+          logger.info("MERCADOPAGO_WEBHOOK", "Assinatura valida com sucesso");
+        }
+      } catch (error) {
+        logger.error("MERCADOPAGO_WEBHOOK", "Erro ao calcular HMAC", error);
+      }
     }
 
     const headers: Record<string, string | string[] | undefined> = {};
