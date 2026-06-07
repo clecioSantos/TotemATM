@@ -8,7 +8,8 @@ import {
   Store, 
   Users, 
   ChevronLeft, 
-  Menu 
+  Menu,
+  ArrowLeft 
 } from "lucide-react";
 // Assuming CSS from admin will work or we will need to create/import own
 import "../../admin/components/Sidebar/page.css"; 
@@ -54,6 +55,16 @@ export default function OwnerSidebar({ collapsed, onToggle }: SidebarProps) {
             </Link>
           ))}
         </nav>
+      </div>
+
+      <div className="sidebar-bottom">
+        <Link
+          href="/totem"
+          className={`menu-item ${collapsed ? "collapsed-item" : ""}`}
+        >
+          <span className="menu-icon"><ArrowLeft size={20} /></span>
+          {!collapsed && <span>Voltar ao Totem</span>}
+        </Link>
       </div>
     </aside>
   );

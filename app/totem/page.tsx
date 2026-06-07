@@ -374,6 +374,11 @@ export default function StoreListingPage() {
                       Acessar Painel Admin
                     </Link>
                   ) : null}
+                  {(user as any)?.role === "owner" ? (
+                    <Link href="/owner" className="block p-3 bg-[#222] text-white text-center rounded-lg font-bold">
+                      Acessar Painel Owner
+                    </Link>
+                  ) : null}
                   <button onClick={() => signOut()} className="flex items-center gap-2 text-red-500 font-bold w-full">
                     <LogOut size={18} /> Sair
                   </button>

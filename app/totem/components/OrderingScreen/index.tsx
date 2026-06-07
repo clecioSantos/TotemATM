@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Product, Category, CartItem, Condiment, CategoryFlavor, SelectedSize, SelectedFlavor, ProductSize } from "@totem/shared/types";
-import { ShoppingBag, Trash2, Plus, Minus, X, ArrowLeft, Store, Star } from "lucide-react";
+import { ShoppingBag, Trash2, Plus, Minus, X, ArrowLeft, Store, Star, Bell, User } from "lucide-react";
 import { firestore } from "@/src/services/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import StoreReviewsModal from "../StoreReviewsModal";
@@ -29,6 +29,10 @@ interface OrderingScreenProps {
   };
   onFinish: () => void;
   onCancel: () => void;
+  unreadCount: number;
+  onOpenNotifications: () => void;
+  onOpenOrders: () => void;
+  onOpenProfile: () => void;
 }
 
 const BANNER_HEIGHT = 168;
@@ -49,7 +53,11 @@ export default function OrderingScreen({
   cart = [], 
   actions, 
   onFinish, 
-  onCancel 
+  onCancel,
+  unreadCount = 0,
+  onOpenNotifications,
+  onOpenOrders,
+  onOpenProfile,
 }: OrderingScreenProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
@@ -150,36 +158,39 @@ export default function OrderingScreen({
   return (
     <div className="flex h-screen w-screen bg-brand-light overflow-hidden text-brand-dark font-sans select-none">
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <header className="sticky top-0 z-30 backdrop-blur-[16px] bg-[rgba(255,255,255,0.85)] border-b border-[rgba(0,0,0,0.05)] px-6 h-[80px] flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-4">
-             <button 
-                onClick={onCancel}
-                className="p-2 rounded-full hover:bg-gray-100 text-gray-600"
-             >
-                <ArrowLeft className="h-6 w-6" />
-             </button>
-             <img src="/Logo.png" alt="Bora" className="h-10" />
-             <div className="h-6 w-[1px] bg-gray-200" />
-             <div> 
-                <div className={`flex items-center gap-2 text-[12px] font-semibold ${isClosed ? 'text-red-600' : 'text-green-600'}`}>
-                  <span className={`w-2 h-2 rounded-full ${isClosed ? 'bg-red-500' : 'bg-green-500'}`}></span>
-                  {isClosed ? 'Fechado' : 'Aberto'}
-                </div>
-             </div>
-          </div>
-          <div className="h-6 w-[1px] bg-gray-200" />
-          <div className="flex items-center gap-4">
-             <button 
-                className="relative p-3 rounded-full hover:bg-gray-100"
-                onClick={() => setIsMobileCartOpen(true)}
-             >
-                <ShoppingBag className="h-6 w-6 text-gray-900" />
-                {cartItemsCount > 0 && (
-                    <span className="absolute top-1 right-1 bg-brand-primary text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold">
-                        {cartItemsCount}
-                    </span>
+        <header className="sticky top-0 bg-white z-10 border-b border-[#EAEAEA]">
+          <div className="flex items-center justify-between px-4 pt-3 pb-2">
+            <div className="flex items-center gap-2">
+              <img src="/Logo.png" alt="Bora" className="h-[42px] w-auto" />
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={onOpenNotifications}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-[#666] hover:bg-gray-100 transition-colors relative"
+                title="Notificações"
+              >
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold min-w-[16px] h-4 flex items-center justify-center rounded-full px-1 shadow-md">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
                 )}
-             </button>
+              </button>
+              <button
+                onClick={onOpenOrders}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-[#666] hover:bg-gray-100 transition-colors"
+                title="Pedidos"
+              >
+                <ShoppingBag className="h-5 w-5" />
+              </button>
+              <button
+                onClick={onOpenProfile}
+                className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-[#666] hover:bg-gray-200 transition-colors"
+                title="Perfil"
+              >
+                <User className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </header>
 
@@ -196,6 +207,14 @@ export default function OrderingScreen({
             className="relative w-full overflow-hidden"
             style={{ height: BANNER_HEIGHT }}
           >
+            {/* Back button overlay */}
+            <button
+              onClick={onCancel}
+              className="absolute top-4 left-4 z-20 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+
             {/* Parallax background layer */}
             <div
               className="absolute inset-0"
