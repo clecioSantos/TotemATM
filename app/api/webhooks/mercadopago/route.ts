@@ -11,7 +11,7 @@ function verifySignature(rawBody: string, signatureHeader: string | null): boole
 
   if (!secret || isSandbox) {
     if (isSandbox) {
-      logger.info("MERCADOPAGO_WEBHOOK", "Ambiente sandbox: validação de assinatura desabilitada");
+      logger.info("MERCADOPAGO_WEBHOOK", "Ambiente sandbox: validacao de assinatura desabilitada");
     }
     return true;
   }
@@ -49,6 +49,8 @@ function verifySignature(rawBody: string, signatureHeader: string | null): boole
 }
 
 export async function POST(req: NextRequest) {
+  logger.info("MERCADOPAGO_WEBHOOK", "=== INICIO DO WEBHOOK ===");
+
   try {
     const rawBody = await req.text();
     const contentType = req.headers.get("content-type") || "";
@@ -58,14 +60,32 @@ export async function POST(req: NextRequest) {
       contentType,
       contentLength: rawBody.length,
       hasSignature: !!signatureHeader,
+      signaturePreview: signatureHeader?.substring(0, 120),
+      bodyPreview: rawBody.substring(0, 1000),
+      environment: process.env.MERCADOPAGO_ENVIRONMENT,
     });
 
-    if (!verifySignature(rawBody, signatureHeader)) {
-      logger.warn("MERCADOPAGO_WEBHOOK", "Webhook rejeitado: assinatura inválida");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    logger.info("MERCADOPAGO_WEBHOOK", "Iniciando validacao de assinatura");
+
+    const signatureValid = verifySignature(rawBody, signatureHeader);
+
+    logger.info("MERCADOPAGO_WEBHOOK", "Resultado da validacao", {
+      signatureValid,
+      hasSecret: !!process.env.MERCADOPAGO_WEBHOOK_SECRET,
+      environment: process.env.MERCADOPAGO_ENVIRONMENT,
+    });
+
+    if (!signatureValid) {
+      logger.warn("MERCADOPAGO_WEBHOOK", "Webhook rejeitado por assinatura invalida");
+      logger.info("MERCADOPAGO_WEBHOOK", "Retornando Unauthorized");
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
     let payload: Record<string, unknown>;
+
     try {
       if (contentType.includes("application/json")) {
         payload = JSON.parse(rawBody);
@@ -73,8 +93,15 @@ export async function POST(req: NextRequest) {
         const params = new URLSearchParams(rawBody);
         payload = Object.fromEntries(params.entries()) as unknown as Record<string, unknown>;
       }
-    } catch {
-      logger.error("MERCADOPAGO_WEBHOOK", "Payload inválido");
+
+      logger.info("MERCADOPAGO_WEBHOOK", "Payload parseado", {
+        action: (payload as any)?.action,
+        type: (payload as any)?.type,
+        dataId: (payload as any)?.data?.id,
+      });
+    } catch (error) {
+      logger.error("MERCADOPAGO_WEBHOOK", "Payload invalido", error);
+      logger.warn("MERCADOPAGO_WEBHOOK", "Retornando received=true apos payload invalido");
       return NextResponse.json({ received: true });
     }
 
@@ -86,6 +113,7 @@ export async function POST(req: NextRequest) {
         action,
         hasDataId: !!data?.id,
       });
+      logger.info("MERCADOPAGO_WEBHOOK", "Retornando received=true apos acao invalida");
       return NextResponse.json({ received: true });
     }
 
@@ -94,11 +122,22 @@ export async function POST(req: NextRequest) {
       headers[key] = value;
     });
 
+    logger.info("MERCADOPAGO_WEBHOOK", "Chamando processWebhook");
+
     const provider = new MercadoPagoProvider();
     const event = await provider.processWebhook(payload, headers);
 
+    logger.info("MERCADOPAGO_WEBHOOK", "Resultado processWebhook", {
+      hasEvent: !!event,
+      eventType: event?.event,
+      paymentId: event?.paymentId,
+      orderId: event?.orderId,
+      status: event?.status,
+    });
+
     if (!event) {
-      logger.info("MERCADOPAGO_WEBHOOK", "Evento ignorado: não foi possível processar");
+      logger.info("MERCADOPAGO_WEBHOOK", "Evento ignorado: nao foi possivel processar");
+      logger.info("MERCADOPAGO_WEBHOOK", "Retornando received=true apos evento nulo");
       return NextResponse.json({ received: true });
     }
 
@@ -109,15 +148,23 @@ export async function POST(req: NextRequest) {
     });
 
     if (event.status === "PAID") {
+      logger.info("MERCADOPAGO_WEBHOOK", "Iniciando markOrderAsPaid", {
+        orderId: event.orderId,
+      });
       await markOrderAsPaid(event.orderId);
       logger.info("MERCADOPAGO_WEBHOOK", `Pagamento aprovado para pedido ${event.orderId}`);
     } else {
-      logger.info("MERCADOPAGO_WEBHOOK", `Evento não-PAID: ${event.event} para pedido ${event.orderId}`);
+      logger.info("MERCADOPAGO_WEBHOOK", `Evento nao-PAID: ${event.event} para pedido ${event.orderId}`);
     }
 
+    logger.info("MERCADOPAGO_WEBHOOK", "=== WEBHOOK FINALIZADO COM SUCESSO ===");
     return NextResponse.json({ received: true });
   } catch (error) {
-    logger.error("MERCADOPAGO_WEBHOOK", "Erro interno no processamento do webhook", error);
+    logger.error("MERCADOPAGO_WEBHOOK", "Erro interno no processamento do webhook", error, {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    logger.info("MERCADOPAGO_WEBHOOK", "Retornando received=true apos erro");
     return NextResponse.json({ received: true });
   }
 }
