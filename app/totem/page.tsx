@@ -59,6 +59,10 @@ export default function StoreListingPage() {
     return () => unsub();
   }, []);
 
+  const activeCategories = categories.filter((cat) => 
+    cat.key === "all" || stores.some((store) => store.areasAtuacao?.includes(cat.key))
+  );
+
   const filteredStores = stores.filter((store) => {
     const matchesName = store.name.toLowerCase().includes(search.toLowerCase());
     let matchesCity = true;
@@ -507,7 +511,7 @@ export default function StoreListingPage() {
 
         {/* Categories */}
         <div className="flex gap-4 overflow-x-auto pb-4 mb-2 scrollbar-hide">
-          {categories.map((cat, i) => (
+          {activeCategories.map((cat, i) => (
             <button
               key={i}
               onClick={() => setCategoryFilter(cat.key)}
