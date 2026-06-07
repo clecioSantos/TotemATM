@@ -56,13 +56,16 @@ export async function POST(req: NextRequest) {
     const contentType = req.headers.get("content-type") || "";
     const signatureHeader = req.headers.get("x-signature");
 
-    logger.info("MERCADOPAGO_WEBHOOK", "Webhook recebido", {
+    const allHeaders: Record<string, string> = {};
+    req.headers.forEach((value, key) => { allHeaders[key] = value; });
+
+    logger.info("MERCADOPAGO_WEBHOOK", "CONTEUDO COMPLETO RECEBIDO", {
+      allHeaders,
       contentType,
       contentLength: rawBody.length,
       hasSignature: !!signatureHeader,
-      signaturePreview: signatureHeader?.substring(0, 120),
-      bodyPreview: rawBody.substring(0, 1000),
-      environment: process.env.MERCADOPAGO_ENVIRONMENT,
+      signatureHeader: signatureHeader || "(ausente)",
+      bodyCompleto: rawBody,
     });
 
     logger.info("MERCADOPAGO_WEBHOOK", "Iniciando validacao de assinatura");
