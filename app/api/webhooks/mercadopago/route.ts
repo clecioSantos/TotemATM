@@ -5,12 +5,20 @@ import { markOrderAsPaid } from "@/src/services/payment/services/order-payment.s
 import { logger } from "@/src/lib/logger";
 
 function verifySignature(rawBody: string, signatureHeader: string | null): boolean {
-  if (!signatureHeader) return false;
-
   const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
-  if (!secret) {
-    logger.warn("MERCADOPAGO_WEBHOOK", "WEBHOOK_SECRET não configurado, pulando validação");
+  const env = (process.env.MERCADOPAGO_ENVIRONMENT || "production").toLowerCase();
+  const isSandbox = env === "sandbox" || env === "test" || env === "dev";
+
+  if (!secret || isSandbox) {
+    if (isSandbox) {
+      logger.info("MERCADOPAGO_WEBHOOK", "Ambiente sandbox: validação de assinatura desabilitada");
+    }
     return true;
+  }
+
+  if (!signatureHeader) {
+    logger.warn("MERCADOPAGO_WEBHOOK", "Assinatura ausente mas secret configurado");
+    return false;
   }
 
   try {
