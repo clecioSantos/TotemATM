@@ -1,4 +1,4 @@
-export type NotificationType = "order_review";
+export type NotificationType = "order_review" | "review_reply";
 
 export interface AppNotification {
   id: string;

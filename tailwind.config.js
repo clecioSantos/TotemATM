@@ -13,8 +13,8 @@ module.exports = {
           dark: '#202020',       // Texto principal
           muted: '#666666',      // Texto secundário
           border: '#EAEAEA',     // Bordas
-          primary: 'oklch(60% 0.18 25)', // Vermelho Veloce
-          primaryHover: 'oklch(55% 0.18 25)',
+          primary: '#FF6B00',
+          primaryHover: '#E65C00',
           success: '#00A650',
           alert: '#FFB800',
         }

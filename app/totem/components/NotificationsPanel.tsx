@@ -34,7 +34,7 @@ export default function NotificationsPanel({ userId, isOpen, onClose }: Props) {
 
   const handleNotificationClick = async (n: AppNotification) => {
     await markAsRead(n.id);
-    if (n.type === 'order_review') {
+    if (n.type === 'order_review' || n.type === 'review_reply') {
       setReviewingOrderId(n.relatedOrderId);
     }
   };

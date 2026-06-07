@@ -1,9 +1,10 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Product, Category, CartItem, Condiment, CategoryFlavor, SelectedSize, SelectedFlavor, ProductSize } from "@totem/shared/types";
-import { ShoppingBag, Trash2, Plus, Minus, X, ArrowLeft, Store } from "lucide-react";
+import { ShoppingBag, Trash2, Plus, Minus, X, ArrowLeft, Store, Star } from "lucide-react";
 import { firestore } from "@/src/services/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
+import StoreReviewsModal from "../StoreReviewsModal";
 
 interface OrderingScreenProps {
   companyId: string;
@@ -59,6 +60,7 @@ export default function OrderingScreen({
   const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null);
   const [selectedFlavors, setSelectedFlavors] = useState<CategoryFlavor[]>([]);
   const [quantity, setQuantity] = useState(1);
+  const [isStoreReviewsOpen, setIsStoreReviewsOpen] = useState(false);
   const [deliveryCosts, setDeliveryCosts] = useState<any[]>([]);
 
   useEffect(() => {
@@ -223,10 +225,15 @@ export default function OrderingScreen({
                 {companyName || (categories.length > 0 ? "Bem-vindo ao Bora" : "Cardápio")}
               </h2>
               <div className="flex items-center gap-4 text-sm font-medium opacity-90 drop-shadow">
-                <div className="flex items-center gap-1">
-                  {averageRating > 0 ? `⭐ ${averageRating.toFixed(1)}` : '⭐ --'}
-                  {reviewCount > 0 && <span className="text-[10px] opacity-70">({reviewCount})</span>}
-                </div>
+                <button
+                onClick={() => setIsStoreReviewsOpen(true)}
+                className="flex items-center gap-1 hover:opacity-80 transition-opacity cursor-pointer"
+                title="Ver avaliações"
+              >
+                <Star className="h-3.5 w-3.5 fill-[#f59e0b] text-[#f59e0b]" />
+                <span>{averageRating > 0 ? averageRating.toFixed(1) : '--'}</span>
+                {reviewCount > 0 && <span className="text-[10px] opacity-70">({reviewCount})</span>}
+              </button>
                 <div className="flex items-center gap-1">🕒 {tempoPreparoMin}-{tempoPreparoMax} min</div>
                 <div className="flex items-center gap-1">
                   🚚 {deliveryCosts.length > 0
@@ -400,6 +407,12 @@ export default function OrderingScreen({
           </>
         )}
       </aside>
+
+      <StoreReviewsModal
+        companyId={companyId}
+        isOpen={isStoreReviewsOpen}
+        onClose={() => setIsStoreReviewsOpen(false)}
+      />
 
       {/* Mobile Cart Sheet */}
       {isMobileCartOpen && (

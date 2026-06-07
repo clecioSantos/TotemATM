@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  collection, onSnapshot, query, where, doc, updateDoc, Timestamp
+  collection, onSnapshot, query, where, doc, updateDoc, Timestamp, getDoc, setDoc
 } from 'firebase/firestore';
 import { firestore } from '@/src/services/firebase';
 import { OrderReview } from '@totem/shared/types';
@@ -10,7 +10,7 @@ import { useAuth } from '@totem/shared/types/AuthProvider';
 import { logger } from '@/src/lib/logger';
 
 export function useAdminReviews() {
-  const [reviews, setReviews] = useState<(OrderReview & { customerName?: string; orderNumber?: string })[]>([]);
+  const [reviews, setReviews] = useState<(OrderReview & { customerName?: string; orderNumber?: string; orderItems?: { name: string; quantity: number }[] })[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
@@ -36,7 +36,7 @@ export function useAdminReviews() {
               adminReplyAt: data.adminReplyAt
                 ? (data.adminReplyAt as Timestamp)?.toDate() || new Date()
                 : null,
-            } as OrderReview & { customerName?: string; orderNumber?: string };
+            } as OrderReview & { customerName?: string; orderNumber?: string; orderItems?: { name: string; quantity: number }[] };
           });
 
           items.sort((a, b) => {
@@ -53,6 +53,10 @@ export function useAdminReviews() {
                 const orderData = orderSnap.data();
                 review.customerName = orderData.userName || orderData.customerName || '';
                 review.orderNumber = `#${review.orderId.slice(-6).toUpperCase()}`;
+                review.orderItems = (orderData.items || []).map((i: any) => ({
+                  name: i.name || i.productId || 'Item',
+                  quantity: i.quantity || 1,
+                }));
               }
               const userSnap = await getDoc(doc(firestore, 'users', review.customerId));
               if (userSnap.exists()) {
@@ -78,10 +82,36 @@ export function useAdminReviews() {
 
   const replyToReview = useCallback(async (reviewId: string, reply: string) => {
     try {
-      await updateDoc(doc(firestore, 'order_reviews', reviewId), {
+      const reviewRef = doc(firestore, 'order_reviews', reviewId);
+      await updateDoc(reviewRef, {
         adminReply: reply,
         adminReplyAt: Timestamp.now(),
       });
+
+      const reviewSnap = await getDoc(reviewRef);
+      if (reviewSnap.exists()) {
+        const reviewData = reviewSnap.data();
+        const customerId = reviewData.customerId;
+        const orderId = reviewData.orderId;
+        if (customerId && orderId) {
+          const notifId = `reply_${reviewId}`;
+          const notifRef = doc(firestore, 'notifications', notifId);
+          const existing = await getDoc(notifRef);
+          if (!existing.exists()) {
+            await setDoc(notifRef, {
+              userId: customerId,
+              type: 'review_reply',
+              title: 'Sua avaliação foi respondida!',
+              message: 'A loja respondeu à sua avaliação. Veja o que disseram.',
+              relatedOrderId: orderId,
+              isRead: false,
+              isResolved: false,
+              createdAt: Timestamp.now(),
+            });
+            logger.info("useAdminReviews", `Notificação de resposta criada para avaliação ${reviewId}`);
+          }
+        }
+      }
     } catch (e) {
       logger.error("useAdminReviews", "Erro ao salvar resposta", e);
       throw e;

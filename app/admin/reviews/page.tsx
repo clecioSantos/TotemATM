@@ -176,6 +176,24 @@ export default function AdminReviewsPage() {
               <div className="review-comment">{review.comment}</div>
             )}
 
+            {review.orderItems && review.orderItems.length > 0 && (
+              <div style={{ marginBottom: 12, fontSize: 13, color: '#64748b' }}>
+                <span style={{ fontWeight: 600, display: 'block', marginBottom: 4 }}>Itens do pedido:</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {review.orderItems.map((item, i) => (
+                    <span key={i} style={{
+                      background: '#f1f5f9',
+                      padding: '4px 10px',
+                      borderRadius: 6,
+                      fontSize: 12,
+                    }}>
+                      {item.quantity}x {item.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="review-reply">
               {review.adminReply ? (
                 <div>
