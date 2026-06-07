@@ -14,6 +14,14 @@ interface NeighborhoodFormProps {
   onClose: () => void;
 }
 
+const formatCurrency = (value: number) =>
+  value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const parseCurrencyInput = (raw: string) => {
+  const digits = raw.replace(/[^0-9]/g, '');
+  return Number(digits) / 100;
+};
+
 export default function NeighborhoodForm({ initialData, selectedCityId, onSubmit, onClose }: NeighborhoodFormProps) {
   const [neighborhoodName, setNeighborhoodName] = useState(initialData?.name || "");
   const [deliveryPrice, setDeliveryPrice] = useState(initialData?.deliveryPrice || 0);
@@ -49,17 +57,16 @@ export default function NeighborhoodForm({ initialData, selectedCityId, onSubmit
           </div>
           <label style={{ fontSize: '11px', fontWeight: '900', color: '#a1a1aa', marginBottom: '8px', display: 'block' }}>VALOR DA ENTREGA (R$)</label>
           <input 
-            type="number" 
-            step="0.01" 
+            type="text" 
+            inputMode="numeric" 
             className="form-input" 
-            value={deliveryPrice} 
+            value={formatCurrency(deliveryPrice)} 
             onChange={e => {
-              const val = Number(e.target.value);
+              const val = parseCurrencyInput(e.target.value);
               setDeliveryPrice(val);
-              // Habilita automaticamente se o preço for maior que zero
               if (val > 0) setEnabled(true);
             }} 
-            placeholder="0.00" 
+            placeholder="0,00" 
             required 
             style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #f4f4f5', outline: 'none' }} 
           />

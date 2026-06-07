@@ -10,6 +10,14 @@ interface Props {
   onSubmit: (data: Partial<CategoryFlavor>) => Promise<void>;
 }
 
+const formatCurrency = (value: number) =>
+  value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const parseCurrencyInput = (raw: string) => {
+  const digits = raw.replace(/[^0-9]/g, '');
+  return Number(digits) / 100;
+};
+
 export default function FlavorForm({ initialData, categories = [], onSubmit }: Props) {
   const [nome, setNome] = useState(initialData?.nome || "");
   const [preco, setPreco] = useState(initialData?.preco || 0);
@@ -41,7 +49,7 @@ export default function FlavorForm({ initialData, categories = [], onSubmit }: P
       </div>
       <div className="input-group">
         <label>Preço Extra (R$)</label>
-        <input className="form-input" type="number" step="0.01" value={preco} onChange={e => setPreco(Number(e.target.value))} />
+        <input className="form-input" type="text" inputMode="numeric" value={formatCurrency(preco)} onChange={e => setPreco(parseCurrencyInput(e.target.value))} />
       </div>
       <div className="input-group">
         <label>Categoria</label>

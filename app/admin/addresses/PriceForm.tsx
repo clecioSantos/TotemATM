@@ -6,6 +6,14 @@ interface PriceFormProps {
   onClose: () => void;
 }
 
+const formatCurrency = (value: number) =>
+  value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const parseCurrencyInput = (raw: string) => {
+  const digits = raw.replace(/[^0-9]/g, '');
+  return Number(digits) / 100;
+};
+
 export default function PriceForm({ initialPrice, onSubmit, onClose }: PriceFormProps) {
   const [price, setPrice] = useState(initialPrice || 0);
   const [submitting, setSubmitting] = useState(false);
@@ -29,12 +37,12 @@ export default function PriceForm({ initialPrice, onSubmit, onClose }: PriceForm
           VALOR DA ENTREGA (R$)
         </label>
         <input 
-          type="number" 
-          step="0.01" 
+          type="text" 
+          inputMode="numeric" 
           className="form-input" 
-          value={price} 
-          onChange={e => setPrice(Number(e.target.value))} 
-          placeholder="0.00" 
+          value={formatCurrency(price)} 
+          onChange={e => setPrice(parseCurrencyInput(e.target.value))} 
+          placeholder="0,00" 
           required 
           autoFocus 
           style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '2px solid #f4f4f5', outline: 'none' }} 

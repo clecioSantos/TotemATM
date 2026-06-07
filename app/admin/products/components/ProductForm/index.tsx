@@ -10,6 +10,14 @@ interface Props {
   onSubmit: (data: Partial<Product>, file?: File) => Promise<void>;
 }
 
+const formatCurrency = (value: number) =>
+  value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const parseCurrencyInput = (raw: string) => {
+  const digits = raw.replace(/[^0-9]/g, '');
+  return Number(digits) / 100;
+};
+
 export default function ProductForm({ initialData, categories, onSubmit }: Props) {
   const [name, setName] = useState(initialData?.name || "");
   const [price, setPrice] = useState(initialData?.price || 0);
@@ -32,6 +40,11 @@ export default function ProductForm({ initialData, categories, onSubmit }: Props
   };
 
   const updateSize = (index: number, field: keyof ProductSize, value: string | number) => {
+    if (field === 'preco') {
+      const numeric = parseCurrencyInput(value as string);
+      setSizes(prev => prev.map((s, i) => i === index ? { ...s, preco: numeric } : s));
+      return;
+    }
     setSizes(prev => prev.map((s, i) => i === index ? { ...s, [field]: value } : s));
   };
 
@@ -46,7 +59,7 @@ export default function ProductForm({ initialData, categories, onSubmit }: Props
       active,
       featured,
       imageUrl: initialData?.imageUrl,
-      sizes: possuiTamanhos ? sizes.filter(s => s.nome.trim()) : undefined,
+      ...(possuiTamanhos && { sizes: sizes.filter(s => s.nome.trim()) }),
     };
 
     if (initialData?.id) {
@@ -64,8 +77,15 @@ export default function ProductForm({ initialData, categories, onSubmit }: Props
       </div>
       
       <div className="input-group">
-        <label>Preço Base</label>
-        <input className="form-input" type="number" step="0.01" value={price} onChange={e => setPrice(Number(e.target.value))} required />
+        <label>Preço Base (R$)</label>
+        <input
+          className="form-input"
+          type="text"
+          inputMode="numeric"
+          value={formatCurrency(price)}
+          onChange={e => setPrice(parseCurrencyInput(e.target.value))}
+          required
+        />
       </div>
 
       <div className="input-group">
@@ -106,11 +126,11 @@ export default function ProductForm({ initialData, categories, onSubmit }: Props
                   <label className="size-field-label">Preço (R$)</label>
                   <input
                     className="form-input"
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="numeric"
                     placeholder="0,00"
-                    value={size.preco}
-                    onChange={e => updateSize(index, 'preco', Number(e.target.value))}
+                    value={formatCurrency(size.preco)}
+                    onChange={e => updateSize(index, 'preco', e.target.value)}
                   />
                 </div>
                 <div className="size-field">

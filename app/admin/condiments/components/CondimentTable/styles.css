@@ -91,9 +91,11 @@
 
 .actions-cell {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 6px;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
 }
 
 .btn-action {
@@ -215,35 +217,13 @@
 }
 
 .checkbox-group input[type="checkbox"] {
-  /* Hide default checkbox */
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--border-light);
-  border-radius: 6px;
-  background-color: var(--bg-light);
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid #e4e4e7;
   cursor: pointer;
-  position: relative;
-  transition: all 0.2s ease;
+  accent-color: #09090b;
   flex-shrink: 0;
-}
-
-.checkbox-group input[type="checkbox"]:checked {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-}
-
-.checkbox-group input[type="checkbox"]:checked::after {
-  content: '✔';
-  display: block;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 14px;
-  color: var(--white);
 }
 
 .checkbox-group label {
@@ -255,23 +235,26 @@
 
 /* Submit Button */
 .form-submit {
-  padding: 14px 24px;
-  background-color: var(--primary-color);
+  height: 52px;
+  background: var(--text-primary);
   color: var(--white);
   border: none;
-  border-radius: 12px;
-  font-size: 16px;
+  border-radius: var(--radius-md);
   font-weight: 700;
+  font-size: 16px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 10px rgba(var(--primary-rgb), 0.2);
   margin-top: 10px;
+  transition: var(--transition-default);
 }
 
 .form-submit:hover:not(:disabled) {
-  background-color: var(--primary-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(var(--primary-rgb), 0.3);
+  background: #27272a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.form-submit:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .form-submit:disabled {

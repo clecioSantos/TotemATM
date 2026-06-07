@@ -4,13 +4,20 @@ import { useState } from "react";
 import { Category } from '@totem/shared/types';
 import { Condiment } from "../../hooks/useCondiments";
 import "../CondimentTable/styles.css";
-import "../../../products/components/ProductForm/styles.css";
 
 interface Props {
   initialData?: Condiment | null;
   categories: Category[];
   onSubmit: (data: Partial<Condiment>, file?: File) => Promise<void>;
 }
+
+const formatCurrency = (value: number) =>
+  value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const parseCurrencyInput = (raw: string) => {
+  const digits = raw.replace(/[^0-9]/g, '');
+  return Number(digits) / 100;
+};
 
 export default function CondimentForm({ initialData, categories = [], onSubmit }: Props) {
   const [name, setName] = useState(initialData?.name || "");
@@ -61,7 +68,7 @@ export default function CondimentForm({ initialData, categories = [], onSubmit }
       
       <div className="input-group">
         <label>Preço Extra (R$)</label>
-        <input className="form-input" type="number" step="0.01" value={price} onChange={e => setPrice(Number(e.target.value))} required />
+        <input className="form-input" type="text" inputMode="numeric" value={formatCurrency(price)} onChange={e => setPrice(parseCurrencyInput(e.target.value))} required />
       </div>
 
       <div className="input-group">
