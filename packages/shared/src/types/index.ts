@@ -106,6 +106,8 @@ export interface Order {
 
 export type { AppNotification, NotificationType } from './notifications';
 export type { OrderReview } from './reviews';
+export type { Company } from './company';
+export type { StorePermissions, StoreUser } from './auth';
 
 export interface OrderFormPayload {
   customerName: string;

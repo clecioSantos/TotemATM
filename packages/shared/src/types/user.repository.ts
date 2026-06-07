@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { firestore } from "../../../../src/services/firebase";
 import { UserProfile } from "@totem/shared/types/auth";
 import { logger } from "@/src/lib/logger";
@@ -36,6 +36,18 @@ export const userRepository = {
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       logger.error("userRepository", `Erro ao criar usuário ${profile.uid}: ${errMsg}`, error);
+      throw error;
+    }
+  },
+
+  async update(uid: string, data: Partial<UserProfile>): Promise<void> {
+    try {
+      const docRef = doc(firestore, "users", uid);
+      await updateDoc(docRef, data);
+      logger.info("userRepository", `Usuário atualizado: ${uid}`);
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error("userRepository", `Erro ao atualizar usuário ${uid}: ${errMsg}`, error);
       throw error;
     }
   },

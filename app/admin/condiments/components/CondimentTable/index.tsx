@@ -2,6 +2,7 @@
 
 import { Condiment } from "../../hooks/useCondiments";
 import { Category } from "@totem/shared/types";
+import { PermissionGate } from "@/src/components/PermissionGate";
 import "./styles.css";
 
 interface Props {
@@ -55,8 +56,10 @@ export default function CondimentTable({ condiments, categories, onEdit, onDelet
                 </span>
               </td>
               <td className="actions-cell">
-                <button className="btn-action btn-edit" onClick={() => onEdit(condiment)}>Editar</button>
-                <button className="btn-action btn-delete" onClick={() => onDelete(condiment.id)}>Deletar</button>
+                <PermissionGate permission="manageCondiments">
+                  <button className="btn-action btn-edit" onClick={() => onEdit(condiment)}>Editar</button>
+                  <button className="btn-action btn-delete" onClick={() => onDelete(condiment.id)}>Deletar</button>
+                </PermissionGate>
               </td>
             </tr>
           ))}

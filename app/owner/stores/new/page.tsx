@@ -1,15 +1,39 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { addDoc, collection, onSnapshot } from "firebase/firestore";
-import { firestore } from "@/src/services/firebase";
+import { addDoc, collection, onSnapshot, doc, updateDoc } from "firebase/firestore";
+import { firestore, auth } from "@/src/services/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import { StoreUser, adminStorePermissions, computeStoreIds } from "@totem/shared/types/auth";
+import { StoreUsersSection } from "@/src/components/StoreUsersSection";
 
 export default function NewStorePage() {
   const router = useRouter();
   const [cities, setCities] = useState<any[]>([]);
   const [isAddingCity, setIsAddingCity] = useState(false);
   const [newCity, setNewCity] = useState({ name: "", estado: "" });
+
+  const [ownerId, setOwnerId] = useState<string>("");
+  const [users, setUsers] = useState<StoreUser[]>([]);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setOwnerId(firebaseUser.uid);
+        setUsers([
+          {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email || "",
+            name: firebaseUser.displayName || "Proprietário",
+            role: "admin",
+            permissions: { ...adminStorePermissions },
+          },
+        ]);
+      }
+    });
+    return () => unsub();
+  }, []);
 
   const handleAddCity = async () => {
     try {
@@ -159,7 +183,28 @@ export default function NewStorePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addDoc(collection(firestore, "companies"), formData);
+      const { userIds, adminIds } = computeStoreIds(users);
+      const companyData = {
+        ...formData,
+        ownerId,
+        users,
+        userIds,
+        adminIds,
+      };
+      const docRef = await addDoc(collection(firestore, "companies"), companyData);
+      const companyId = docRef.id;
+
+      for (const storeUser of users) {
+        try {
+          await updateDoc(doc(firestore, "users", storeUser.uid), {
+            companyId,
+            role: storeUser.role === "admin" ? "admin" : "collaborator",
+          });
+        } catch (err) {
+          console.error(`Erro ao atualizar perfil do usuário ${storeUser.uid}:`, err);
+        }
+      }
+
       alert("Loja criada com sucesso!");
       router.push("/owner/stores");
     } catch (error) {
@@ -336,6 +381,8 @@ export default function NewStorePage() {
                 ))}
             </div>
         </div>
+
+        <StoreUsersSection users={users} onChange={setUsers} />
         <div className="md:col-span-2 flex gap-4 mt-4">
           <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded flex-1">
             Salvar Loja

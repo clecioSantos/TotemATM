@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/app/admin/orders/AuthContext";
+import { useStorePermissions } from "@/src/hooks/useStorePermissions";
 import { ShieldAlert } from "lucide-react";
 import { collection, onSnapshot, query, where, deleteDoc, doc, addDoc, updateDoc, getDocs, writeBatch, FirestoreError } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
@@ -19,8 +20,9 @@ import "./page.css";
 
 function AddressesManagementContent() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
-  const isOwner = user?.role === 'owner';
+  const { can: canManage } = useStorePermissions();
+  const isAdmin = user?.role === 'admin' || user?.role === 'owner' || canManage('manageAddresses');
+  const isOwner = user?.role === 'owner' || canManage('manageAddresses');
 
   const [cities, setCities] = useState<any[]>([]);
   const [neighborhoods, setNeighborhoods] = useState<any[]>([]);

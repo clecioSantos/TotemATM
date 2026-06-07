@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { doc, getDoc, updateDoc, collection, onSnapshot, addDoc } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
 import { useRouter, useParams } from "next/navigation";
+import { StoreUser, adminStorePermissions, computeStoreIds } from "@totem/shared/types/auth";
+import { StoreUsersSection } from "@/src/components/StoreUsersSection";
 
 export default function EditStorePage() {
   const router = useRouter();
@@ -15,6 +17,7 @@ export default function EditStorePage() {
   const [newCity, setNewCity] = useState({ name: "", estado: "" });
   
   const [formData, setFormData] = useState<any>(null);
+  const [users, setUsers] = useState<StoreUser[]>([]);
 
   const estadosBrasileiros = [
     "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", 
@@ -78,6 +81,7 @@ export default function EditStorePage() {
             if (data.cnpj) data.cnpj = maskCNPJ(data.cnpj);
           }
           setFormData(data);
+          setUsers(data.users || []);
         }
       } catch (error) {
         console.error("🔥 Erro ao buscar loja:", error);
@@ -162,11 +166,28 @@ export default function EditStorePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateDoc(doc(firestore, "companies", storeId), formData);
+      const { userIds, adminIds } = computeStoreIds(users);
+      await updateDoc(doc(firestore, "companies", storeId), { ...formData, users, userIds, adminIds });
+
+      for (const storeUser of users) {
+        try {
+          const userRef = doc(firestore, "users", storeUser.uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists() && userSnap.data().companyId !== storeId) {
+            await updateDoc(userRef, {
+              companyId: storeId,
+              role: storeUser.role === "admin" ? "admin" : "collaborator",
+            });
+          }
+        } catch (err) {
+          console.error(`Erro ao atualizar perfil do usuário ${storeUser.uid}:`, err);
+        }
+      }
+
       alert("Loja atualizada!");
       router.push("/owner/stores");
     } catch (error) {
-      console.error("🔥 Erro ao atualizar loja:", error);
+      console.error("Erro ao atualizar loja:", error);
       alert("Erro ao atualizar loja.");
     }
   };
@@ -265,6 +286,8 @@ export default function EditStorePage() {
                 ))}
             </div>
         </div>
+
+        <StoreUsersSection users={users} onChange={setUsers} companyId={storeId} />
         <div className="md:col-span-2 flex gap-4 mt-4">
           <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded flex-1">
             Salvar Alterações

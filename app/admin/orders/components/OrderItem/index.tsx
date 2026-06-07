@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Order } from '../../types';
 import OrderTimer from './OrderTimer';
+import { PermissionGate } from '@/src/components/PermissionGate';
 import "./styles.css";
 
 interface Props {
@@ -143,25 +144,27 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
           )}
 
           {nextStatus && (
-            <div className="order-actions-footer">
-              <button 
-                className="action-btn-danger"
-                onClick={(e) => { 
-                  e.stopPropagation(); 
-                  if (window.confirm("Deseja realmente cancelar este pedido?")) {
-                    onCancel(order.id);
-                  }
-                }}
-              >
-                Cancelar Pedido
-              </button>
-              <button 
-                className="action-btn-primary"
-                onClick={(e) => { e.stopPropagation(); onStatusUpdate(order.id, nextStatus); }}
-              >
-                Avançar para {statusMap[nextStatus].label}
-              </button>
-            </div>
+            <PermissionGate permission="editOrders">
+              <div className="order-actions-footer">
+                <button 
+                  className="action-btn-danger"
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    if (window.confirm("Deseja realmente cancelar este pedido?")) {
+                      onCancel(order.id);
+                    }
+                  }}
+                >
+                  Cancelar Pedido
+                </button>
+                <button 
+                  className="action-btn-primary"
+                  onClick={(e) => { e.stopPropagation(); onStatusUpdate(order.id, nextStatus); }}
+                >
+                  Avançar para {statusMap[nextStatus].label}
+                </button>
+              </div>
+            </PermissionGate>
           )}
         </div>
       )}

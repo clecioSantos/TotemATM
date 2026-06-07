@@ -1,3 +1,6 @@
+"use client";
+
+import { PermissionGate } from "@/src/components/PermissionGate";
 import "./styles.css";
 
 export default function CategoryTable({ categories, onEdit, onDelete }) {
@@ -27,8 +30,10 @@ export default function CategoryTable({ categories, onEdit, onDelete }) {
                 </span>
               </td>
               <td>
-                <button onClick={() => onEdit(cat)}>Editar</button>
-                <button onClick={() => onDelete(cat.id)} style={{color: 'red', marginLeft: '10px'}}>Excluir</button>
+                <PermissionGate permission="manageCategories">
+                  <button onClick={() => onEdit(cat)}>Editar</button>
+                  <button onClick={() => onDelete(cat.id)} style={{color: 'red', marginLeft: '10px'}}>Excluir</button>
+                </PermissionGate>
               </td>
             </tr>
           ))}

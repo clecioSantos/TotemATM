@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/totem", request.url));
     }
 
-    if (pathname.startsWith("/admin") && userRole !== "admin" && userRole !== "owner") {
+    if (pathname.startsWith("/admin") && userRole !== "admin" && userRole !== "owner" && userRole !== "collaborator") {
       return NextResponse.redirect(new URL("/totem", request.url));
     }
 

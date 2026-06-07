@@ -1,6 +1,7 @@
 "use client";
 
 import { Product, Category } from '@totem/shared/types';
+import { PermissionGate } from '@/src/components/PermissionGate';
 import "./styles.css";
 
 interface Props {
@@ -43,8 +44,10 @@ export default function ProductTable({ products, categories, onEdit, onDelete }:
                 </span>
               </td>
               <td className="actions-cell">
-                <button className="btn-action btn-edit" onClick={() => onEdit(product)}>Editar</button>
-                <button className="btn-action btn-delete" onClick={() => onDelete(product.id)}>Excluir</button>
+                <PermissionGate permission="editProducts">
+                  <button className="btn-action btn-edit" onClick={() => onEdit(product)}>Editar</button>
+                  <button className="btn-action btn-delete" onClick={() => onDelete(product.id)}>Excluir</button>
+                </PermissionGate>
               </td>
             </tr>
           ))}

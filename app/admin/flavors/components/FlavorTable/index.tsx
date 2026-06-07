@@ -1,6 +1,7 @@
 "use client";
 
 import { CategoryFlavor, Category } from "@totem/shared/types";
+import { PermissionGate } from "@/src/components/PermissionGate";
 import "../../../products/components/ProductTable/styles.css";
 import "./styles.css";
 
@@ -38,8 +39,10 @@ export default function FlavorTable({ flavors, categories, onEdit, onDelete }: P
                 </span>
               </td>
               <td className="actions-cell">
-                <button className="btn-action btn-edit" onClick={() => onEdit(flavor)}>Editar</button>
-                <button className="btn-action btn-delete" onClick={() => onDelete(flavor.id)}>Deletar</button>
+                <PermissionGate permission="manageFlavors">
+                  <button className="btn-action btn-edit" onClick={() => onEdit(flavor)}>Editar</button>
+                  <button className="btn-action btn-delete" onClick={() => onDelete(flavor.id)}>Deletar</button>
+                </PermissionGate>
               </td>
             </tr>
           ))}

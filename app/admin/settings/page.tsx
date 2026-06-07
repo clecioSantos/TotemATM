@@ -8,6 +8,7 @@ import { firestore } from "@/src/services/firebase";
 import { doc, getDoc, updateDoc, collection, onSnapshot, FirestoreError } from "firebase/firestore";
 import { logger } from "@/src/lib/logger";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
+import { PermissionGate } from "@/src/components/PermissionGate";
 import "./page.css";
 
 const estadosBrasileiros = [
@@ -265,6 +266,7 @@ function ConfigurationsContent() {
           ) : !companyData ? (
             <p className="user-detail">Nenhum dado de empresa encontrado para o seu perfil.</p>
           ) : (
+            <PermissionGate permission="editSettings">
             <form onSubmit={handleSubmit} className="company-form">
               <div className="company-form-grid">
                 {[
@@ -400,6 +402,7 @@ function ConfigurationsContent() {
                 </button>
               </div>
             </form>
+            </PermissionGate>
           )}
         </div>
 

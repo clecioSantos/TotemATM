@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { OrderReview } from "@totem/shared/types";
 import { useAdminReviews } from "./hooks/useReviews";
+import { PermissionGate } from "@/src/components/PermissionGate";
 import "./page.css";
 
 const STAR_LABELS = ["", "1 estrela", "2 estrelas", "3 estrelas", "4 estrelas", "5 estrelas"];
@@ -194,6 +195,7 @@ export default function AdminReviewsPage() {
               </div>
             )}
 
+            <PermissionGate permission="manageReviews">
             <div className="review-reply">
               {review.adminReply ? (
                 <div>
@@ -244,6 +246,7 @@ export default function AdminReviewsPage() {
                 </div>
               )}
             </div>
+            </PermissionGate>
           </div>
         ))
       )}
