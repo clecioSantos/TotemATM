@@ -57,6 +57,8 @@ function TotemContent({ params }: PageProps) {
     companyName,
     companyBanner,
     companyOpen,
+    averageRating,
+    reviewCount,
     tempoPreparoMin,
     tempoPreparoMax,
     cart,
@@ -131,6 +133,12 @@ function TotemContent({ params }: PageProps) {
 
       const data = await res.json();
 
+      if (data.sandbox) {
+        logger.info("TotemPage", `Sandbox ativo — pedido ${orderId} pago automaticamente`);
+        handlePaymentConfirmed();
+        return;
+      }
+
       setPixData({ qrCode: data.qrCode || data.pixQrCode, copyPaste: data.pixCode || data.pixCopyPaste });
 
       try {
@@ -191,6 +199,8 @@ function TotemContent({ params }: PageProps) {
           companyName={companyName}
           companyBanner={companyBanner}
           companyOpen={companyOpen}
+          averageRating={averageRating}
+          reviewCount={reviewCount}
           tempoPreparoMin={tempoPreparoMin}
           tempoPreparoMax={tempoPreparoMax}
           products={products}
@@ -248,6 +258,8 @@ function TotemContent({ params }: PageProps) {
           companyName={companyName}
           companyBanner={companyBanner}
           companyOpen={companyOpen}
+          averageRating={averageRating}
+          reviewCount={reviewCount}
           tempoPreparoMin={tempoPreparoMin}
           tempoPreparoMax={tempoPreparoMax}
           products={products}

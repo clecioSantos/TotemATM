@@ -104,6 +104,9 @@ export interface Order {
   address?: Address;
 }
 
+export type { AppNotification, NotificationType } from './notifications';
+export type { OrderReview } from './reviews';
+
 export interface OrderFormPayload {
   customerName: string;
   tableNumber: string;

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
   collection, onSnapshot, query, orderBy, Timestamp, addDoc,
-  doc, updateDoc, deleteDoc, where
+  doc, updateDoc, deleteDoc, where, getDocs, getDoc, setDoc
 } from 'firebase/firestore';
 import { Order } from '../types';
 import { firestore } from '../../../../src/services/firebase';
@@ -78,11 +78,70 @@ export const useOrders = () => {
     }
   };
 
+  const findCustomerId = async (orderData: Record<string, unknown>): Promise<string | null> => {
+    if (orderData.customerId) return orderData.customerId as string;
+    if (orderData.userId) return orderData.userId as string;
+
+    const customerName = (orderData.userName || orderData.customerName) as string | undefined;
+    if (!customerName) return null;
+
+    try {
+      const usersSnap = await getDocs(
+        query(collection(firestore, 'users'), where('name', '==', customerName))
+      );
+      if (!usersSnap.empty) return usersSnap.docs[0].id;
+    } catch { }
+    return null;
+  };
+
+  const scheduleReviewNotification = async (orderId: string, customerId: string, companyId: string) => {
+    try {
+      const notifId = `review_${orderId}`;
+      const notifRef = doc(firestore, 'notifications', notifId);
+      const existing = await getDoc(notifRef);
+      if (existing.exists()) {
+        logger.info("useOrders", `Notificação de review já existe para pedido ${orderId}`);
+        return;
+      }
+
+      await setDoc(notifRef, {
+        userId: customerId,
+        type: 'order_review',
+        title: 'Como foi sua experiência?',
+        message: 'Seu pedido foi entregue. Avalie sua experiência e ajude a melhorar nosso atendimento.',
+        relatedOrderId: orderId,
+        isRead: false,
+        isResolved: false,
+        createdAt: Timestamp.now(),
+      });
+      logger.info("useOrders", `Notificação de review criada para pedido ${orderId}`);
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error("useOrders", `Erro ao criar notificação de review: ${errMsg}`, error);
+    }
+  };
+
   const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
     try {
       const orderRef = doc(firestore, 'orders', orderId);
-      await updateDoc(orderRef, { status: newStatus });
+      const updateData: Record<string, unknown> = { status: newStatus };
+      if (newStatus === 'finished') {
+        updateData.deliveredAt = Timestamp.now();
+      }
+      await updateDoc(orderRef, updateData);
       logger.info("useOrders", `Status do pedido ${orderId} atualizado para ${newStatus}`);
+
+      if (newStatus === 'finished') {
+        const orderSnap = await getDoc(orderRef);
+        if (orderSnap.exists()) {
+          const orderData = orderSnap.data() as Record<string, unknown>;
+          const customerId = await findCustomerId(orderData);
+          const companyId = orderData.companyId as string | undefined;
+          if (customerId && companyId) {
+            await scheduleReviewNotification(orderId, customerId, companyId);
+          }
+        }
+      }
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       logger.error("useOrders", `Erro ao atualizar status do pedido ${orderId}: ${errMsg}`, error);

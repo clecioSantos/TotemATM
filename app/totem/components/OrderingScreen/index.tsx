@@ -10,6 +10,8 @@ interface OrderingScreenProps {
   companyName: string;
   companyBanner: string;
   companyOpen: boolean | null;
+  averageRating: number;
+  reviewCount: number;
   tempoPreparoMin: number;
   tempoPreparoMax: number;
   products: Product[];
@@ -35,6 +37,8 @@ export default function OrderingScreen({
   companyName,
   companyBanner,
   companyOpen,
+  averageRating,
+  reviewCount,
   tempoPreparoMin,
   tempoPreparoMax,
   products = [], 
@@ -219,7 +223,10 @@ export default function OrderingScreen({
                 {companyName || (categories.length > 0 ? "Bem-vindo ao Bora" : "Cardápio")}
               </h2>
               <div className="flex items-center gap-4 text-sm font-medium opacity-90 drop-shadow">
-                <div className="flex items-center gap-1">⭐ 4.8</div>
+                <div className="flex items-center gap-1">
+                  {averageRating > 0 ? `⭐ ${averageRating.toFixed(1)}` : '⭐ --'}
+                  {reviewCount > 0 && <span className="text-[10px] opacity-70">({reviewCount})</span>}
+                </div>
                 <div className="flex items-center gap-1">🕒 {tempoPreparoMin}-{tempoPreparoMax} min</div>
                 <div className="flex items-center gap-1">
                   🚚 {deliveryCosts.length > 0

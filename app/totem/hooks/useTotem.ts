@@ -23,6 +23,8 @@ export const useTotem = (companyId: string) => {
   const [tempoPreparoMin, setTempoPreparoMin] = useState<number>(0);
   const [tempoPreparoMax, setTempoPreparoMax] = useState<number>(0);
   const [companyOpen, setCompanyOpen] = useState<boolean | null>(null);
+  const [averageRating, setAverageRating] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
 
   useEffect(() => {
     if (!db?.app?.options?.projectId || !companyId) {
@@ -41,6 +43,8 @@ export const useTotem = (companyId: string) => {
           setTempoPreparoMin(data.tempoPreparoMin || 0);
           setTempoPreparoMax(data.tempoPreparoMax || 0);
           setCompanyOpen(data.open !== undefined ? data.open : null);
+          setAverageRating(data.averageRating || 0);
+          setReviewCount(data.reviewCount || 0);
         }
       } catch (error) {
         logger.error("useTotem", "Erro ao buscar empresa", error);
@@ -291,6 +295,8 @@ export const useTotem = (companyId: string) => {
     companyName,
     companyBanner,
     companyOpen,
+    averageRating,
+    reviewCount,
     tempoPreparoMin,
     tempoPreparoMax,
     cart,

@@ -1,0 +1,229 @@
+.reviews-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.metric-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border-light);
+}
+
+.metric-card .metric-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.metric-card .metric-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.metric-card.metric-highlight {
+  background: linear-gradient(135deg, #09090b 0%, #27272a 100%);
+  color: white;
+}
+
+.metric-card.metric-highlight .metric-value,
+.metric-card.metric-highlight .metric-label {
+  color: white;
+}
+
+.rating-distribution {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border-light);
+  margin-bottom: 24px;
+}
+
+.rating-distribution h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+.rating-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.rating-row .rating-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 60px;
+}
+
+.rating-row .rating-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-light);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.rating-row .rating-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+.rating-row .rating-count {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 40px;
+  text-align: right;
+}
+
+.reviews-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  padding: 8px 16px;
+  border-radius: 99px;
+  border: 1px solid var(--border-light);
+  background: var(--white);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-chip:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.filter-chip.active {
+  background: var(--text-primary);
+  color: var(--white);
+  border-color: var(--text-primary);
+}
+
+.review-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border-light);
+  margin-bottom: 12px;
+}
+
+.review-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.review-customer-info h4 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.review-customer-info .review-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.review-stars {
+  display: flex;
+  gap: 2px;
+}
+
+.review-stars .star {
+  font-size: 18px;
+  color: #e4e4e7;
+}
+
+.review-stars .star.filled {
+  color: #f59e0b;
+}
+
+.review-comment {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--bg-light);
+  border-radius: var(--radius-md);
+}
+
+.review-reply {
+  border-top: 1px solid var(--border-light);
+  padding-top: 16px;
+  margin-top: 8px;
+}
+
+.review-reply h5 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.review-reply textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  resize: vertical;
+  margin-bottom: 8px;
+  font-family: inherit;
+}
+
+.review-reply textarea:focus {
+  outline: none;
+  border-color: var(--text-primary);
+}
+
+.review-reply .reply-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.review-reply .existing-reply {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  padding: 12px;
+  background: #f0fdf4;
+  border-radius: var(--radius-md);
+  border: 1px solid #bbf7d0;
+  margin-bottom: 8px;
+}
+
+.review-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-secondary);
+}
+
+.review-empty p {
+  font-size: 15px;
+  margin-top: 8px;
+}

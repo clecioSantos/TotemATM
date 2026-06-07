@@ -13,7 +13,8 @@ import {
   MapPin, 
   ChevronLeft, 
   Menu,
-  Palette
+  Palette,
+  Star
 } from "lucide-react";
 import "./page.css";
 
@@ -32,6 +33,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     { name: "Categorias", path: "/admin/categories", icon: <Folder size={20} /> },
     { name: "Sabores", path: "/admin/flavors", icon: <Palette size={20} /> },
     { name: "Condimentos", path: "/admin/condiments", icon: <ChefHat size={20} /> },
+    { name: "Avaliações", path: "/admin/reviews", icon: <Star size={20} /> },
     { name: "Cupons", path: "/admin/coupons", icon: <Ticket size={20} /> },
     { name: "Relatórios", path: "/admin/reports", icon: <BarChart3 size={20} /> },
     { name: "Endereços", path: "/admin/addresses", icon: <MapPin size={20} /> },

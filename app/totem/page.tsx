@@ -5,8 +5,10 @@ import { firestore } from "@/src/services/firebase";
 import { collection, onSnapshot, query, where, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, orderBy } from "firebase/firestore";
 import Link from "next/link";
 import { useAuth } from "@totem/shared/types/AuthProvider";
-import { Search, MapPin, User, ShoppingBag, Store, X, LogOut, ChevronRight, Plus, Trash2, Home } from "lucide-react";
+import { Search, MapPin, User, ShoppingBag, Store, X, LogOut, ChevronRight, Plus, Trash2, Home, Bell } from "lucide-react";
 import { logger } from "@/src/lib/logger";
+import NotificationsPanel from "./components/NotificationsPanel";
+import { useNotifications } from "./hooks/useNotifications";
 
 const categories = [
   { name: "Todas", icon: "★", key: "all" },
@@ -47,6 +49,8 @@ export default function StoreListingPage() {
   const [isEditing, setIsEditing] = useState<string | null>(null);
 
   const [storeCitySettings, setStoreCitySettings] = useState<any[]>([]);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const { unreadCount } = useNotifications(user?.uid);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(firestore, "storeCitySettings"), (snap) => {
@@ -275,14 +279,26 @@ export default function StoreListingPage() {
           </div>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setIsOrdersOpen(true)}
+              onClick={() => { setIsNotificationsOpen(true); setIsProfileOpen(false); setIsOrdersOpen(false); setIsAddressesOpen(false); }}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-[#666] hover:bg-gray-100 transition-colors relative"
+              title="Notificações"
+            >
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold min-w-[16px] h-4 flex items-center justify-center rounded-full px-1 shadow-md">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => { setIsOrdersOpen(true); setIsNotificationsOpen(false); }}
               className="w-9 h-9 rounded-full flex items-center justify-center text-[#666] hover:bg-gray-100 transition-colors"
               title="Pedidos"
             >
               <ShoppingBag className="h-5 w-5" />
             </button>
             <button
-              onClick={() => setIsProfileOpen(true)}
+              onClick={() => { setIsProfileOpen(true); setIsNotificationsOpen(false); }}
               className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-[#666] hover:bg-gray-200 transition-colors"
               title="Perfil"
             >
@@ -318,6 +334,12 @@ export default function StoreListingPage() {
           </div>
         </div>
       </header>
+
+      <NotificationsPanel
+        userId={user?.uid}
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+      />
 
       {/* Profile & Orders Modals */}
       {(isProfileOpen || isOrdersOpen || isAddressesOpen) && (
@@ -535,7 +557,9 @@ export default function StoreListingPage() {
                       <span className="text-red-500 font-semibold">Toque para ver o cardápio</span>
                     ) : (
                       <>
-                        <span className="text-[#FFB800] font-bold">⭐ 4.8</span>
+                        <span className="text-[#FFB800] font-bold">
+                          {store.averageRating > 0 ? `⭐ ${Number(store.averageRating).toFixed(1)}` : '⭐ --'}
+                        </span>
                         <span>• 30-40 min</span>
                       </>
                     )}

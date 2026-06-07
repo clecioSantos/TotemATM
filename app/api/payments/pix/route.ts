@@ -32,6 +32,27 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanOrderId = orderId.replace(/^ORDER-/, "");
+    const isSandbox = process.env.MERCADOPAGO_ENVIRONMENT?.toLowerCase() === "sandbox"
+      || process.env.MERCADOPAGO_ENVIRONMENT?.toLowerCase() === "test";
+
+    if (isSandbox) {
+      logger.info("API_PIX", `[${requestId}] Ambiente sandbox detectado — pagamento automático`, {
+        cleanOrderId,
+        amount,
+      });
+      const { markOrderAsPaid } = await import(
+        "@/src/services/payment/services/order-payment.service"
+      );
+      await markOrderAsPaid(cleanOrderId);
+      return NextResponse.json({
+        success: true,
+        sandbox: true,
+        provider: "sandbox",
+        paymentId: cleanOrderId,
+        status: "paid",
+      });
+    }
+
     logger.info("API_PIX", `[${requestId}] Obtendo provider da factory`);
     const provider = PaymentProviderFactory.create();
     logger.info("API_PIX", `[${requestId}] Provider ativo: ${provider.name}`);
