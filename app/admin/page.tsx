@@ -513,6 +513,7 @@ function AdminDashboardContent() {
   const [prevCustomerIds, setPrevCustomerIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [allOrders, setAllOrders] = useState<any[]>([]);
 
   // Company info (real-time)
   useEffect(() => {
@@ -633,6 +634,20 @@ function AdminDashboardContent() {
       setPrevCustomerIds(new Set(snap.docs.map(d => d.data().customerId).filter(Boolean)));
     }).catch(error => {
       logger.error("DASHBOARD", "Erro ao carregar clientes anteriores", error);
+    });
+  }, [user?.companyId]);
+
+  // All orders (static, for financial summary)
+  useEffect(() => {
+    if (!user?.companyId) return;
+    getDocs(query(
+      collection(firestore, "orders"),
+      where("companyId", "==", user.companyId),
+      orderBy("createdAt", "desc")
+    )).then(snap => {
+      setAllOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }).catch(error => {
+      logger.error("DASHBOARD", "Erro ao carregar todos os pedidos", error);
     });
   }, [user?.companyId]);
 
@@ -855,7 +870,7 @@ function AdminDashboardContent() {
           <TopProducts orders={todayOrders} />
         </div>
         <div className="dashboard-right">
-          <FinancialSummary orders={todayOrders} />
+          <FinancialSummary orders={allOrders} />
           <ClientMetrics orders={todayOrders} allUserIds={prevCustomerIds} />
           <DeliveryMetrics orders={todayOrders} />
           <WeeklyPerformance thisWeek={thisWeekOrders} lastWeek={lastWeekOrders} />

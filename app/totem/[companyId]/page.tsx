@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { doc, updateDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, orderBy } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
@@ -24,10 +24,11 @@ interface PageProps {
 
 type TotemStep = 'WELCOME' | 'ORDERING' | 'IDENTIFICATION' | 'PAYMENT' | 'FINISHED';
 
-export default function TotemPage({ params }: PageProps) {
+export default function TotemPage({ params }: { params: Promise<{ companyId: string }> }) {
+  const resolvedParams = use(params);
   return (
     <ErrorBoundary context="TotemPage">
-      <TotemContent params={params} />
+      <TotemContent params={resolvedParams} />
     </ErrorBoundary>
   );
 }

@@ -1,6 +1,65 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PaymentProviderFactory } from "@/src/services/payment/payment-provider.factory";
 import { logger } from "@/src/lib/logger";
+import { getAdminDb } from "@/src/services/firebase-admin";
+import { MercadoPagoService } from "@/app/services/mercadopago/mercadopago.service";
+
+async function ensureValidToken(company: any): Promise<{ accessToken: string; disconnected: boolean }> {
+  if (!company.mercadopago_connected || !company.mercadopago_access_token) {
+    return { accessToken: "", disconnected: true };
+  }
+
+  const expiresAt = company.mercadopago_token_expires_at?.toDate?.() || company.mercadopago_token_expires_at;
+  const isExpired = expiresAt ? new Date() >= new Date(expiresAt) : false;
+
+  if (!isExpired) {
+    return { accessToken: company.mercadopago_access_token, disconnected: false };
+  }
+
+  if (!company.mercadopago_refresh_token) {
+    logger.warn("MERCADOPAGO", "Token expirado sem refresh_token — desconectando loja", {
+      companyId: company.id,
+    });
+    return { accessToken: "", disconnected: true };
+  }
+
+  try {
+    const tokenData = await MercadoPagoService.refreshToken(company.mercadopago_refresh_token);
+    const newExpiresAt = MercadoPagoService.calculateExpiresAt(tokenData.expires_in);
+
+    const db = getAdminDb();
+    await db.collection("companies").doc(company.id).update({
+      mercadopago_access_token: tokenData.access_token,
+      mercadopago_refresh_token: tokenData.refresh_token,
+      mercadopago_token_expires_at: newExpiresAt,
+    });
+
+    logger.info("MERCADOPAGO", "Token renovado automaticamente", {
+      companyId: company.id,
+    });
+
+    return { accessToken: tokenData.access_token, disconnected: false };
+  } catch (error) {
+    logger.error("MERCADOPAGO", "Falha ao renovar token — desconectando loja", error, {
+      companyId: company.id,
+    });
+
+    const db = getAdminDb();
+    await db.collection("companies").doc(company.id).update({
+      mercadopago_connected: false,
+      mercadopago_access_token: null,
+      mercadopago_refresh_token: null,
+      mercadopago_token_expires_at: null,
+    });
+
+    return { accessToken: "", disconnected: true };
+  }
+}
+
+function calculateCommission(amount: number, commissionPercent: number): number {
+  const fee = amount * (commissionPercent / 100);
+  return Math.round(fee * 100) / 100;
+}
 
 export async function POST(req: NextRequest) {
   const requestId = Math.random().toString(36).substring(2, 10);
@@ -53,6 +112,73 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const providerName = PaymentProviderFactory.getProviderName();
+
+    let storeAccessToken: string | undefined;
+    let applicationFee: number | undefined;
+
+    if (providerName === "mercadopago") {
+      const db = getAdminDb();
+      const orderRef = db.collection("orders").doc(cleanOrderId);
+      const orderSnap = await orderRef.get();
+
+      if (!orderSnap.exists) {
+        logger.warn("API_PIX", `[${requestId}] Pedido ${cleanOrderId} não encontrado`);
+        return NextResponse.json(
+          { success: false, error: "Pedido não encontrado" },
+          { status: 404 }
+        );
+      }
+
+      const orderData = orderSnap.data()!;
+      const companyId = orderData.companyId as string;
+
+      if (!companyId) {
+        logger.warn("API_PIX", `[${requestId}] Pedido ${cleanOrderId} sem companyId`);
+        return NextResponse.json(
+          { success: false, error: "Pedido não possui loja associada" },
+          { status: 400 }
+        );
+      }
+
+      const companyRef = db.collection("companies").doc(companyId);
+      const companySnap = await companyRef.get();
+
+      if (!companySnap.exists) {
+        logger.warn("API_PIX", `[${requestId}] Loja ${companyId} não encontrada`);
+        return NextResponse.json(
+          { success: false, error: "Loja não encontrada" },
+          { status: 404 }
+        );
+      }
+
+      const company = { id: companyId, ...companySnap.data() };
+      const { accessToken, disconnected } = await ensureValidToken(company);
+
+      if (disconnected) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Este estabelecimento ainda não configurou o recebimento via Mercado Pago.",
+            code: "MERCADOPAGO_NOT_CONNECTED",
+          },
+          { status: 400 }
+        );
+      }
+
+      storeAccessToken = accessToken;
+
+      const commissionPercent = (company as any).platform_commission_percent ?? 6.00;
+      applicationFee = calculateCommission(amount, commissionPercent);
+
+      logger.info("API_PIX", `[${requestId}] Split configurado`, {
+        companyId,
+        commissionPercent,
+        applicationFee,
+        amount,
+      });
+    }
+
     logger.info("API_PIX", `[${requestId}] Obtendo provider da factory`);
     const provider = PaymentProviderFactory.create();
     logger.info("API_PIX", `[${requestId}] Provider ativo: ${provider.name}`);
@@ -60,6 +186,9 @@ export async function POST(req: NextRequest) {
     logger.info("API_PIX", `[${requestId}] Chamando provider.createPayment`, {
       cleanOrderId,
       amount,
+      hasStoreToken: !!storeAccessToken,
+      hasApplicationFee: applicationFee !== undefined,
+      applicationFee,
     });
 
     const payment = await provider.createPayment({
@@ -70,6 +199,8 @@ export async function POST(req: NextRequest) {
       customerTaxId,
       customerPhone,
       description,
+      accessToken: storeAccessToken,
+      applicationFee,
     });
 
     logger.info("API_PIX", `[${requestId}] Pagamento criado com sucesso`, {
@@ -139,57 +270,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (provider.name === "mercadopago") {
-      const isSandbox = process.env.MERCADOPAGO_ENVIRONMENT?.toLowerCase() === "sandbox" || process.env.MERCADOPAGO_ENVIRONMENT?.toLowerCase() === "test";
-      if (isSandbox) {
-        logger.info("MERCADOPAGO_MOCK", `[${requestId}] Mock payment scheduled — will call webhook in 5s`, {
-          paymentId: payment.paymentId,
-          orderId: cleanOrderId,
-          delay: 5000,
-        });
-
-        const mockPayload = {
-          action: "payment.created",
-          data: { id: payment.paymentId },
-          external_reference: cleanOrderId,
-        };
-
-        const timeoutId = setTimeout(async () => {
-          try {
-            const protocol = req.headers.get("x-forwarded-proto") || "http";
-            const host = req.headers.get("host") || "localhost:3000";
-            const webhookUrl = `${protocol}://${host}/api/webhooks/mercadopago`;
-
-            const response = await fetch(webhookUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(mockPayload),
-            });
-
-            if (response.ok) {
-              logger.info("MERCADOPAGO_MOCK", `[${requestId}] Mock payment approved — webhook responded OK`, {
-                paymentId: payment.paymentId,
-                orderId: cleanOrderId,
-                status: response.status,
-              });
-            } else {
-              logger.warn("MERCADOPAGO_MOCK", `[${requestId}] Mock webhook returned non-OK`, {
-                paymentId: payment.paymentId,
-                orderId: cleanOrderId,
-                status: response.status,
-              });
-            }
-          } catch (err) {
-            logger.error("MERCADOPAGO_MOCK", `[${requestId}] Mock payment failed`, err, {
-              paymentId: payment.paymentId,
-              orderId: cleanOrderId,
-            });
-          }
-        }, 5000);
-
-        if (typeof timeoutId === "object" && "unref" in timeoutId) {
-          (timeoutId as any).unref();
-        }
-      }
+      logger.info("MERCADOPAGO_MOCK", `[${requestId}] Pagamento criado com sucesso em modo produção`, {
+        paymentId: payment.paymentId,
+        orderId: cleanOrderId,
+      });
     }
 
     return NextResponse.json({

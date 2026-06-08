@@ -73,6 +73,7 @@ export default function NewStorePage() {
     },
     tempoPreparoMin: "",
     tempoPreparoMax: "",
+    platform_commission_percent: 6.00,
   });
 
   const handleHorarioChange = (dia: string, field: 'open' | 'close', value: string) => {
@@ -380,6 +381,21 @@ export default function NewStorePage() {
                     </label>
                 ))}
             </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Comissão da Plataforma (%)</label>
+          <p className="text-xs text-gray-500 mb-1">Percentual de comissão sobre cada pedido.</p>
+          <input
+            type="number"
+            name="platform_commission_percent"
+            value={formData.platform_commission_percent}
+            onChange={(e) => setFormData({...formData, platform_commission_percent: parseFloat(e.target.value) || 0})}
+            min="0"
+            max="100"
+            step="0.5"
+            className="mt-1 block w-32 border border-gray-300 rounded-md p-2"
+          />
         </div>
 
         <StoreUsersSection users={users} onChange={setUsers} />

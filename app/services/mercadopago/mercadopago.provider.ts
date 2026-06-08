@@ -12,15 +12,24 @@ export class MercadoPagoProvider implements PaymentProvider {
   readonly name = "mercadopago";
 
   async createPayment(params: CreatePaymentParams): Promise<PaymentResponse> {
+    const tokenLabel = params.accessToken
+      ? "utilizando token da loja"
+      : "utilizando token global";
+
     logger.info("MERCADOPAGO_PROVIDER", `Criando pagamento via Mercado Pago para pedido ${params.orderId}`, {
       amount: params.amount,
+      tokenMode: tokenLabel,
+      hasApplicationFee: params.applicationFee !== undefined,
+      applicationFee: params.applicationFee,
     });
 
     const response = await MercadoPagoService.createPixOrder(
       params.orderId,
       params.amount,
       params.customerEmail,
-      params.description
+      params.description,
+      params.accessToken,
+      params.applicationFee
     );
 
     const txData = response.point_of_interaction?.transaction_data;
@@ -31,11 +40,13 @@ export class MercadoPagoProvider implements PaymentProvider {
       rawB64 = `data:image/png;base64,${rawB64}`;
     }
 
-    logger.info("MERCADOPAGO_PROVIDER", "QR Code dados", {
+    logger.info("MERCADOPAGO_PROVIDER", "PIX_SPLIT", {
+      paymentId: response.id,
       base64Length: rawB64.length,
-      base64Prefix: rawB64.startsWith("data:image/") ? "data:image/..." : "sem prefixo",
       pixCodeLength: pixCode.length,
-      pixCodePreview: pixCode.substring(0, 20),
+      hasApplicationFee: params.applicationFee !== undefined,
+      applicationFee: params.applicationFee,
+      amount: params.amount,
     });
 
     return {

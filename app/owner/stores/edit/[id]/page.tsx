@@ -18,6 +18,7 @@ export default function EditStorePage() {
   
   const [formData, setFormData] = useState<any>(null);
   const [users, setUsers] = useState<StoreUser[]>([]);
+  const [previousCommission, setPreviousCommission] = useState<number | null>(null);
 
   const estadosBrasileiros = [
     "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", 
@@ -82,6 +83,7 @@ export default function EditStorePage() {
           }
           setFormData(data);
           setUsers(data.users || []);
+          setPreviousCommission(data.platform_commission_percent ?? 6.00);
         }
       } catch (error) {
         console.error("🔥 Erro ao buscar loja:", error);
@@ -167,7 +169,24 @@ export default function EditStorePage() {
     e.preventDefault();
     try {
       const { userIds, adminIds } = computeStoreIds(users);
-      await updateDoc(doc(firestore, "companies", storeId), { ...formData, users, userIds, adminIds });
+      const updateData = { ...formData, users, userIds, adminIds };
+
+      const newCommission = formData.platform_commission_percent;
+      if (previousCommission !== null && newCommission !== previousCommission) {
+        const auditRef = collection(firestore, "commission_audit_log");
+        await addDoc(auditRef, {
+          companyId: storeId,
+          companyName: formData.name,
+          previousCommission,
+          newCommission,
+          changedBy: "owner",
+          changedById: "system",
+          timestamp: new Date(),
+        });
+        setPreviousCommission(newCommission);
+      }
+
+      await updateDoc(doc(firestore, "companies", storeId), updateData);
 
       for (const storeUser of users) {
         try {
@@ -268,6 +287,21 @@ export default function EditStorePage() {
         <div className="md:col-span-2 grid grid-cols-2 gap-4">
             <input type="number" name="tempoPreparoMin" placeholder="Tempo Mín" value={formData.tempoPreparoMin || ""} onChange={handleChange} className="border p-2" />
             <input type="number" name="tempoPreparoMax" placeholder="Tempo Máx" value={formData.tempoPreparoMax || ""} onChange={handleChange} className="border p-2" />
+        </div>
+
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700">Comissão da Plataforma (%)</label>
+          <p className="text-xs text-gray-500 mb-1">Percentual de comissão sobre cada pedido. Mín: 0, Máx: 100.</p>
+          <input
+            type="number"
+            name="platform_commission_percent"
+            value={formData.platform_commission_percent ?? 6.00}
+            onChange={(e) => setFormData({ ...formData, platform_commission_percent: parseFloat(e.target.value) || 0 })}
+            min="0"
+            max="100"
+            step="0.5"
+            className="border p-2 w-32"
+          />
         </div>
 
         <div className="md:col-span-2">

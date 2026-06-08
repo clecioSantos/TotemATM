@@ -34,6 +34,16 @@ interface GetPaymentResponse {
   external_reference?: string;
 }
 
+interface OAuthTokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  refresh_token: string;
+  user_id: number;
+  public_key: string;
+  live_mode: boolean;
+}
+
 function maskToken(token: string): string {
   if (token.length <= 8) return "***";
   return token.substring(0, 4) + "..." + token.substring(token.length - 4);
@@ -48,9 +58,10 @@ export class MercadoPagoService {
     return token;
   }
 
-  private static getHeaders(): Record<string, string> {
+  private static getHeaders(token?: string): Record<string, string> {
+    const accessToken = token || this.getAccessToken();
     return {
-      Authorization: `Bearer ${this.getAccessToken()}`,
+      Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
       Accept: "application/json",
     };
@@ -77,7 +88,9 @@ export class MercadoPagoService {
     orderId: string,
     amount: number,
     payerEmail?: string,
-    description?: string
+    description?: string,
+    accessToken?: string,
+    applicationFee?: number
   ): Promise<CreatePixResponse> {
     const amountInCents = toCents(amount);
     const amountInDecimals = amountInCents / 100;
@@ -92,29 +105,35 @@ export class MercadoPagoService {
       external_reference: orderId,
     };
 
+    if (applicationFee !== undefined && applicationFee > 0) {
+      body.application_fee = Math.round(applicationFee * 100) / 100;
+    }
+
     const idempotencyKey = orderId;
     const url = `${this.getBaseUrl()}/payments`;
 
+    const tokenToUse = accessToken || this.getAccessToken();
     const logSafeBody = JSON.parse(JSON.stringify(body));
-    const token = process.env.MERCADOPAGO_ACCESS_TOKEN?.trim() || "";
     logger.info("MERCADOPAGO", "Request Payload", {
       url,
       method: "POST",
       headers: {
-        Authorization: `Bearer ${maskToken(token)}`,
+        Authorization: `Bearer ${maskToken(tokenToUse)}`,
         "X-Idempotency-Key": idempotencyKey,
       },
       body: logSafeBody,
       amountOriginal: amount,
       amountInCents,
       amountInDecimals,
+      hasApplicationFee: applicationFee !== undefined,
+      applicationFee,
     });
 
     try {
       const response = await fetchJson<CreatePixResponse>(url, {
         method: "POST",
         headers: {
-          ...this.getHeaders(),
+          ...this.getHeaders(tokenToUse),
           "X-Idempotency-Key": idempotencyKey,
         },
         body: JSON.stringify(body),
@@ -124,16 +143,13 @@ export class MercadoPagoService {
 
       const rawB64 = response.point_of_interaction?.transaction_data?.qr_code_base64 || "";
       const rawQrCode = response.point_of_interaction?.transaction_data?.qr_code || "";
-      logger.info("MERCADOPAGO", "Response Success", {
+      logger.info("MERCADOPAGO", "PIX_CREATE", {
         paymentId: response.id,
         status: response.status,
         hasQrCode: !!rawQrCode,
         hasBase64: !!rawB64,
         base64Length: rawB64.length,
-        base64Preview: rawB64.substring(0, 30),
         qrCodeLength: rawQrCode.length,
-        qrCodePreview: rawQrCode.substring(0, 30),
-        hasDataUriPrefix: rawB64.startsWith("data:image/"),
       });
 
       return response;
@@ -164,7 +180,7 @@ export class MercadoPagoService {
     }
   }
 
-  static async getPayment(paymentId: string): Promise<GetPaymentResponse> {
+  static async getPayment(paymentId: string, accessToken?: string): Promise<GetPaymentResponse> {
     const url = `${this.getBaseUrl()}/payments/${paymentId}`;
 
     logger.info("MERCADOPAGO", `Consultando pagamento ${paymentId}`);
@@ -172,18 +188,145 @@ export class MercadoPagoService {
     try {
       const response = await fetchJson<GetPaymentResponse>(url, {
         method: "GET",
-        headers: this.getHeaders(),
+        headers: this.getHeaders(accessToken),
         timeout: MERCADOPAGO_TIMEOUT_MS,
         context: "MERCADOPAGO_GET_PAYMENT",
       });
 
-      logger.info("MERCADOPAGO", `Status do pagamento ${paymentId}: ${response.status}`);
+      logger.info("MERCADOPAGO", `PAYMENT_UPDATED`, {
+        paymentId,
+        status: response.status,
+        transactionAmount: response.transaction_amount,
+      });
 
       return response;
     } catch (error) {
       logger.error("MERCADOPAGO", `Erro ao consultar pagamento ${paymentId}`, error);
       throw error;
     }
+  }
+
+  static async refreshToken(refreshToken: string): Promise<OAuthTokenResponse> {
+    const clientId = process.env.MERCADOPAGO_CLIENT_ID?.trim();
+    const clientSecret = process.env.MERCADOPAGO_CLIENT_SECRET?.trim();
+
+    if (!clientId || !clientSecret) {
+      throw new Error("MERCADOPAGO_CLIENT_ID ou MERCADOPAGO_CLIENT_SECRET não configurados");
+    }
+
+    const url = "https://api.mercadopago.com/oauth/token";
+
+    logger.info("MERCADOPAGO", "OAUTH_REFRESH", {
+      hasClientId: !!clientId,
+    });
+
+    try {
+      const response = await fetchJson<OAuthTokenResponse>(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          client_secret: clientSecret,
+          client_id: clientId,
+          grant_type: "refresh_token",
+          refresh_token: refreshToken,
+        }),
+        timeout: MERCADOPAGO_TIMEOUT_MS,
+        context: "MERCADOPAGO_REFRESH_TOKEN",
+      });
+
+      logger.info("MERCADOPAGO", "OAUTH_REFRESH", {
+        userId: response.user_id,
+        expiresIn: response.expires_in,
+        liveMode: response.live_mode,
+        hasAccessToken: !!response.access_token,
+        hasRefreshToken: !!response.refresh_token,
+      });
+
+      return response;
+    } catch (error) {
+      const err = error as Error & { status?: number; responseData?: unknown };
+      logger.error("MERCADOPAGO", "OAUTH_REFRESH_ERROR", error, {
+        httpStatus: err.status,
+        responseData: err.responseData,
+      });
+      throw error;
+    }
+  }
+
+  static async exchangeAuthorizationCode(code: string): Promise<OAuthTokenResponse> {
+    const clientId = process.env.MERCADOPAGO_CLIENT_ID?.trim();
+    const clientSecret = process.env.MERCADOPAGO_CLIENT_SECRET?.trim();
+    const redirectUri = process.env.MERCADOPAGO_REDIRECT_URI?.trim();
+
+    if (!clientId || !clientSecret || !redirectUri) {
+      throw new Error("MERCADOPAGO_CLIENT_ID, CLIENT_SECRET e REDIRECT_URI devem estar configurados");
+    }
+
+    const url = "https://api.mercadopago.com/oauth/token";
+
+    logger.info("MERCADOPAGO", "OAUTH_TOKEN_EXCHANGE", {
+      hasClientId: !!clientId,
+      hasRedirectUri: !!redirectUri,
+    });
+
+    try {
+      const response = await fetchJson<OAuthTokenResponse>(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          client_secret: clientSecret,
+          client_id: clientId,
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: redirectUri,
+        }),
+        timeout: MERCADOPAGO_TIMEOUT_MS,
+        context: "MERCADOPAGO_TOKEN_EXCHANGE",
+      });
+
+      logger.info("MERCADOPAGO", "OAUTH_TOKEN_EXCHANGE", {
+        userId: response.user_id,
+        expiresIn: response.expires_in,
+        liveMode: response.live_mode,
+        hasAccessToken: !!response.access_token,
+        hasRefreshToken: !!response.refresh_token,
+      });
+
+      return response;
+    } catch (error) {
+      const err = error as Error & { status?: number; responseData?: unknown };
+      logger.error("MERCADOPAGO", "OAUTH_TOKEN_EXCHANGE_ERROR", error, {
+        httpStatus: err.status,
+        responseData: err.responseData,
+      });
+      throw error;
+    }
+  }
+
+  static buildOAuthUrl(state: string): string {
+    const clientId = process.env.MERCADOPAGO_CLIENT_ID?.trim();
+    const redirectUri = process.env.MERCADOPAGO_REDIRECT_URI?.trim();
+
+    if (!clientId || !redirectUri) {
+      throw new Error("MERCADOPAGO_CLIENT_ID e MERCADOPAGO_REDIRECT_URI devem estar configurados");
+    }
+
+    const baseUrl = "https://auth.mercadopago.com/authorization";
+    const params = new URLSearchParams({
+      client_id: clientId,
+      response_type: "code",
+      platform_id: "mp",
+      redirect_uri: redirectUri,
+      state,
+    });
+
+    return `${baseUrl}?${params.toString()}`;
   }
 
   static mapStatus(mpStatus: string): string {
@@ -204,5 +347,9 @@ export class MercadoPagoService {
       default:
         return "PENDING";
     }
+  }
+
+  static calculateExpiresAt(expiresIn: number): Date {
+    return new Date(Date.now() + expiresIn * 1000);
   }
 }

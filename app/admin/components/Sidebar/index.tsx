@@ -16,7 +16,8 @@ import {
   Palette,
   Star,
   Users,
-  Tag
+  Tag,
+  Wallet
 } from "lucide-react";
 import "./page.css";
 
@@ -38,6 +39,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     { name: "Avaliações", path: "/admin/reviews", icon: <Star size={20} /> },
     { name: "Promoções", path: "/admin/promotions", icon: <Tag size={20} /> },
     { name: "Cupons", path: "/admin/coupons", icon: <Ticket size={20} /> },
+    { name: "Financeiro", path: "/admin/financeiro", icon: <Wallet size={20} /> },
     { name: "Relatórios", path: "/admin/reports", icon: <BarChart3 size={20} /> },
     { name: "Endereços", path: "/admin/addresses", icon: <MapPin size={20} /> },
     { name: "Usuários", path: "/admin/settings/users", icon: <Users size={20} /> },
