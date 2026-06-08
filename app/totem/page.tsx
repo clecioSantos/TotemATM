@@ -5,10 +5,11 @@ import { firestore } from "@/src/services/firebase";
 import { collection, onSnapshot, query, where, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, orderBy } from "firebase/firestore";
 import Link from "next/link";
 import { useAuth } from "@totem/shared/types/AuthProvider";
-import { Search, MapPin, User, ShoppingBag, Store, X, LogOut, ChevronRight, Plus, Trash2, Home, Bell } from "lucide-react";
+import { Search, MapPin, User, ShoppingBag, Store, X, LogOut, ChevronRight, Plus, Trash2, Home, Bell, ChevronLeft, ChevronRight as ChevronRightIcon, Tag } from "lucide-react";
 import { logger } from "@/src/lib/logger";
 import NotificationsPanel from "./components/NotificationsPanel";
 import { useNotifications } from "./hooks/useNotifications";
+import { usePromotionsForListing } from "./hooks/usePromotionsForListing";
 
 const categories = [
   { name: "Todas", icon: "★", key: "all" },
@@ -51,6 +52,8 @@ export default function StoreListingPage() {
   const [storeCitySettings, setStoreCitySettings] = useState<any[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const { unreadCount } = useNotifications(user?.uid);
+  const { events, promotions, getStoresForEvent, loading: promosLoading } = usePromotionsForListing();
+  const [carouselScrolls, setCarouselScrolls] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const unsub = onSnapshot(collection(firestore, "storeCitySettings"), (snap) => {
@@ -503,11 +506,76 @@ export default function StoreListingPage() {
       )}
 
       <div className="p-4">
-        {/* Banner */}
-        <div className="w-full h-32 rounded-[16px] bg-gradient-to-r from-[#FF6B00] to-[#E65C00] p-6 text-white flex flex-col justify-center mb-6 shadow-sm">
-          <h2 className="text-xl font-bold">Ofertas da Semana</h2>
-          <p className="text-sm opacity-90">Confira nossas promoções exclusivas!</p>
-        </div>
+        {/* Event Blocks */}
+        {!promosLoading && events.map((ev) => {
+          const storeIds = getStoresForEvent(ev.id);
+          const eventStores = stores.filter((s) => storeIds.includes(s.id));
+          if (eventStores.length === 0) return null;
+
+          const containerRefId = `event-container-${ev.id}`;
+
+          return (
+            <div key={ev.id} className="mb-6" style={{ padding: "0 2% 2% 2%" }}>
+              <div className="w-full rounded-[16px] overflow-hidden shadow-sm bg-white">
+                {/* Title */}
+                <div className="px-4 pt-4 pb-2">
+                  <h2 className="text-xl font-bold text-[#1F1F1F]" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>{ev.name}</h2>
+                  {ev.description && <p className="text-sm text-[#666] mt-0.5">{ev.description}</p>}
+                </div>
+
+                {/* Banner image - separate div between title and stores */}
+                {ev.bannerUrl && (
+                  <div className="px-4 pb-2">
+                    <div className="w-full rounded-[12px] overflow-hidden" style={{ aspectRatio: "3/1" }}>
+                      <img src={ev.bannerUrl} alt={ev.name} className="w-full h-full object-cover" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Stores area — white background */}
+                <div className="p-3">
+                  <div
+                    className="flex gap-2 overflow-x-auto scrollbar-hide"
+                    onScroll={(e) => {
+                      const el = e.currentTarget;
+                      setCarouselScrolls((prev) => ({ ...prev, [ev.id]: el.scrollLeft }));
+                    }}
+                    ref={(el) => {
+                      if (el && carouselScrolls[ev.id] !== undefined) {
+                        el.scrollLeft = carouselScrolls[ev.id];
+                      }
+                    }}
+                  >
+                    {eventStores.map((store) => {
+                      const closed = store.open === false;
+                      return (
+                        <Link
+                          key={store.id}
+                          href={`/totem/${store.id}`}
+                          className={`flex-shrink-0 w-[120px] bg-white rounded-[12px] p-2 shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-[#EAEAEA] transition-transform active:scale-[0.97] ${closed ? "opacity-70" : ""}`}
+                        >
+                          <div className="w-9 h-9 rounded-[10px] bg-[#eee] flex items-center justify-center overflow-hidden mx-auto mb-1.5">
+                          {store.logo ? (
+                            <img src={store.logo} alt={store.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-sm font-bold text-[#999]">{store.name.charAt(0)}</span>
+                          )}
+                        </div>
+                        <h4 className="text-[11px] font-bold text-[#1F1F1F] text-center truncate">{store.name}</h4>
+                        <div className="flex items-center justify-center gap-1 mt-0.5">
+                          <span className="text-[9px] font-semibold text-[#FFB800]">
+                              ⭐ {store.averageRating > 0 ? Number(store.averageRating).toFixed(1) : '--'}
+                            </span>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
 
         {/* Categories */}
         <div className="flex gap-4 overflow-x-auto pb-4 mb-2 scrollbar-hide">

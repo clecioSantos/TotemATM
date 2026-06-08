@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Product, Category, CartItem, Condiment, CategoryFlavor, SelectedSize, SelectedFlavor, ProductSize } from "@totem/shared/types";
-import { ShoppingBag, Trash2, Plus, Minus, X, ArrowLeft, Store, Star, Bell, User } from "lucide-react";
+import { Product, Category, CartItem, Condiment, CategoryFlavor, SelectedSize, SelectedFlavor, ProductSize, Promotion } from "@totem/shared/types";
+import { ShoppingBag, Trash2, Plus, Minus, X, ArrowLeft, Store, Star, Bell, User, Tag } from "lucide-react";
 import { firestore } from "@/src/services/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import StoreReviewsModal from "../StoreReviewsModal";
@@ -21,7 +21,7 @@ interface OrderingScreenProps {
   flavors: CategoryFlavor[];
   cart: CartItem[];
   actions: {
-    addToCart: (product: Product, selectedCondiments?: Condiment[], tamanhoSelecionado?: SelectedSize, saboresSelecionados?: SelectedFlavor[]) => void;
+    addToCart: (product: Product, selectedCondiments?: Condiment[], tamanhoSelecionado?: SelectedSize, saboresSelecionados?: SelectedFlavor[], quantity?: number) => { message?: string; usedRegularPrice?: boolean } | undefined;
     removeFromCart: (id: string) => void;
     updateQuantity: (id: string, delta: number) => void;
     updateItemObservation: (id: string, obs: string) => void;
@@ -33,6 +33,9 @@ interface OrderingScreenProps {
   onOpenNotifications: () => void;
   onOpenOrders: () => void;
   onOpenProfile: () => void;
+  promotions?: Promotion[];
+  getProductPromotion?: (productId: string) => Promotion | undefined;
+  getPromotionalPrice?: (productId: string, basePrice: number) => number;
 }
 
 const BANNER_HEIGHT = 168;
@@ -58,6 +61,9 @@ export default function OrderingScreen({
   onOpenNotifications,
   onOpenOrders,
   onOpenProfile,
+  promotions = [],
+  getProductPromotion,
+  getPromotionalPrice,
 }: OrderingScreenProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
@@ -70,6 +76,14 @@ export default function OrderingScreen({
   const [quantity, setQuantity] = useState(1);
   const [isStoreReviewsOpen, setIsStoreReviewsOpen] = useState(false);
   const [deliveryCosts, setDeliveryCosts] = useState<any[]>([]);
+  const [toast, setToast] = useState<{ message: string; type?: "error" | "info" } | null>(null);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   useEffect(() => {
     if (!companyId) return;
@@ -133,16 +147,40 @@ export default function OrderingScreen({
     });
   };
 
-  const effectivePrice = selectedSize ? selectedSize.preco : selectedProduct?.price || 0;
+  const effectivePrice = selectedProduct
+    ? selectedSize
+      ? getPromotionalPrice
+        ? getPromotionalPrice(selectedProduct.id, selectedSize.preco)
+        : selectedSize.preco
+      : getPromotionalPrice
+        ? getPromotionalPrice(selectedProduct.id, selectedProduct.price)
+        : selectedProduct.price
+    : 0;
 
   const productTotal = selectedProduct 
     ? (effectivePrice + selectedFlavors.reduce((sum, f) => sum + (f.preco || 0), 0) + selectedCondiments.reduce((sum, c) => sum + c.price, 0)) * quantity
     : 0;
 
+  const getPrice = (product: Product) => {
+    if (getPromotionalPrice) return getPromotionalPrice(product.id, product.price);
+    return product.price;
+  };
+
+  const hasPromotion = (productId: string) => {
+    if (getProductPromotion) return getProductPromotion(productId) != null;
+    return false;
+  };
+
+  const getPromoStock = (productId: string) => {
+    const promo = getProductPromotion?.(productId);
+    if (!promo || promo.stockLimit == null) return null;
+    return { sold: promo.soldUnits || 0, limit: promo.stockLimit };
+  };
+
   const filteredProducts = activeCategory === "all" 
     ? products 
     : activeCategory === "featured"
-    ? products.filter(p => p.featured)
+    ? products.filter(p => p.featured || hasPromotion(p.id))
     : products.filter(p => p.categoryId === activeCategory);
 
   const cartTotal = cart.reduce((acc, i) => {
@@ -152,6 +190,7 @@ export default function OrderingScreen({
     return acc + ((basePrice + flavorsPrice + condimentsPrice) * i.quantity);
   }, 0);
   const cartItemsCount = cart.reduce((acc, i) => acc + i.quantity, 0);
+  const hasRegularItems = cart.some(item => item.id.includes('-regular-'));
 
   const isClosed = companyOpen === false;
 
@@ -302,28 +341,62 @@ export default function OrderingScreen({
 
           {/* Products list */}
           <div className="p-4 space-y-4">
-            {filteredProducts.map(product => (
-              <div
-                key={product.id}
-                className="bg-white rounded-[16px] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-gray-200/60 p-3 flex flex-row items-center cursor-pointer transition-all duration-200 hover:translate-y-[-2px] hover:shadow-md"
-                onClick={() => setSelectedProduct(product)}
-              >
-                <div className="relative w-[30%] aspect-[4/3] shrink-0 rounded-xl overflow-hidden">
-                  <img
-                    src={product.imageUrl || "https://placehold.co/400x400?text=Sem+Imagem"}
-                    alt={product.name}
-                    className="h-full w-full object-cover"
-                  />
+            {filteredProducts.map(product => {
+              const promo = getProductPromotion?.(product.id);
+              const displayPrice = getPrice(product);
+              const promoStock = getPromoStock(product.id);
+
+              return (
+                <div
+                  key={product.id}
+                  className="bg-white rounded-[16px] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-gray-200/60 p-3 flex flex-row items-center cursor-pointer transition-all duration-200 hover:translate-y-[-2px] hover:shadow-md"
+                  onClick={() => setSelectedProduct(product)}
+                >
+                  <div className="relative w-[30%] aspect-[4/3] shrink-0 rounded-xl overflow-hidden">
+                    <img
+                      src={product.imageUrl || "https://placehold.co/400x400?text=Sem+Imagem"}
+                      alt={product.name}
+                      className="h-full w-full object-cover"
+                    />
+                    {promo && (
+                      <div className="absolute top-1 left-1 bg-[#FF6B00] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow">
+                        PROMOÇÃO
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 ml-3 flex flex-col justify-center">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-[16px] font-bold text-gray-900 mb-0.5">{product.name}</h3>
+                      {promoStock && promoStock.limit - promoStock.sold <= 5 && (
+                        <span className="text-[8px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                          ÚLTIMAS UNIDADES
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[13px] text-gray-500 mb-1 line-clamp-2">{product.description}</p>
+                    {promo ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[16px] font-bold text-brand-primary">
+                          R$ {displayPrice.toFixed(2)}
+                        </span>
+                        <span className="text-[12px] text-gray-400 line-through">
+                          R$ {product.price.toFixed(2)}
+                        </span>
+                        {promo.promotionType === "percentage_discount" && (
+                          <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
+                            {promo.percentageOff}% OFF
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-[20px] font-bold text-brand-primary">
+                        R$ {product.price.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1 ml-3 flex flex-col justify-center">
-                  <h3 className="text-[16px] font-bold text-gray-900 mb-0.5">{product.name}</h3>
-                  <p className="text-[13px] text-gray-500 mb-1 line-clamp-2">{product.description}</p>
-                  <span className="text-[20px] font-bold text-brand-primary">
-                    R$ {product.price.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </main>
 
@@ -409,6 +482,12 @@ export default function OrderingScreen({
                 </div>
               ))}
             </div>
+            {hasRegularItems && (
+              <div className="flex items-start gap-2 px-1 py-2 text-xs font-semibold text-amber-700 bg-amber-50 rounded-lg mx-1">
+                <span className="text-amber-500 font-bold text-sm leading-none mt-0.5">(!)</span>
+                <span>Alguns itens estão fora da promoção e foram adicionados ao preço normal.</span>
+              </div>
+            )}
             <div className="border-t border-brand-border/40 pt-4 mt-auto space-y-4 shrink-0">
               <div className="flex justify-between items-end">
                 <span className="text-xs font-bold uppercase text-brand-muted">Total</span>
@@ -448,12 +527,17 @@ export default function OrderingScreen({
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto space-y-4 py-2">
+                  <div className="flex-1 overflow-y-auto space-y-4 py-2">
               {cart.map(item => (
                 <div key={item.id} className="bg-brand-light rounded-[12px] p-4 border border-brand-border/40 flex flex-col gap-3">
                   <div className="flex justify-between items-start gap-2">
                     <div>
-                      <span className="font-bold text-brand-dark text-sm leading-tight">{item.name}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-brand-dark text-sm leading-tight">{item.name}</span>
+                        {item.id.includes('-regular-') && (
+                          <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full">Preço normal</span>
+                        )}
+                      </div>
                       {item.tamanhoSelecionado && (
                         <p className="text-xs text-brand-muted mt-0.5">{item.tamanhoSelecionado.nome}</p>
                       )}
@@ -498,6 +582,12 @@ export default function OrderingScreen({
                 </div>
               ))}
             </div>
+            {hasRegularItems && (
+              <div className="flex items-start gap-2 px-3 py-2 text-xs font-semibold text-amber-700 bg-amber-50 rounded-lg mx-0">
+                <span className="text-amber-500 font-bold text-sm leading-none mt-0.5">(!)</span>
+                <span>Alguns itens estão fora da promoção e foram adicionados ao preço normal.</span>
+              </div>
+            )}
             <div className="border-t border-brand-border/40 pt-6 mt-auto space-y-4 shrink-0">
               <div className="flex justify-between items-end">
                 <span className="text-xs font-bold uppercase text-brand-muted">Total</span>
@@ -544,9 +634,26 @@ export default function OrderingScreen({
               <div className="mb-6 shrink-0">
                 <h2 className="text-4xl font-bold text-brand-dark mb-2">{selectedProduct.name}</h2>
                 <p className="text-brand-muted text-lg">{selectedProduct.description}</p>
-                <p className="text-2xl font-bold text-brand-primary mt-2">
-                  R$ {selectedProduct.price.toFixed(2)}
-                </p>
+                {(() => {
+                  const promo = getProductPromotion?.(selectedProduct.id);
+                  const promoPrice = getPromotionalPrice?.(selectedProduct.id, selectedProduct.price);
+                  if (promo && promoPrice != null && promoPrice !== selectedProduct.price) {
+                    return (
+                      <div className="flex items-center gap-3 mt-2">
+                        <p className="text-2xl font-bold text-brand-primary">R$ {promoPrice.toFixed(2)}</p>
+                        <p className="text-lg text-gray-400 line-through">R$ {selectedProduct.price.toFixed(2)}</p>
+                        {promo.promotionType === "percentage_discount" && (
+                          <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">{promo.percentageOff}% OFF</span>
+                        )}
+                      </div>
+                    );
+                  }
+                  return (
+                    <p className="text-2xl font-bold text-brand-primary mt-2">
+                      R$ {selectedProduct.price.toFixed(2)}
+                    </p>
+                  );
+                })()}
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto space-y-6">
                 {/* Tamanhos */}
@@ -569,7 +676,18 @@ export default function OrderingScreen({
                           >
                             <span className="font-medium text-brand-dark">{size.nome}</span>
                             <span className="font-bold text-brand-muted">
-                              {size.preco > 0 ? `R$ ${size.preco.toFixed(2)}` : "Grátis"}
+                              {(() => {
+                                if (!getPromotionalPrice || !selectedProduct) {
+                                  return size.preco > 0 ? `R$ ${size.preco.toFixed(2)}` : "Grátis";
+                                }
+                                const promoPrice = getPromotionalPrice(selectedProduct.id, size.preco);
+                                if (promoPrice !== size.preco) {
+                                  return (
+                                    <span>R$ {promoPrice.toFixed(2)}</span>
+                                  );
+                                }
+                                return size.preco > 0 ? `R$ ${size.preco.toFixed(2)}` : "Grátis";
+                              })()}
                             </span>
                           </button>
                         );
@@ -643,8 +761,18 @@ export default function OrderingScreen({
                 )}
               </div>
               <div className="shrink-0 pt-8 border-t border-gray-200/60">
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between">
                   <span className="text-2xl font-bold text-brand-dark">Quantidade</span>
+                  {(() => {
+                    if (!selectedProduct) return null;
+                    const promo = getProductPromotion?.(selectedProduct.id);
+                    if (promo?.maxPerOrder != null) {
+                      return <span className="text-xs text-brand-muted">Máx. {promo.maxPerOrder} unidade(s) no valor promocional</span>;
+                    }
+                    return null;
+                  })()}
+                </div>
+                <div className="flex items-center justify-between mt-4 mb-6">
                   <div className="flex items-center gap-4 border border-gray-200/60 rounded-2xl p-2">
                     <button
                       className="p-3 text-2xl font-bold text-brand-muted disabled:opacity-50"
@@ -653,7 +781,7 @@ export default function OrderingScreen({
                     >-</button>
                     <span className="text-2xl font-bold w-12 text-center text-brand-dark">{quantity}</span>
                     <button
-                      className="p-3 text-2xl font-bold text-brand-primary"
+                      className="p-3 text-2xl font-bold text-brand-primary disabled:opacity-50"
                       onClick={() => setQuantity(quantity + 1)}
                     >+</button>
                   </div>
@@ -668,7 +796,8 @@ export default function OrderingScreen({
                     const selectedFlavorsData: SelectedFlavor[] | undefined = selectedFlavors.length > 0
                       ? selectedFlavors.map(f => ({ id: f.id, nome: f.nome, preco: f.preco }))
                       : undefined;
-                    actions.addToCart(selectedProduct, selectedCondiments, selectedSizeData, selectedFlavorsData);
+                    const result: any = actions.addToCart(selectedProduct, selectedCondiments, selectedSizeData, selectedFlavorsData, quantity);
+                    if (result?.message) setToast({ message: result.message, type: "info" });
                     setSelectedProduct(null);
                     setQuantity(1);
                     setSelectedCondiments([]);
@@ -681,6 +810,33 @@ export default function OrderingScreen({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* In-view toast */}
+      {toast && (
+        <div
+          className="fixed bottom-28 left-4 right-4 z-[60] max-w-[430px] mx-auto animate-slide-up"
+          style={{
+            background: toast.type === "error" ? "#fef2f2" : "#f0fdf4",
+            color: toast.type === "error" ? "#991b1b" : "#166534",
+            border: `1px solid ${toast.type === "error" ? "#fecaca" : "#bbf7d0"}`,
+            borderRadius: 12,
+            padding: "12px 16px",
+            fontSize: 13,
+            fontWeight: 600,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <span>{toast.message}</span>
+            <button
+              onClick={() => setToast(null)}
+              style={{ marginLeft: "auto", opacity: 0.6, background: "none", border: "none", cursor: "pointer", fontSize: 16 }}
+            >
+              ✕
+            </button>
           </div>
         </div>
       )}

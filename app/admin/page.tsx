@@ -13,7 +13,7 @@ import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import {
   TrendingUp, TrendingDown, Clock, ShoppingBag, DollarSign, Users,
   UtensilsCrossed, Package, AlertTriangle, Store, CheckCircle2, XCircle,
-  Truck, Landmark, CreditCard, Wallet, RefreshCw, Loader2, Power
+  Truck, Landmark, CreditCard, Wallet, RefreshCw, Loader2, Power, Tag
 } from "lucide-react";
 import "./page.css";
 
@@ -674,6 +674,28 @@ function AdminDashboardContent() {
     return Math.round(times.reduce((s, t) => s + t, 0) / times.length);
   }, [paidToday]);
 
+  // ── Promotions Stats ──
+  const [promotionsData, setPromotionsData] = useState<any[]>([]);
+  useEffect(() => {
+    if (!user?.companyId) return;
+    const unsub = onSnapshot(
+      query(collection(firestore, "promotions"), where("storeId", "==", user.companyId)),
+      (snap) => {
+        setPromotionsData(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      },
+      (err) => logger.error("DASHBOARD", "Erro ao carregar promoções", err)
+    );
+    return () => unsub();
+  }, [user?.companyId]);
+
+  const promoStats = useMemo(() => {
+    const active = promotionsData.filter((p: any) => p.status === "active").length;
+    const finished = promotionsData.filter((p: any) => p.status === "finished").length;
+    const uniqueProducts = new Set(promotionsData.filter((p: any) => p.status === "active").map((p: any) => p.productId)).size;
+    const totalSold = promotionsData.filter((p: any) => p.status === "active").reduce((s: number, p: any) => s + (p.soldUnits || 0), 0);
+    return { active, finished, uniqueProducts, totalSold };
+  }, [promotionsData]);
+
   // ── Alerts ──
   const alerts = useMemo(() => {
     const list: { icon: any; text: string; type: string }[] = [];
@@ -800,6 +822,31 @@ function AdminDashboardContent() {
           icon={Package}
         />
       </div>
+
+      {/* Promoções Section */}
+      {promotionsData.length > 0 && (
+        <div className="status-panel">
+          <h3 className="section-title-sm"><Tag size={16} /> Promoções</h3>
+          <div className="client-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+            <div className="client-stat">
+              <span className="client-stat-value">{promoStats.active}</span>
+              <span className="client-stat-label">Ativas</span>
+            </div>
+            <div className="client-stat">
+              <span className="client-stat-value">{promoStats.finished}</span>
+              <span className="client-stat-label">Encerradas</span>
+            </div>
+            <div className="client-stat">
+              <span className="client-stat-value">{promoStats.uniqueProducts}</span>
+              <span className="client-stat-label">Produtos em Promoção</span>
+            </div>
+            <div className="client-stat">
+              <span className="client-stat-value">{fmtNumber(promoStats.totalSold)}</span>
+              <span className="client-stat-label">Unidades Vendidas</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="dashboard-columns">
         <div className="dashboard-left">

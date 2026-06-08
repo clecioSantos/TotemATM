@@ -73,6 +73,14 @@ function TotemContent({ params }: PageProps) {
   const [pixData, setPixData] = useState({ qrCode: "", copyPaste: "" });
   const [orderTotal, setOrderTotal] = useState(0);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type?: "error" | "info" } | null>(null);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   const { unreadCount } = useNotifications(user?.uid);
 
@@ -244,6 +252,9 @@ function TotemContent({ params }: PageProps) {
     finishOrder,
     loading,
     logout,
+    promotions,
+    getProductPromotion,
+    getPromotionalPrice,
   } = useTotem(companyId);
 
   const cartTotal = cart.reduce((acc, item) => {
@@ -255,7 +266,7 @@ function TotemContent({ params }: PageProps) {
 
   const handleFinish = async (deliveryFee: number) => {
     if (companyOpen === false) {
-      alert("Loja fechada. Não é possível realizar pedidos no momento.");
+      setToast({ message: "Loja fechada. Não é possível realizar pedidos no momento.", type: "error" });
       return;
     }
 
@@ -277,8 +288,15 @@ function TotemContent({ params }: PageProps) {
         paymentStatus: 'WAITING_PAYMENT',
       };
 
-      const orderId = await finishOrder(orderData) as unknown as string;
+      const result = await finishOrder(orderData);
 
+      if (result.error) {
+        setToast({ message: result.error, type: "error" });
+        setIsProcessingPayment(false);
+        return;
+      }
+
+      const orderId = result.orderId;
       if (!orderId) {
         logger.error("TotemPage", "ID do pedido não foi retornado pelo finishOrder");
         setIsProcessingPayment(false);
@@ -300,7 +318,7 @@ function TotemContent({ params }: PageProps) {
           status: res.status,
           errorData,
         });
-        alert("Erro ao gerar pagamento. Tente novamente.");
+        setToast({ message: "Erro ao gerar pagamento. Tente novamente.", type: "error" });
         setIsProcessingPayment(false);
         return;
       }
@@ -334,7 +352,7 @@ function TotemContent({ params }: PageProps) {
       setStep('PAYMENT');
     } catch (error) {
       logger.error("TotemPage", "Erro ao finalizar pedido", error);
-      alert("Erro ao processar pedido. Tente novamente.");
+      setToast({ message: "Erro ao processar pedido. Tente novamente.", type: "error" });
     } finally {
       setIsProcessingPayment(false);
     }
@@ -391,6 +409,9 @@ function TotemContent({ params }: PageProps) {
     onOpenNotifications: () => { closeAllModals(); setIsNotificationsOpen(true); },
     onOpenOrders: () => { closeAllModals(); setIsOrdersOpen(true); },
     onOpenProfile: () => { closeAllModals(); setIsProfileOpen(true); },
+    promotions,
+    getProductPromotion,
+    getPromotionalPrice,
   };
 
   if (loading) {
@@ -600,6 +621,33 @@ function TotemContent({ params }: PageProps) {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast notification */}
+      {toast && (
+        <div
+          className="fixed bottom-24 left-4 right-4 z-[60] max-w-[430px] mx-auto animate-slide-up"
+          style={{
+            background: toast.type === "error" ? "#fef2f2" : "#f0fdf4",
+            color: toast.type === "error" ? "#991b1b" : "#166534",
+            border: `1px solid ${toast.type === "error" ? "#fecaca" : "#bbf7d0"}`,
+            borderRadius: 12,
+            padding: "12px 16px",
+            fontSize: 13,
+            fontWeight: 600,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <span>{toast.message}</span>
+            <button
+              onClick={() => setToast(null)}
+              style={{ marginLeft: "auto", opacity: 0.6, background: "none", border: "none", cursor: "pointer", fontSize: 16 }}
+            >
+              ✕
+            </button>
           </div>
         </div>
       )}

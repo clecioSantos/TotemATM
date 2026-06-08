@@ -5,10 +5,11 @@ import {
   doc, getDoc, orderBy
 } from 'firebase/firestore';
 import { firestore as db } from '@/src/services/firebase';
-import { Product, Category, CartItem, Condiment, CategoryFlavor, SelectedSize, SelectedFlavor } from '@totem/shared/types';
+import { Product, Category, CartItem, Condiment, CategoryFlavor, SelectedSize, SelectedFlavor, Promotion } from '@totem/shared/types';
 import { useAuth } from '@totem/shared/types/AuthProvider';
 import { authService } from '@totem/shared/types/auth.service';
 import { logger } from '@/src/lib/logger';
+import { incrementSoldUnits } from '@/src/services/promotions.service';
 
 export const useTotem = (companyId: string) => {
   const { user } = useAuth();
@@ -25,6 +26,7 @@ export const useTotem = (companyId: string) => {
   const [companyOpen, setCompanyOpen] = useState<boolean | null>(null);
   const [averageRating, setAverageRating] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
 
   useEffect(() => {
     if (!db?.app?.options?.projectId || !companyId) {
@@ -142,11 +144,34 @@ export const useTotem = (companyId: string) => {
       logger.error("useTotem", `Erro ao carregar sabores: ${errMsg}`, err);
     });
 
+    // Active promotions for this store
+    const promoRef = collection(db, 'promotions');
+    const qPromos = query(
+      promoRef,
+      where('storeId', '==', companyId),
+      where('status', '==', 'active')
+    );
+
+    const unsubPromos = onSnapshot(qPromos, (snapshot) => {
+      try {
+        const promoData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Promotion[];
+        setPromotions(promoData);
+      } catch (err) {
+        logger.error("useTotem", "Erro ao processar promoções", err);
+      }
+    }, (err: unknown) => {
+      logger.error("useTotem", `Erro ao carregar promoções: ${err}`, err);
+    });
+
     return () => {
       unsubCat();
       unsubProd();
       unsubCond();
       unsubFlavors();
+      unsubPromos();
     };
   }, [companyId]);
 
@@ -154,32 +179,93 @@ export const useTotem = (companyId: string) => {
     product: Product,
     selectedCondiments: Condiment[] = [],
     tamanhoSelecionado?: SelectedSize,
-    saboresSelecionados?: SelectedFlavor[]
-  ) => {
+    saboresSelecionados?: SelectedFlavor[],
+    requestedQty: number = 1
+  ): { message?: string; usedRegularPrice?: boolean } => {
     try {
-      setCart(prev => {
-        const condimentsKey = selectedCondiments.map(c => c.id).sort().join(',');
-        const sizeKey = tamanhoSelecionado?.id || '';
-        const flavorsKey = (saboresSelecionados || []).map(f => f.id).sort().join(',');
-        const cartItemId = `${product.id}-${sizeKey}-${flavorsKey}-${condimentsKey}`;
+      const promo = getProductPromotion(product.id);
+      let promoQty = 0;
+      let regularQty = requestedQty;
+      let message = "";
 
-        const existing = prev.find(item => item.id === cartItemId);
-        if (existing) {
-          return prev.map(item => item.id === cartItemId ? { ...item, quantity: item.quantity + 1 } : item);
+      if (promo) {
+        const availableStock = promo.stockLimit != null ? promo.stockLimit - (promo.soldUnits || 0) : Infinity;
+        const maxPerOrder = promo.maxPerOrder ?? Infinity;
+        const allowedPromo = Math.min(availableStock, maxPerOrder);
+
+        if (allowedPromo <= 0) {
+          message = `Estoque promocional esgotado. Adicionado ao preço normal.`;
+        } else if (requestedQty > allowedPromo) {
+          promoQty = allowedPromo;
+          regularQty = requestedQty - allowedPromo;
+          message = `${allowedPromo} unidade(s) no valor promocional e ${regularQty} ao preço normal.`;
+        } else {
+          promoQty = requestedQty;
+          regularQty = 0;
+        }
+      } else {
+        promoQty = 0;
+        regularQty = requestedQty;
+      }
+
+      const condimentsKey = selectedCondiments.map(c => c.id).sort().join(',');
+      const flavorsKey = (saboresSelecionados || []).map(f => f.id).sort().join(',');
+      const sizeKey = tamanhoSelecionado?.id || '';
+
+      const promoItemId = `${product.id}-${sizeKey}-${flavorsKey}-${condimentsKey}`;
+      const promoPrice = promo ? getPromotionalPrice(product.id, product.price) : product.price;
+
+      let adjustedSize: SelectedSize | undefined;
+      if (tamanhoSelecionado && promo && promoQty > 0) {
+        adjustedSize = { ...tamanhoSelecionado, preco: getPromotionalPrice(product.id, tamanhoSelecionado.preco) };
+      } else {
+        adjustedSize = tamanhoSelecionado;
+      }
+
+      setCart(prev => {
+        let updated = [...prev];
+
+        if (promoQty > 0) {
+          const existingPromo = updated.find(item => item.id === promoItemId);
+          if (existingPromo) {
+            updated = updated.map(item =>
+              item.id === promoItemId ? { ...item, quantity: item.quantity + promoQty } : item
+            );
+          } else {
+            updated.push({
+              ...product,
+              id: promoItemId,
+              productId: product.id,
+              price: promoPrice,
+              quantity: promoQty,
+              condiments: selectedCondiments,
+              tamanhoSelecionado: adjustedSize,
+              saboresSelecionados,
+            } as CartItem);
+          }
         }
 
-        return [...prev, {
-          ...product,
-          id: cartItemId,
-          productId: product.id,
-          quantity: 1,
-          condiments: selectedCondiments,
-          tamanhoSelecionado,
-          saboresSelecionados,
-        } as CartItem];
+        if (regularQty > 0) {
+          const regularItemId = `${promoItemId}-regular-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+          updated.push({
+            ...product,
+            id: regularItemId,
+            productId: product.id,
+            price: product.price,
+            quantity: regularQty,
+            condiments: selectedCondiments,
+            tamanhoSelecionado,
+            saboresSelecionados,
+          } as CartItem);
+        }
+
+        return updated;
       });
+
+      return { message: message || undefined, usedRegularPrice: regularQty > 0 || undefined };
     } catch (error) {
       logger.error("useTotem", "Erro ao adicionar ao carrinho", error);
+      return { message: "Erro ao adicionar ao carrinho." };
     }
   };
 
@@ -219,22 +305,75 @@ export const useTotem = (companyId: string) => {
 
   const [isFinishing, setIsFinishing] = useState(false);
 
-  const finishOrder = async (identification: OrderIdentification): Promise<string | undefined> => {
-    if (cart.length === 0 || !companyId || isFinishing) return;
+  const finishOrder = async (identification: OrderIdentification): Promise<{ orderId?: string; error?: string }> => {
+    if (cart.length === 0 || !companyId || isFinishing) return { error: "Carrinho vazio." };
     if (companyOpen === false) {
-      alert("Loja fechada. Não é possível realizar pedidos no momento.");
-      return;
+      return { error: "Loja fechada. Não é possível realizar pedidos no momento." };
     }
 
     setIsFinishing(true);
 
     try {
-      const itemsTotal = cart.reduce((acc, item) => {
+      const orderItems: any[] = [];
+      let itemsTotal = 0;
+
+      for (const item of cart) {
+        const isRegularItem = item.id.includes('-regular-');
         const basePrice = item.tamanhoSelecionado ? item.tamanhoSelecionado.preco : item.price;
         const condimentsTotal = item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0;
         const flavorsTotal = item.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0;
-        return acc + ((basePrice + flavorsTotal + condimentsTotal) * item.quantity);
-      }, 0);
+        const unitTotal = basePrice + flavorsTotal + condimentsTotal;
+
+        const promo = getProductPromotion(item.productId || item.id);
+
+        if (promo && !isRegularItem && promo.stockLimit != null) {
+          const availableStock = promo.stockLimit - (promo.soldUnits || 0);
+          const promoQty = Math.min(item.quantity, Math.max(0, availableStock));
+          const regularQty = item.quantity - promoQty;
+
+          if (promoQty > 0) {
+            const promoPrice = getPromotionalPrice(item.productId || item.id, item.price);
+            const promoUnitTotal = promoPrice + flavorsTotal + condimentsTotal;
+            orderItems.push({
+              productId: item.productId || item.id,
+              name: item.name,
+              price: promoPrice,
+              quantity: promoQty,
+              observation: item.observation || "",
+              condiments: item.condiments || [],
+              tamanhoSelecionado: item.tamanhoSelecionado || null,
+              saboresSelecionados: item.saboresSelecionados || null,
+            });
+            itemsTotal += promoUnitTotal * promoQty;
+          }
+
+          if (regularQty > 0) {
+            orderItems.push({
+              productId: item.productId || item.id,
+              name: item.name,
+              price: item.price,
+              quantity: regularQty,
+              observation: item.observation || "",
+              condiments: item.condiments || [],
+              tamanhoSelecionado: item.tamanhoSelecionado || null,
+              saboresSelecionados: item.saboresSelecionados || null,
+            });
+            itemsTotal += unitTotal * regularQty;
+          }
+        } else {
+          orderItems.push({
+            productId: item.productId || item.id,
+            name: item.name,
+            price: basePrice,
+            quantity: item.quantity,
+            observation: item.observation || "",
+            condiments: item.condiments || [],
+            tamanhoSelecionado: item.tamanhoSelecionado || null,
+            saboresSelecionados: item.saboresSelecionados || null,
+          });
+          itemsTotal += unitTotal * item.quantity;
+        }
+      }
 
       const deliveryFee = identification.deliveryFee || 0;
       const total = itemsTotal + deliveryFee;
@@ -249,16 +388,7 @@ export const useTotem = (companyId: string) => {
         deliveryFee,
         paymentMethod: identification.paymentMethod || "PIX",
         paymentStatus: identification.paymentStatus || "WAITING_PAYMENT",
-        items: cart.map(i => ({
-          productId: i.productId || i.id,
-          name: i.name,
-          price: i.tamanhoSelecionado ? i.tamanhoSelecionado.preco : i.price,
-          quantity: i.quantity,
-          observation: i.observation || "",
-          condiments: i.condiments || [],
-          tamanhoSelecionado: i.tamanhoSelecionado || null,
-          saboresSelecionados: i.saboresSelecionados || null,
-        })),
+        items: orderItems,
         total,
         status: 'pending',
         source: 'totem',
@@ -267,13 +397,32 @@ export const useTotem = (companyId: string) => {
 
       const docRef = await addDoc(collection(db, 'orders'), orderData);
       logger.info("useTotem", `Pedido finalizado: ${docRef.id}`);
+
+      // Increment sold units for promoted products
+      try {
+        for (const item of cart) {
+          const promo = getProductPromotion(item.productId || item.id);
+          if (!promo) continue;
+          const isRegularItem = item.id.includes('-regular-');
+          if (isRegularItem) continue;
+          if (promo.stockLimit != null) {
+            const availableStock = promo.stockLimit - (promo.soldUnits || 0);
+            const promoQty = Math.min(item.quantity, Math.max(0, availableStock));
+            if (promoQty > 0) await incrementSoldUnits(promo.id, promoQty);
+          } else {
+            await incrementSoldUnits(promo.id, item.quantity);
+          }
+        }
+      } catch (err) {
+        logger.error("useTotem", "Erro ao atualizar unidades vendidas", err);
+      }
+
       clearCart();
-      return docRef.id;
+      return { orderId: docRef.id };
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       logger.error("useTotem", `Erro ao finalizar pedido: ${errMsg}`, error);
-      alert("Erro ao processar pedido. Tente novamente.");
-      return undefined;
+      return { error: "Erro ao processar pedido. Tente novamente." };
     } finally {
       setIsFinishing(false);
     }
@@ -285,6 +434,22 @@ export const useTotem = (companyId: string) => {
     } catch (error) {
       logger.error("useTotem", "Erro ao fazer logout", error);
     }
+  };
+
+  const getProductPromotion = (productId: string): Promotion | undefined => {
+    const promo = promotions.find((p) => p.productId === productId);
+    if (!promo) return undefined;
+    if (promo.stockLimit != null && (promo.soldUnits || 0) >= promo.stockLimit) return undefined;
+    return promo;
+  };
+
+  const getPromotionalPrice = (productId: string, basePrice: number): number => {
+    const promo = getProductPromotion(productId);
+    if (!promo) return basePrice;
+    if (promo.promotionType === "fixed_price") return promo.promotionalPrice;
+    if (promo.promotionType === "percentage_discount") return basePrice - (basePrice * promo.percentageOff / 100);
+    if (promo.promotionType === "amount_discount") return Math.max(0, basePrice - promo.promotionalPrice);
+    return basePrice;
   };
 
   return {
@@ -308,5 +473,8 @@ export const useTotem = (companyId: string) => {
     clearCart,
     loading,
     logout,
+    promotions,
+    getProductPromotion,
+    getPromotionalPrice,
   };
 };

@@ -138,5 +138,23 @@ service cloud.firestore {
       allow update: if isAuth();
       allow delete: if false;
     }
+
+    // =============================================
+    // EVENTOS PROMOCIONAIS
+    // =============================================
+
+    match /promotionEvents/{eventId} {
+      allow read: if true;
+      allow write: if isAuth();
+    }
+
+    // =============================================
+    // PROMOÇÕES
+    // =============================================
+
+    match /promotions/{promotionId} {
+      allow read: if true;
+      allow write: if isAuth();
+    }
   }
 }
