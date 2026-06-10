@@ -3,59 +3,75 @@ import { MercadoPagoService } from "@/app/services/mercadopago/mercadopago.servi
 import { getAdminDb } from "@/src/services/firebase-admin";
 import { logger } from "@/src/lib/logger";
 
+function getRedirectBaseUrl(storedBaseUrl?: string, req?: NextRequest): string {
+  if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
+  if (storedBaseUrl) return storedBaseUrl;
+  const host = req?.headers.get("host") || "localhost:3000";
+  const protocol = req?.headers.get("x-forwarded-proto") || "http";
+  return `${protocol}://${host}`;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const code = searchParams.get("code");
     const state = searchParams.get("state");
-    const error = searchParams.get("error");
-
-    if (error) {
-      logger.error("MERCADOPAGO_CALLBACK", "Erro retornado pelo Mercado Pago", { error });
-      return NextResponse.redirect(new URL("/admin/financeiro?error=access_denied", req.url));
-    }
 
     if (!code || !state) {
-      logger.error("MERCADOPAGO_CALLBACK", "Parâmetros ausentes", { code: !!code, state: !!state });
-      return NextResponse.redirect(new URL("/admin/financeiro?error=missing_params", req.url));
+      logger.warn("MERCADOPAGO", "OAUTH_CALLBACK: code ou state ausentes", undefined, {
+        hasCode: !!code,
+        hasState: !!state,
+      });
+      const baseUrl = getRedirectBaseUrl(undefined, req);
+      return NextResponse.redirect(`${baseUrl}/admin/financeiro?error=oauth_invalid`);
     }
 
     const db = getAdminDb();
     const stateDoc = await db.collection("mercadopago_oauth_states").doc(state).get();
 
     if (!stateDoc.exists) {
-      logger.error("MERCADOPAGO_CALLBACK", "State inválido ou expirado");
-      return NextResponse.redirect(new URL("/admin/financeiro?error=invalid_state", req.url));
+      logger.warn("MERCADOPAGO", "OAUTH_CALLBACK: state inválido ou expirado", undefined, { state });
+      return NextResponse.redirect(`/admin/financeiro?error=oauth_invalid_state`);
     }
 
     const stateData = stateDoc.data()!;
-    const baseUrl = stateData.baseUrl || "http://localhost:3000";
+    const companyId = stateData.companyId as string;
+    const storedBaseUrl = (stateData.baseUrl as string) || "";
 
     await db.collection("mercadopago_oauth_states").doc(state).delete();
 
-    const tokenRaw = await MercadoPagoService.exchangeAuthorizationCode(code);
-    const tokenData = tokenRaw as {
-      access_token: string;
-      refresh_token: string;
-      user_id: string;
-      expires_in: number;
-    };
-
-    const companyId = stateData.companyId;
-    if (companyId) {
-      await db.collection("companies").doc(companyId).update({
-        mercadopago_connected: true,
-        mercadopago_user_id: tokenData.user_id,
-        mercadopago_access_token: tokenData.access_token,
-        mercadopago_refresh_token: tokenData.refresh_token,
-        mercadopago_token_expires_at: MercadoPagoService.calculateExpiresAt(tokenData.expires_in),
-        mercadopago_connected_at: new Date(),
-      });
+    let tokenData;
+    try {
+      tokenData = await MercadoPagoService.exchangeAuthorizationCode(code);
+    } catch (error) {
+      const isTimeout = error instanceof Error && error.name === "AbortError";
+      logger.error("MERCADOPAGO", isTimeout ? "OAUTH_CALLBACK: timeout na API do Mercado Pago" : "OAUTH_CALLBACK: erro na troca do código", error);
+      const baseUrl = getRedirectBaseUrl(storedBaseUrl, req);
+      return NextResponse.redirect(`${baseUrl}/admin/financeiro?error=oauth_token_exchange`);
     }
 
-    return NextResponse.redirect(new URL("/admin/financeiro?success=connected", baseUrl));
+    const expiresAt = MercadoPagoService.calculateExpiresAt(tokenData.expires_in as number);
+
+    const companyRef = db.collection("companies").doc(companyId);
+    await companyRef.update({
+      mercadopago_connected: true,
+      mercadopago_user_id: String(tokenData.user_id),
+      mercadopago_access_token: tokenData.access_token,
+      mercadopago_refresh_token: tokenData.refresh_token,
+      mercadopago_token_expires_at: expiresAt,
+      mercadopago_connected_at: new Date(),
+    });
+
+    logger.info("MERCADOPAGO", "OAUTH_CALLBACK", {
+      companyId,
+      mercadopagoUserId: tokenData.user_id,
+      liveMode: (tokenData as any).live_mode,
+    });
+
+    const baseUrl = getRedirectBaseUrl(storedBaseUrl, req);
+    return NextResponse.redirect(`${baseUrl}/admin/financeiro?success=connected`);
   } catch (error) {
-    logger.error("MERCADOPAGO_CALLBACK", "Erro no callback OAuth", error);
-    return NextResponse.redirect(new URL("/admin/financeiro?error=server_error", req.url));
+    logger.error("MERCADOPAGO", "OAUTH_CALLBACK: erro interno", error);
+    return NextResponse.redirect(`/admin/financeiro?error=oauth_internal`);
   }
 }

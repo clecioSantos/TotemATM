@@ -202,6 +202,33 @@ export class MercadoPagoService {
     }
   }
 
+  private static async oauthFetch(
+    body: URLSearchParams,
+    context: string
+  ): Promise<Record<string, unknown>> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    try {
+      const response = await fetch("https://api.mercadopago.com/oauth/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString(),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        logger.error("MERCADOPAGO", `Erro na chamada OAuth [${context}]`, { status: response.status, body: errorBody });
+        throw new Error(`Falha na chamada OAuth: ${response.status}`);
+      }
+
+      return response.json();
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
   static async refreshToken(refreshToken: string): Promise<Record<string, unknown>> {
     const clientId = process.env.MERCADOPAGO_CLIENT_ID;
     const clientSecret = process.env.MERCADOPAGO_CLIENT_SECRET;
@@ -210,7 +237,6 @@ export class MercadoPagoService {
       throw new Error("MERCADOPAGO_CLIENT_ID e MERCADOPAGO_CLIENT_SECRET não configurados");
     }
 
-    const url = "https://api.mercadopago.com/oauth/token";
     const body = new URLSearchParams({
       grant_type: "refresh_token",
       client_id: clientId,
@@ -218,19 +244,7 @@ export class MercadoPagoService {
       refresh_token: refreshToken,
     });
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: body.toString(),
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      logger.error("MERCADOPAGO", "Erro ao renovar token", { status: response.status, body: errorBody });
-      throw new Error(`Falha ao renovar token: ${response.status}`);
-    }
-
-    return response.json();
+    return this.oauthFetch(body, "REFRESH_TOKEN");
   }
 
   static async exchangeAuthorizationCode(code: string): Promise<Record<string, unknown>> {
@@ -242,7 +256,6 @@ export class MercadoPagoService {
       throw new Error("MERCADOPAGO_CLIENT_ID, MERCADOPAGO_CLIENT_SECRET e MERCADOPAGO_REDIRECT_URI não configurados");
     }
 
-    const url = "https://api.mercadopago.com/oauth/token";
     const body = new URLSearchParams({
       grant_type: "authorization_code",
       client_id: clientId,
@@ -251,19 +264,7 @@ export class MercadoPagoService {
       redirect_uri: redirectUri,
     });
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: body.toString(),
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      logger.error("MERCADOPAGO", "Erro ao trocar código por token", { status: response.status, body: errorBody });
-      throw new Error(`Falha na troca do código de autorização: ${response.status}`);
-    }
-
-    return response.json();
+    return this.oauthFetch(body, "TOKEN_EXCHANGE");
   }
 
   static buildOAuthUrl(state: string): string {

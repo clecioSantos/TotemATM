@@ -4,6 +4,16 @@ import { getAdminDb } from "@/src/services/firebase-admin";
 import { logger } from "@/src/lib/logger";
 import crypto from "crypto";
 
+function getBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
+  if (process.env.MERCADOPAGO_REDIRECT_URI) {
+    try {
+      return new URL(process.env.MERCADOPAGO_REDIRECT_URI).origin;
+    } catch {}
+  }
+  return "http://localhost:3000";
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -11,7 +21,7 @@ export async function GET(req: NextRequest) {
     const userId = searchParams.get("userId") || "";
 
     const state = crypto.randomBytes(32).toString("hex");
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const baseUrl = getBaseUrl();
 
     const db = getAdminDb();
     await db.collection("mercadopago_oauth_states").doc(state).set({
