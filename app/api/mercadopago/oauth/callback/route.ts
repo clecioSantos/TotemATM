@@ -3,6 +3,8 @@ import { MercadoPagoService } from "@/app/services/mercadopago/mercadopago.servi
 import { getAdminDb } from "@/src/services/firebase-admin";
 import { logger } from "@/src/lib/logger";
 
+export const dynamic = "force-dynamic";
+
 function getRedirectBaseUrl(storedBaseUrl?: string, req?: NextRequest): string {
   if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
   if (storedBaseUrl) return storedBaseUrl;
@@ -31,7 +33,7 @@ export async function GET(req: NextRequest) {
 
     if (!stateDoc.exists) {
       logger.warn("MERCADOPAGO", "OAUTH_CALLBACK: state inválido ou expirado", undefined, { state });
-      return NextResponse.redirect(`/admin/financeiro?error=oauth_invalid_state`);
+      return NextResponse.redirect(new URL(`/admin/financeiro?error=oauth_invalid_state`, req.url));
     }
 
     const stateData = stateDoc.data()!;
@@ -72,6 +74,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${baseUrl}/admin/financeiro?success=connected`);
   } catch (error) {
     logger.error("MERCADOPAGO", "OAUTH_CALLBACK: erro interno", error);
-    return NextResponse.redirect(`/admin/financeiro?error=oauth_internal`);
+    return NextResponse.redirect(new URL(`/admin/financeiro?error=oauth_internal`, req.url));
   }
 }

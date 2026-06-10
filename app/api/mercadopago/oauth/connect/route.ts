@@ -4,6 +4,8 @@ import { getAdminDb } from "@/src/services/firebase-admin";
 import { logger } from "@/src/lib/logger";
 import crypto from "crypto";
 
+export const dynamic = "force-dynamic";
+
 function getBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
   if (process.env.MERCADOPAGO_REDIRECT_URI) {
