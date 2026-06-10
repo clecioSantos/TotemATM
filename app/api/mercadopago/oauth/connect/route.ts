@@ -17,6 +17,10 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    const host = req.headers.get("host") || "localhost:3000";
+    const protocol = req.headers.get("x-forwarded-proto") || "http";
+    const baseUrl = `${protocol}://${host}`;
+
     const state = crypto.randomBytes(32).toString("hex");
 
     const db = getAdminDb();
@@ -24,6 +28,7 @@ export async function GET(req: NextRequest) {
       state,
       companyId,
       userId,
+      baseUrl,
       createdAt: new Date(),
     });
 
@@ -32,6 +37,7 @@ export async function GET(req: NextRequest) {
     logger.info("MERCADOPAGO", "OAUTH_CONNECT", {
       companyId,
       userId,
+      baseUrl,
       hasState: true,
     });
 
