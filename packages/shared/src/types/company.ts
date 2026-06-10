@@ -41,4 +41,5 @@ export interface Company {
   mercadopago_token_expires_at?: Date;
   mercadopago_connected_at?: Date;
   platform_commission_percent?: number;
+  enabled?: boolean;
 }

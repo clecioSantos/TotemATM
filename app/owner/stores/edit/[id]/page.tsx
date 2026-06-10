@@ -289,7 +289,7 @@ export default function EditStorePage() {
             <input type="number" name="tempoPreparoMax" placeholder="Tempo Máx" value={formData.tempoPreparoMax || ""} onChange={handleChange} className="border p-2" />
         </div>
 
-        <div className="md:col-span-2">
+        <div>
           <label className="block text-sm font-medium text-gray-700">Comissão da Plataforma (%)</label>
           <p className="text-xs text-gray-500 mb-1">Percentual de comissão sobre cada pedido. Mín: 0, Máx: 100.</p>
           <input
@@ -302,6 +302,21 @@ export default function EditStorePage() {
             step="0.5"
             className="border p-2 w-32"
           />
+        </div>
+
+        <div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.enabled === true}
+              onChange={(e) => setFormData({ ...formData, enabled: e.target.checked })}
+              className="w-5 h-5 rounded border-gray-300 accent-blue-600"
+            />
+            <div>
+              <span className="text-sm font-medium text-gray-700">Loja Habilitada</span>
+              <p className="text-xs text-gray-500">Se desabilitada, a loja só aparece em ambiente sandbox.</p>
+            </div>
+          </label>
         </div>
 
         <div className="md:col-span-2">

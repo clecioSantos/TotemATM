@@ -62,6 +62,9 @@ async function migrate() {
       if (data.platform_commission_percent === undefined) {
         updates.platform_commission_percent = 6.00;
       }
+      if (data.enabled === undefined) {
+        updates.enabled = false;
+      }
 
       if (Object.keys(updates).length > 0) {
         batch.update(doc.ref, updates);

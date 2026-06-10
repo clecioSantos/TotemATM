@@ -30,6 +30,8 @@ export default function StoreListingPage() {
   const [stores, setStores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+
+  const isSandbox = typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_MERCADOPAGO_ENVIRONMENT?.toLowerCase() === 'sandbox';
   const [cityFilter, setCityFilter] = useState("");
   const [cities, setCities] = useState<any[]>([]);
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -67,6 +69,7 @@ export default function StoreListingPage() {
   );
 
   const filteredStores = stores.filter((store) => {
+    if (!isSandbox && store.enabled !== true) return false;
     const matchesName = store.name.toLowerCase().includes(search.toLowerCase());
     let matchesCity = true;
     if (cityFilter) {
@@ -509,7 +512,7 @@ export default function StoreListingPage() {
         {/* Event Blocks */}
         {!promosLoading && events.map((ev) => {
           const storeIds = getStoresForEvent(ev.id);
-          const eventStores = stores.filter((s) => storeIds.includes(s.id));
+          const eventStores = stores.filter((s) => storeIds.includes(s.id) && (isSandbox || s.enabled === true));
           if (eventStores.length === 0) return null;
 
           const containerRefId = `event-container-${ev.id}`;

@@ -3,6 +3,12 @@ import { MercadoPagoService } from "@/app/services/mercadopago/mercadopago.servi
 import { getAdminDb } from "@/src/services/firebase-admin";
 import { logger } from "@/src/lib/logger";
 
+function getBaseUrl(req: NextRequest): string {
+  const host = req.headers.get("host") || "localhost:3000";
+  const protocol = req.headers.get("x-forwarded-proto") || "http";
+  return `${protocol}://${host}`;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -14,7 +20,7 @@ export async function GET(req: NextRequest) {
         hasCode: !!code,
         hasState: !!state,
       });
-      return NextResponse.redirect(new URL("/admin/financeiro?error=oauth_invalid", req.url));
+      return NextResponse.redirect(`${getBaseUrl(req)}/admin/financeiro?error=oauth_invalid`);
     }
 
     const db = getAdminDb();
@@ -22,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     if (!stateDoc.exists) {
       logger.warn("MERCADOPAGO", "OAUTH_CALLBACK: state inválido ou expirado", undefined, { state });
-      return NextResponse.redirect(new URL("/admin/financeiro?error=oauth_invalid_state", req.url));
+      return NextResponse.redirect(`${getBaseUrl(req)}/admin/financeiro?error=oauth_invalid_state`);
     }
 
     const stateData = stateDoc.data()!;
@@ -35,7 +41,7 @@ export async function GET(req: NextRequest) {
       tokenData = await MercadoPagoService.exchangeAuthorizationCode(code);
     } catch (error) {
       logger.error("MERCADOPAGO", "OAUTH_CALLBACK: erro na troca do código", error);
-      return NextResponse.redirect(new URL("/admin/financeiro?error=oauth_token_exchange", req.url));
+      return NextResponse.redirect(`${getBaseUrl(req)}/admin/financeiro?error=oauth_token_exchange`);
     }
 
     const expiresAt = MercadoPagoService.calculateExpiresAt(tokenData.expires_in);
@@ -56,9 +62,9 @@ export async function GET(req: NextRequest) {
       liveMode: tokenData.live_mode,
     });
 
-    return NextResponse.redirect(new URL("/admin/financeiro?success=connected", req.url));
+    return NextResponse.redirect(`${getBaseUrl(req)}/admin/financeiro?success=connected`);
   } catch (error) {
     logger.error("MERCADOPAGO", "OAUTH_CALLBACK: erro interno", error);
-    return NextResponse.redirect(new URL("/admin/financeiro?error=oauth_internal", req.url));
+    return NextResponse.redirect(`${getBaseUrl(req)}/admin/financeiro?error=oauth_internal`);
   }
 }

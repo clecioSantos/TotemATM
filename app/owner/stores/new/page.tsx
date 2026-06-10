@@ -74,6 +74,7 @@ export default function NewStorePage() {
     tempoPreparoMin: "",
     tempoPreparoMax: "",
     platform_commission_percent: 6.00,
+    enabled: false,
   });
 
   const handleHorarioChange = (dia: string, field: 'open' | 'close', value: string) => {
@@ -396,6 +397,21 @@ export default function NewStorePage() {
             step="0.5"
             className="mt-1 block w-32 border border-gray-300 rounded-md p-2"
           />
+        </div>
+
+        <div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.enabled === true}
+              onChange={(e) => setFormData({...formData, enabled: e.target.checked})}
+              className="w-5 h-5 rounded border-gray-300 accent-blue-600"
+            />
+            <div>
+              <span className="text-sm font-medium text-gray-700">Loja Habilitada</span>
+              <p className="text-xs text-gray-500">Se desabilitada, a loja só aparece em ambiente sandbox.</p>
+            </div>
+          </label>
         </div>
 
         <StoreUsersSection users={users} onChange={setUsers} />
