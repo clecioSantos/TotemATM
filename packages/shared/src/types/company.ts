@@ -34,4 +34,12 @@ export interface Company {
   averageRating?: number;
   reviewCount?: number;
   createdAt?: Date;
+  mercadopago_connected?: boolean;
+  mercadopago_user_id?: string;
+  mercadopago_access_token?: string;
+  mercadopago_refresh_token?: string;
+  mercadopago_token_expires_at?: Date;
+  mercadopago_connected_at?: Date;
+  platform_commission_percent?: number;
+  enabled?: boolean;
 }

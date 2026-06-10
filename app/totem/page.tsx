@@ -55,6 +55,9 @@ export default function StoreListingPage() {
   const { events, promotions, getStoresForEvent, loading: promosLoading } = usePromotionsForListing();
   const [carouselScrolls, setCarouselScrolls] = useState<Record<string, number>>({});
 
+  const isSandbox = process.env.NEXT_PUBLIC_MERCADOPAGO_ENVIRONMENT?.toLowerCase() === "sandbox"
+    || process.env.NEXT_PUBLIC_MERCADOPAGO_ENVIRONMENT?.toLowerCase() === "test";
+
   useEffect(() => {
     const unsub = onSnapshot(collection(firestore, "storeCitySettings"), (snap) => {
       setStoreCitySettings(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
@@ -79,7 +82,8 @@ export default function StoreListingPage() {
     if (categoryFilter !== "all") {
       matchesCategory = store.areasAtuacao?.includes(categoryFilter);
     }
-    return matchesName && matchesCity && matchesCategory;
+    const matchesEnabled = isSandbox ? true : store.enabled !== false;
+    return matchesName && matchesCity && matchesCategory && matchesEnabled;
   });
 
   useEffect(() => {
@@ -509,7 +513,11 @@ export default function StoreListingPage() {
         {/* Event Blocks */}
         {!promosLoading && events.map((ev) => {
           const storeIds = getStoresForEvent(ev.id);
-          const eventStores = stores.filter((s) => storeIds.includes(s.id));
+          const eventStores = stores.filter((s) => {
+            const inEvent = storeIds.includes(s.id);
+            const matchesEnabled = isSandbox ? true : s.enabled !== false;
+            return inEvent && matchesEnabled;
+          });
           if (eventStores.length === 0) return null;
 
           const containerRefId = `event-container-${ev.id}`;

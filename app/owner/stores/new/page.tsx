@@ -73,6 +73,8 @@ export default function NewStorePage() {
     },
     tempoPreparoMin: "",
     tempoPreparoMax: "",
+    platform_commission_percent: 6.00,
+    enabled: false,
   });
 
   const handleHorarioChange = (dia: string, field: 'open' | 'close', value: string) => {
@@ -382,6 +384,33 @@ export default function NewStorePage() {
             </div>
         </div>
 
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Comissão da Plataforma (%)
+          </label>
+          <input
+            type="number"
+            name="platform_commission_percent"
+            value={formData.platform_commission_percent}
+            min={0}
+            max={100}
+            step={0.5}
+            onChange={(e) => setFormData({ ...formData, platform_commission_percent: parseFloat(e.target.value) || 0 })}
+            className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="enabled"
+            checked={formData.enabled}
+            onChange={(e) => setFormData({ ...formData, enabled: e.target.checked })}
+            className="rounded border-gray-300"
+          />
+          <label htmlFor="enabled" className="text-sm font-medium text-gray-700">
+            Loja ativa (disponível para pedidos)
+          </label>
+        </div>
         <StoreUsersSection users={users} onChange={setUsers} />
         <div className="md:col-span-2 flex gap-4 mt-4">
           <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded flex-1">

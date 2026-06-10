@@ -20,7 +20,9 @@ export class MercadoPagoProvider implements PaymentProvider {
       params.orderId,
       params.amount,
       params.customerEmail,
-      params.description
+      params.description,
+      params.accessToken,
+      params.applicationFee
     );
 
     const txData = response.point_of_interaction?.transaction_data;

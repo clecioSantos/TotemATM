@@ -10,6 +10,8 @@ export interface CreatePaymentParams {
   customerTaxId?: string;
   customerPhone?: string;
   description?: string;
+  accessToken?: string;
+  applicationFee?: number;
 }
 
 export interface PaymentResponse {

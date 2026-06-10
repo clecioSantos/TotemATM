@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PaymentProviderFactory } from "@/src/services/payment/payment-provider.factory";
 import { logger } from "@/src/lib/logger";
+import { MercadoPagoService } from "@/app/services/mercadopago/mercadopago.service";
+import { getAdminDb } from "@/src/services/firebase-admin";
 
 export async function POST(req: NextRequest) {
   const requestId = Math.random().toString(36).substring(2, 10);
@@ -15,11 +17,13 @@ export async function POST(req: NextRequest) {
     const customerTaxId = requestBody.customerTaxId as string | undefined;
     const customerPhone = requestBody.customerPhone as string | undefined;
     const description = requestBody.description as string | undefined;
+    const companyId = requestBody.companyId as string | undefined;
 
     logger.info("API_PIX", `[${requestId}] Iniciando criação de pagamento`, {
       orderId,
       amount,
       hasCustomerName: !!customerName,
+      hasCompanyId: !!companyId,
       provider: process.env.PAYMENT_PROVIDER || "pagbank",
     });
 
@@ -53,6 +57,52 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    let mercadopagoAccessToken: string | undefined;
+    let applicationFee: number | undefined;
+
+    if (companyId) {
+      try {
+        const db = getAdminDb();
+        const companyDoc = await db.collection("companies").doc(companyId).get();
+
+        if (companyDoc.exists) {
+          const companyData = companyDoc.data()!;
+
+          if (companyData.mercadopago_connected && companyData.mercadopago_access_token) {
+            const expiresAt = companyData.mercadopago_token_expires_at?.toDate?.() || companyData.mercadopago_token_expires_at;
+            let token = companyData.mercadopago_access_token;
+
+            if (expiresAt && new Date() > expiresAt && companyData.mercadopago_refresh_token) {
+              try {
+                const refreshResult = await MercadoPagoService.refreshToken(companyData.mercadopago_refresh_token);
+                token = refreshResult.access_token as string;
+                await db.collection("companies").doc(companyId).update({
+                  mercadopago_access_token: token,
+                  mercadopago_refresh_token: refreshResult.refresh_token || companyData.mercadopago_refresh_token,
+                  mercadopago_token_expires_at: MercadoPagoService.calculateExpiresAt(refreshResult.expires_in as number),
+                });
+              } catch (refreshError) {
+                logger.error("API_PIX", `[${requestId}] Erro ao renovar token Mercado Pago`, refreshError);
+              }
+            }
+
+            mercadopagoAccessToken = token;
+            applicationFee = companyData.platform_commission_percent
+              ? (amount * companyData.platform_commission_percent) / 100
+              : 0;
+
+            logger.info("API_PIX", `[${requestId}] Usando token Mercado Pago da loja`, {
+              companyId,
+              hasToken: !!mercadopagoAccessToken,
+              applicationFee,
+            });
+          }
+        }
+      } catch (companyError) {
+        logger.warn("API_PIX", `[${requestId}] Erro ao buscar dados da loja`, companyError);
+      }
+    }
+
     logger.info("API_PIX", `[${requestId}] Obtendo provider da factory`);
     const provider = PaymentProviderFactory.create();
     logger.info("API_PIX", `[${requestId}] Provider ativo: ${provider.name}`);
@@ -70,6 +120,8 @@ export async function POST(req: NextRequest) {
       customerTaxId,
       customerPhone,
       description,
+      accessToken: mercadopagoAccessToken,
+      applicationFee,
     });
 
     logger.info("API_PIX", `[${requestId}] Pagamento criado com sucesso`, {

@@ -684,12 +684,7 @@ A marca deve transmitir:
 * Confiança
 * Modernidade
 * Proximidade
-<<<<<<< HEAD
 
-## Estilo
-
-Visual limpo, com bastante espaço em branco.
-=======
 * Energia
 * Conveniência
 
@@ -753,7 +748,6 @@ O ícone deve funcionar perfeitamente como favicon, ícone mobile e avatar de re
 # Estilo Visual
 
 Visual limpo com bastante espaço em branco.
->>>>>>> 431c51c (Update Layout of totem #ATM-105 [enhancement])
 
 Evitar:
 
