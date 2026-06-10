@@ -156,5 +156,23 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAuth();
     }
+
+    // =============================================
+    // AUDITORIA DE COMISSÃO
+    // =============================================
+
+    match /commission_audit_log/{logId} {
+      allow read: if isOwner(resource.data.companyId);
+      allow create: if isAuth();
+      allow update, delete: if false;
+    }
+
+    // =============================================
+    // ESTADOS OAUTH MERCADO PAGO (server-side via Admin SDK)
+    // =============================================
+
+    match /mercadopago_oauth_states/{stateId} {
+      allow read, write: if false;
+    }
   }
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { doc, updateDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, orderBy } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
 import { useTotem } from "@totem/hooks/useTotem";
@@ -24,11 +24,13 @@ interface PageProps {
 
 type TotemStep = 'WELCOME' | 'ORDERING' | 'IDENTIFICATION' | 'PAYMENT' | 'FINISHED';
 
-export default function TotemPage({ params }: { params: Promise<{ companyId: string }> }) {
-  const resolvedParams = use(params);
+export default function TotemPage() {
+  const params = useParams();
+  const companyId = params.companyId as string;
+  if (!companyId) return null;
   return (
     <ErrorBoundary context="TotemPage">
-      <TotemContent params={resolvedParams} />
+      <TotemContent params={{ companyId }} />
     </ErrorBoundary>
   );
 }
