@@ -11,4 +11,5 @@ export interface Order extends Omit<SharedOrder, 'address' | 'status'> {
     neighborhood: string;
     complement?: string;
   };
+  deliveryMode?: string;
 }

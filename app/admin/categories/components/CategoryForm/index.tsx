@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "../../../products/components/ProductForm/styles.css";
 
-export default function CategoryForm({ initialData, onSubmit, isInsideForm }) {
+export default function CategoryForm({ initialData, onSubmit, isInsideForm = false }) {
   const [name, setName] = useState(initialData?.name || "");
   const [possuiTamanhos, setPossuiTamanhos] = useState(initialData?.possuiTamanhos || false);
   const [possuiSabores, setPossuiSabores] = useState(initialData?.possuiSabores || false);

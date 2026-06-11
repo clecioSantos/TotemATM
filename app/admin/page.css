@@ -687,3 +687,141 @@
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+.help-search-section {
+  margin-bottom: 24px;
+}
+
+.help-search-wrapper {
+  position: relative;
+  max-width: 480px;
+}
+
+.help-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #a1a1aa;
+  pointer-events: none;
+}
+
+.help-search-input {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  font-size: 14px;
+  background: #fafafa;
+  outline: none;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.help-search-input:focus {
+  border-color: #ff6b00;
+  background: white;
+}
+
+.help-search-input::placeholder {
+  color: #a1a1aa;
+}
+
+.help-article-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.help-article-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #fafafa;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.help-article-card:hover {
+  background: white;
+  border-color: #ff6b00;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.help-article-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.help-article-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #09090b;
+  margin: 0 0 4px;
+}
+
+.help-article-desc {
+  font-size: 12px;
+  color: #71717a;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.help-article-arrow {
+  font-size: 18px;
+  color: #a1a1aa;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.help-article-card:hover .help-article-arrow {
+  transform: translateX(4px);
+  color: #ff6b00;
+}
+
+.help-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 24px;
+  color: #a1a1aa;
+  text-align: center;
+}
+
+.help-empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.help-empty-hint {
+  font-size: 12px !important;
+  color: #d4d4d8 !important;
+}
+
+.help-saiba-mais {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  background: none;
+  border: none;
+  color: #ff6b00;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  vertical-align: middle;
+}
+
+.help-saiba-mais:hover {
+  background: rgba(255, 107, 0, 0.08);
+}

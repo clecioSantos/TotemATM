@@ -17,7 +17,8 @@ import {
   Star,
   Users,
   Tag,
-  Wallet
+  Wallet,
+  HelpCircle
 } from "lucide-react";
 import "./page.css";
 
@@ -44,6 +45,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     { name: "Endereços", path: "/admin/addresses", icon: <MapPin size={20} /> },
     { name: "Usuários", path: "/admin/settings/users", icon: <Users size={20} /> },
     { name: "Configurações", path: "/admin/settings", icon: <Settings size={20} /> },
+    { name: "Central de Ajuda", path: "/admin/help", icon: <HelpCircle size={20} /> },
   ];
 
   return (

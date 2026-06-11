@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { firestore, auth } from "@/src/services/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { Wallet, Plug, PlugZap, Loader } from "lucide-react";
+import { Wallet, Plug, PlugZap, Loader, ExternalLink } from "lucide-react";
+import HelpTooltip from "../components/HelpTooltip";
+import HelpModal from "../components/HelpModal";
 import "./page.css";
 
 export default function FinanceiroPage() {
@@ -13,6 +15,7 @@ export default function FinanceiroPage() {
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [helpModal, setHelpModal] = useState<string | null>(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (firebaseUser) => {
@@ -115,6 +118,15 @@ export default function FinanceiroPage() {
       <div className="connection-card">
         <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, color: "#0f172a" }}>
           Mercado Pago
+          <HelpTooltip helpId="mercadopago" />
+          <button
+            className="help-saiba-mais"
+            onClick={() => setHelpModal("mercadopago")}
+            aria-label="Saiba mais sobre Mercado Pago"
+          >
+            <ExternalLink size={12} />
+            <span>Saiba mais</span>
+          </button>
         </h2>
 
         <div className={`connection-status ${isConnected ? "connected" : "disconnected"}`}>
@@ -141,7 +153,18 @@ export default function FinanceiroPage() {
               </div>
             </div>
             <div className="info-item">
-              <div className="info-label">Comissão da Plataforma</div>
+              <div className="info-label">
+                Comissão da Plataforma
+                <HelpTooltip helpId="taxas" />
+                <button
+                  className="help-saiba-mais"
+                  onClick={() => setHelpModal("taxas")}
+                  aria-label="Saiba mais sobre a taxa da plataforma"
+                >
+                  <ExternalLink size={12} />
+                  <span>Saiba mais</span>
+                </button>
+              </div>
               <div className="info-value">{company.platform_commission_percent ?? 6}%</div>
             </div>
             <div className="info-item">
@@ -165,6 +188,7 @@ export default function FinanceiroPage() {
           )}
         </div>
       </div>
+      <HelpModal helpId={helpModal || ""} open={!!helpModal} onClose={() => setHelpModal(null)} />
     </div>
   );
 }

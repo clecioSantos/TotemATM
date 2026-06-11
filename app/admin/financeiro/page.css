@@ -154,3 +154,10 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+.info-label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+}

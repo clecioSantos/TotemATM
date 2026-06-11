@@ -9,6 +9,9 @@ import { doc, getDoc, updateDoc, collection, onSnapshot, FirestoreError } from "
 import { logger } from "@/src/lib/logger";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { PermissionGate } from "@/src/components/PermissionGate";
+import HelpTooltip from "../components/HelpTooltip";
+import HelpModal from "../components/HelpModal";
+import "../page.css";
 import "./page.css";
 
 const estadosBrasileiros = [
@@ -68,6 +71,7 @@ function ConfigurationsContent() {
   const [cities, setCities] = useState<any[]>([]);
   const [loadingCompany, setLoadingCompany] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [helpModal, setHelpModal] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -206,7 +210,10 @@ function ConfigurationsContent() {
           <div className="totem-link-section">
             <header className="section-header">
               <QrCode size={20} className="section-icon" />
-              <h3 className="section-title">Link do Totem</h3>
+              <h3 className="section-title">
+                Link do Totem
+                <HelpTooltip helpId="totem" />
+              </h3>
             </header>
 
             <div className="section-content">
@@ -231,8 +238,16 @@ function ConfigurationsContent() {
                     className="totem-open-btn"
                   >
                     <ExternalLink size={18} />
-                    <span>TOTEM</span>
-                  </a>
+                  <span>TOTEM</span>
+                </a>
+                <button
+                  className="help-saiba-mais"
+                  onClick={() => setHelpModal("totem")}
+                  aria-label="Saiba mais sobre o Totem"
+                >
+                  <ExternalLink size={12} />
+                  <span>Saiba mais</span>
+                </button>
                 </div>
               </div>
 
@@ -418,6 +433,7 @@ function ConfigurationsContent() {
               <LogOut size={18} /> Sair da Conta
             </button>
           </div>
+        <HelpModal helpId={helpModal || ""} open={!!helpModal} onClose={() => setHelpModal(null)} />
       </div>
     </div>
   );
