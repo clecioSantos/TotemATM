@@ -91,6 +91,17 @@ export async function POST(req: NextRequest) {
               ? (amount * companyData.platform_commission_percent) / 100
               : 0;
 
+            if (!companyData.platform_commission_percent) {
+              logger.error("API_PIX", `[${requestId}] Mercado Pago conectado mas sem comissão configurada`, undefined, {
+                companyId,
+                platform_commission_percent: companyData.platform_commission_percent,
+              });
+              return NextResponse.json(
+                { success: false, error: "Comissão da plataforma não configurada para esta loja" },
+                { status: 400 }
+              );
+            }
+
             logger.info("API_PIX", `[${requestId}] Usando token Mercado Pago da loja`, {
               companyId,
               hasToken: !!mercadopagoAccessToken,

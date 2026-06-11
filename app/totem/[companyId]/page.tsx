@@ -312,6 +312,7 @@ function TotemContent({ params }: PageProps) {
           orderId,
           amount: total,
           customerName: "Cliente Totem",
+          companyId,
         }),
       });
 
