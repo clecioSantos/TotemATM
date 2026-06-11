@@ -1,13 +1,20 @@
 import { useState } from "react";
 import "../../../products/components/ProductForm/styles.css";
 
-export default function CategoryForm({ initialData, onSubmit }) {
+export default function CategoryForm({ initialData, onSubmit, isInsideForm }) {
   const [name, setName] = useState(initialData?.name || "");
   const [possuiTamanhos, setPossuiTamanhos] = useState(initialData?.possuiTamanhos || false);
   const [possuiSabores, setPossuiSabores] = useState(initialData?.possuiSabores || false);
 
+  const handleSubmit = (e) => {
+    if (!isInsideForm) e.preventDefault();
+    onSubmit({ id: initialData?.id, name, possuiTamanhos, possuiSabores });
+  };
+
+  const Tag = isInsideForm ? "div" : "form";
+
   return (
-    <form className="form-container" onSubmit={(e) => { e.preventDefault(); onSubmit({ id: initialData?.id, name, possuiTamanhos, possuiSabores }); }}>
+    <Tag className="form-container" onSubmit={isInsideForm ? undefined : handleSubmit}>
       <div className="input-group">
         <label>Nome da Categoria</label>
         <input
@@ -36,9 +43,9 @@ export default function CategoryForm({ initialData, onSubmit }) {
         />
         <label htmlFor="cat-sabores">Possui Sabores (Calabresa, Frango...)</label>
       </div>
-      <button className="form-submit" type="submit">
+      <button className="form-submit" type={isInsideForm ? "button" : "submit"} onClick={isInsideForm ? handleSubmit : undefined}>
         Salvar Categoria
       </button>
-    </form>
+    </Tag>
   );
 }

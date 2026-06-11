@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { addDoc, collection } from "firebase/firestore";
+import { firestore } from "@/src/services/firebase";
 import { Product, Category, ProductSize } from '@totem/shared/types';
+import { useAuth } from "@totem/shared/types/AuthProvider";
+import Modal from "@/app/admin/components/Modal";
+import CategoryForm from "@/app/admin/categories/components/CategoryForm";
 import "./styles.css";
 
 interface Props {
@@ -19,6 +24,7 @@ const parseCurrencyInput = (raw: string) => {
 };
 
 export default function ProductForm({ initialData, categories, onSubmit }: Props) {
+  const { user } = useAuth();
   const [name, setName] = useState(initialData?.name || "");
   const [price, setPrice] = useState(initialData?.price || 0);
   const [categoryId, setCategoryId] = useState(initialData?.categoryId || "");
@@ -27,6 +33,7 @@ export default function ProductForm({ initialData, categories, onSubmit }: Props
   const [featured, setFeatured] = useState(initialData?.featured ?? false);
   const [imageFile, setImageFile] = useState<File | undefined>();
   const [sizes, setSizes] = useState<ProductSize[]>(initialData?.sizes || []);
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
 
   const selectedCategory = categories.find(c => c.id === categoryId);
   const possuiTamanhos = selectedCategory?.possuiTamanhos === true;
@@ -90,10 +97,13 @@ export default function ProductForm({ initialData, categories, onSubmit }: Props
 
       <div className="input-group">
         <label>Categoria</label>
-        <select className="form-input" value={categoryId} onChange={e => { setCategoryId(e.target.value); setSizes([]); }} required>
-          <option value="">Selecione...</option>
-          {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
+        <div className="flex gap-2">
+          <select className="form-input flex-1" value={categoryId} onChange={e => { setCategoryId(e.target.value); setSizes([]); }} required>
+            <option value="">Selecione...</option>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <button type="button" className="add-size-btn" onClick={() => setCategoryModalOpen(true)} title="Nova Categoria">+</button>
+        </div>
       </div>
 
       <div className="input-group">
@@ -177,6 +187,25 @@ export default function ProductForm({ initialData, categories, onSubmit }: Props
         <label htmlFor="product-featured">Produto em Destaque</label>
       </div>
       <button type="submit" className="form-submit">Salvar Produto</button>
+
+      <Modal isOpen={categoryModalOpen} onClose={() => setCategoryModalOpen(false)} title="Nova Categoria">
+        <CategoryForm
+          initialData={null}
+          isInsideForm
+          onSubmit={async (data) => {
+            if (!user?.companyId) return;
+            try {
+              await addDoc(collection(firestore, "categories"), {
+                ...data,
+                companyId: user.companyId,
+              });
+              setCategoryModalOpen(false);
+            } catch (err) {
+              alert("Erro ao salvar categoria");
+            }
+          }}
+        />
+      </Modal>
     </form>
   );
 }
