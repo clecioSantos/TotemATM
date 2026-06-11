@@ -82,7 +82,7 @@ export default function StoreListingPage() {
     if (categoryFilter !== "all") {
       matchesCategory = store.areasAtuacao?.includes(categoryFilter);
     }
-    const matchesEnabled = isSandbox ? true : store.enabled !== false;
+    const matchesEnabled = isSandbox ? true : store.enabled !== false && store.enabled !== "false";
     return matchesName && matchesCity && matchesCategory && matchesEnabled;
   });
 
@@ -214,6 +214,7 @@ export default function StoreListingPage() {
     const labels: Record<string, string> = {
       pending: "Pendente",
       paid: "Pago",
+      awating_customization: "Aguardando Alinhamento",
       preparing: "Preparando",
       ready: "Pronto",
       delivering: isPickup ? "Aguardando Retirada" : "Em entrega",
@@ -519,7 +520,7 @@ export default function StoreListingPage() {
           const storeIds = getStoresForEvent(ev.id);
           const eventStores = stores.filter((s) => {
             const inEvent = storeIds.includes(s.id);
-            const matchesEnabled = isSandbox ? true : s.enabled !== false;
+            const matchesEnabled = isSandbox ? true : s.enabled !== false && s.enabled !== "false";
             return inEvent && matchesEnabled;
           });
           if (eventStores.length === 0) return null;

@@ -1,4 +1,4 @@
-export type OrderStatus = "pending" | "paid" | "preparing" | "ready" | "delivering" | "finished" | "cancelled";
+export type OrderStatus = "pending" | "paid" | "preparing" | "ready" | "delivering" | "finished" | "cancelled" | "awating_customization";
 
 export interface Product {
   id: string;
@@ -38,6 +38,10 @@ export interface Category {
   name: string;
   possuiTamanhos?: boolean;
   possuiSabores?: boolean;
+  schedulingMode?: "none" | "optional" | "required";
+  minimumPreparationMinutes?: number;
+  requiresCustomerContact?: boolean;
+  customerInstructions?: string;
 }
 
 export interface CategoryFlavor {
@@ -102,6 +106,11 @@ export interface Order {
   createdAt: Date | { seconds: number; nanoseconds: number };
   deliveryFee?: number;
   address?: Address;
+  isScheduled?: boolean;
+  scheduledDate?: string;
+  scheduledTime?: string;
+  scheduledAt?: Date | { seconds: number; nanoseconds: number };
+  requiresCustomerContact?: boolean;
 }
 
 export type { AppNotification, NotificationType } from './notifications';

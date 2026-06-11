@@ -15,6 +15,10 @@ export interface Category {
   name: string;
   possuiTamanhos?: boolean;
   possuiSabores?: boolean;
+  schedulingMode?: "none" | "optional" | "required";
+  minimumPreparationMinutes?: number;
+  requiresCustomerContact?: boolean;
+  customerInstructions?: string;
   createdAt: Date;
 }
 
@@ -60,20 +64,23 @@ export const useCategoriesStore = () => {
 
   const saveCategory = async (data: Partial<Category>) => {
     try {
+      const payload: Record<string, unknown> = {
+        name: data.name,
+        possuiTamanhos: data.possuiTamanhos ?? false,
+        possuiSabores: data.possuiSabores ?? false,
+        schedulingMode: data.schedulingMode || "none",
+        minimumPreparationMinutes: data.minimumPreparationMinutes ?? null,
+        requiresCustomerContact: data.requiresCustomerContact ?? false,
+        customerInstructions: data.customerInstructions || null,
+      };
       if (data.id) {
         const ref = doc(db, 'categories', data.id);
-        await updateDoc(ref, {
-          name: data.name,
-          possuiTamanhos: data.possuiTamanhos ?? false,
-          possuiSabores: data.possuiSabores ?? false,
-        });
+        await updateDoc(ref, payload);
         logger.info("useCategories", `Categoria ${data.id} atualizada`);
       } else {
         const docRef = await addDoc(collection(db, 'categories'), {
-          name: data.name,
+          ...payload,
           companyId: user?.companyId,
-          possuiTamanhos: data.possuiTamanhos ?? false,
-          possuiSabores: data.possuiSabores ?? false,
           createdAt: Timestamp.now(),
         });
         logger.info("useCategories", `Categoria criada: ${docRef.id}`);

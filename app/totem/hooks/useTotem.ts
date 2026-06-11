@@ -223,6 +223,26 @@ export const useTotem = (companyId: string) => {
         logger.info("useTotem", `Carrinho de outra loja (${stored!.companyId}) será limpo ao adicionar item da loja atual.`);
       }
 
+      const existingSchedulingMode = (() => {
+        for (const item of cart) {
+          const cat = categories.find((c) => c.id === item.categoryId);
+          if (cat?.schedulingMode === "required") return "required";
+          if (cat?.schedulingMode === "optional") return "optional";
+        }
+        return "none";
+      })();
+
+      const newItemCategory = categories.find((c) => c.id === product.categoryId);
+      const newItemMode = newItemCategory?.schedulingMode || "none";
+
+      if (cart.length > 0 && (
+        (existingSchedulingMode === "required" && newItemMode === "none") ||
+        (newItemMode === "required" && existingSchedulingMode === "none")
+      )) {
+        logger.info("useTotem", "Item não pode ser adicionado: conflito de agendamento");
+        return { message: "Este produto não pode ser comprado junto com itens que exigem agendamento." };
+      }
+
       const promo = getProductPromotion(product.id);
       let promoQty = 0;
       let regularQty = requestedQty;
@@ -349,6 +369,10 @@ export const useTotem = (companyId: string) => {
     deliveryFee?: number;
     paymentMethod?: string;
     paymentStatus?: string;
+    isScheduled?: boolean;
+    scheduledDate?: string;
+    scheduledTime?: string;
+    requiresCustomerContact?: boolean;
   }
 
   const [isFinishing, setIsFinishing] = useState(false);
@@ -429,7 +453,7 @@ export const useTotem = (companyId: string) => {
       const stored = getPersistedStoreInfo();
       const orderCompanyId = (stored && stored.companyId) || companyId;
 
-      const orderData = {
+      const orderData: Record<string, unknown> = {
         companyId: orderCompanyId,
         customerName: user?.name || "Cliente",
         userName: user?.name || "Cliente",
@@ -445,6 +469,16 @@ export const useTotem = (companyId: string) => {
         source: 'totem',
         createdAt: serverTimestamp(),
       };
+
+      if (identification.isScheduled) {
+        orderData.isScheduled = true;
+        orderData.scheduledDate = identification.scheduledDate;
+        orderData.scheduledTime = identification.scheduledTime;
+        orderData.scheduledAt = new Date(`${identification.scheduledDate}T${identification.scheduledTime}`);
+        if (identification.requiresCustomerContact) {
+          orderData.requiresCustomerContact = true;
+        }
+      }
 
       const docRef = await addDoc(collection(db, 'orders'), orderData);
       logger.info("useTotem", `Pedido finalizado: ${docRef.id}`);

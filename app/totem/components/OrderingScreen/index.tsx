@@ -454,6 +454,12 @@ export default function OrderingScreen({
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
+                  {(() => {
+                    const cat = categories.find(c => c.id === item.categoryId);
+                    return cat?.requiresCustomerContact && cat.schedulingMode !== "none" ? (
+                      <p className="text-[10px] text-purple-600 font-bold mt-1">🔄 Requer alinhamento com a loja</p>
+                    ) : null;
+                  })()}
                   <div className="flex justify-between items-center mt-1">
                     <div className="flex items-center gap-2 bg-brand-light rounded-[6px] p-1 border border-brand-border/40">
                       <button
@@ -554,6 +560,12 @@ export default function OrderingScreen({
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
+                  {(() => {
+                    const cat = categories.find(c => c.id === item.categoryId);
+                    return cat?.requiresCustomerContact && cat.schedulingMode !== "none" ? (
+                      <p className="text-[10px] text-purple-600 font-bold mt-1">🔄 Requer alinhamento com a loja</p>
+                    ) : null;
+                  })()}
                   <div className="flex justify-between items-center mt-1">
                     <div className="flex items-center gap-2 bg-brand-surface rounded-[8px] p-1 border border-brand-border/40">
                       <button
@@ -653,6 +665,20 @@ export default function OrderingScreen({
                       R$ {selectedProduct.price.toFixed(2)}
                     </p>
                   );
+                })()}
+                {(() => {
+                  const cat = categories.find(c => c.id === selectedProduct.categoryId);
+                  if (cat?.requiresCustomerContact && cat.schedulingMode !== "none") {
+                    return (
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-4">
+                        <p className="text-xs font-bold text-purple-800">🔄 Requer alinhamento com a loja</p>
+                        {cat.customerInstructions && (
+                          <p className="text-[11px] text-purple-700 mt-1 whitespace-pre-wrap">{cat.customerInstructions}</p>
+                        )}
+                      </div>
+                    );
+                  }
+                  return null;
                 })()}
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto space-y-6">

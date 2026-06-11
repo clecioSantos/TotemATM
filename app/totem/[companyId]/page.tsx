@@ -73,6 +73,8 @@ function TotemContent({ params }: PageProps) {
   const [deliveryComplement, setDeliveryComplement] = useState("");
 
   const [currentOrderId, setCurrentOrderId] = useState("");
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledTime, setScheduledTime] = useState("");
   const [orderTotal, setOrderTotal] = useState(0);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [toast, setToast] = useState<{ message: string; type?: "error" | "info" } | null>(null);
@@ -186,6 +188,7 @@ function TotemContent({ params }: PageProps) {
     const labels: Record<string, string> = {
       pending: "Pendente",
       paid: "Pago",
+      awating_customization: "Aguardando Alinhamento",
       preparing: "Preparando",
       ready: "Pronto",
       delivering: isPickup ? "Aguardando Retirada" : "Em entrega",
@@ -224,6 +227,15 @@ function TotemContent({ params }: PageProps) {
         <div className="p-3 bg-brand-light text-xs space-y-2 border-t border-brand-border">
           <p><strong>Status:</strong> {getStatusLabel(o)}</p>
           <p><strong>Pedido:</strong> #{o.id.slice(-6).toUpperCase()}</p>
+          {o.isScheduled && (
+            <p><strong>Agendado:</strong> {o.scheduledDate} - {o.scheduledTime}</p>
+          )}
+          {o.requiresCustomerContact && (
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 my-2">
+              <p className="text-xs font-bold text-purple-800">⚠ Este pedido requer alinhamento com a loja</p>
+              <p className="text-[10px] text-purple-700 mt-1">A loja entrará em contato para alinhar os detalhes da personalização.</p>
+            </div>
+          )}
           <p><strong>Endereço:</strong> {o.address?.street}, {o.address?.number}</p>
           <p><strong>Bairro:</strong> {o.address?.neighborhood}</p>
           <div className="pt-2 border-t border-brand-border">
@@ -270,6 +282,40 @@ function TotemContent({ params }: PageProps) {
     return acc + (basePrice + flavorsPrice + condimentsPrice) * item.quantity;
   }, 0);
 
+  const hasRequiredScheduling = cart.some((item) => {
+    const cat = categories.find((c) => c.id === item.categoryId);
+    return cat?.schedulingMode === "required";
+  });
+
+  const hasOptionalScheduling = cart.some((item) => {
+    const cat = categories.find((c) => c.id === item.categoryId);
+    return cat?.schedulingMode === "optional";
+  });
+
+  const requiresContact = cart.some((item) => {
+    const cat = categories.find((c) => c.id === item.categoryId);
+    return cat?.requiresCustomerContact && cat.schedulingMode !== "none";
+  });
+
+  const contactCategories = cart
+    .map((item) => categories.find((c) => c.id === item.categoryId))
+    .filter((cat) => cat?.requiresCustomerContact && cat.schedulingMode !== "none");
+
+  const contactInstructions = [...new Set(contactCategories.map((c) => c?.customerInstructions).filter(Boolean))] as string[];
+
+  const prepHours = Math.max(
+    ...cart.map((item) => {
+      const cat = categories.find((c) => c.id === item.categoryId);
+      return (cat?.minimumPreparationMinutes || 0) / 60;
+    }),
+    0
+  );
+
+  const earliestDate = new Date();
+  earliestDate.setHours(earliestDate.getHours() + prepHours);
+
+  const isSchedulingNeeded = hasRequiredScheduling || (hasOptionalScheduling && (scheduledDate && scheduledTime));
+
   const handleFinish = async (deliveryFee: number, deliveryMode?: string) => {
     if (companyOpen === false) {
       setToast({ message: "Loja fechada. Não é possível realizar pedidos no momento.", type: "error" });
@@ -277,6 +323,24 @@ function TotemContent({ params }: PageProps) {
     }
 
     setIsProcessingPayment(true);
+
+    if (hasRequiredScheduling && (!scheduledDate || !scheduledTime)) {
+      setToast({ message: "Este pedido exige agendamento. Selecione data e horário.", type: "error" });
+      setIsProcessingPayment(false);
+      return;
+    }
+
+    if (scheduledDate && scheduledTime) {
+      const selected = new Date(`${scheduledDate}T${scheduledTime}`);
+      if (selected < earliestDate) {
+        setToast({
+          message: `Horário muito próximo. O agendamento precisa de pelo menos ${prepHours}h de antecedência.`,
+          type: "error",
+        });
+        setIsProcessingPayment(false);
+        return;
+      }
+    }
 
     try {
       const total = cartTotal + deliveryFee;
@@ -295,6 +359,16 @@ function TotemContent({ params }: PageProps) {
         deliveryMode: deliveryMode || "delivery",
         paymentStatus: 'WAITING_PAYMENT',
       };
+
+      if (isSchedulingNeeded) {
+        orderData.isScheduled = true;
+        orderData.scheduledDate = scheduledDate;
+        orderData.scheduledTime = scheduledTime;
+      }
+
+      if (requiresContact) {
+        orderData.requiresCustomerContact = true;
+      }
 
       const result = await finishOrder(orderData);
 
@@ -392,20 +466,84 @@ function TotemContent({ params }: PageProps) {
         return <OrderingScreen {...orderingScreenProps} />;
       case 'IDENTIFICATION':
         return (
-          <IdentificationScreen
-            addressStreet={deliveryStreet}
-            setAddressStreet={setDeliveryStreet}
-            addressCity={deliveryCity}
-            setAddressCity={setDeliveryCity}
-            addressNumber={deliveryNumber}
-            setAddressNumber={setDeliveryNumber}
-            addressNeighborhood={deliveryNeighborhood}
-            setAddressNeighborhood={setDeliveryNeighborhood}
-            addressComplement={deliveryComplement}
-            setAddressComplement={setDeliveryComplement}
-            onConfirm={handleFinish}
-            onBack={() => setStep('ORDERING')}
-          />
+          <div>
+            {(hasRequiredScheduling || hasOptionalScheduling) && cart.length > 0 && (
+              <div className="w-full max-w-md mx-auto px-4 pt-4 pb-2">
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                  {hasRequiredScheduling && (
+                    <p className="text-sm font-bold text-amber-800 mb-3">
+                      ⚠ Este pedido exige agendamento. Escolha a data e horário desejados.
+                    </p>
+                  )}
+                  {hasOptionalScheduling && !hasRequiredScheduling && (
+                    <p className="text-sm font-bold text-amber-800 mb-3">
+                      Alguns itens podem ser agendados. Selecione data e horário se desejar agendar.
+                    </p>
+                  )}
+                  {prepHours > 0 && (
+                    <p className="text-xs text-amber-700 mb-3">
+                      ⏱ Antecedência mínima necessária: <strong>{prepHours}h</strong>
+                    </p>
+                  )}
+                  <div className="flex gap-2 mb-2">
+                    <div className="flex-1">
+                      <label className="text-[10px] font-bold text-amber-700 uppercase block mb-1">Data</label>
+                      <input
+                        type="date"
+                        className="w-full px-3 py-2 rounded-lg border border-amber-300 bg-white text-sm font-medium"
+                        value={scheduledDate}
+                        onChange={(e) => setScheduledDate(e.target.value)}
+                        min={new Date().toISOString().split("T")[0]}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-[10px] font-bold text-amber-700 uppercase block mb-1">Horário</label>
+                      <input
+                        type="time"
+                        className="w-full px-3 py-2 rounded-lg border border-amber-300 bg-white text-sm font-medium"
+                        value={scheduledTime}
+                        onChange={(e) => setScheduledTime(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  {requiresContact && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-3">
+                      <p className="text-sm font-bold text-purple-800 mb-2">
+                        ⚠ Este pedido requer alinhamento com a loja
+                      </p>
+                      <p className="text-xs text-purple-700 mb-2">
+                        Após a confirmação, a loja entrará em contato para alinhar os detalhes da personalização.
+                      </p>
+                      {contactInstructions.length > 0 && (
+                        <div className="bg-white rounded-lg p-3 border border-purple-100">
+                          <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest mb-1">
+                            Informações necessárias
+                          </p>
+                          {contactInstructions.map((text, i) => (
+                            <p key={i} className="text-xs text-purple-800 whitespace-pre-wrap">{text}</p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            <IdentificationScreen
+              addressStreet={deliveryStreet}
+              setAddressStreet={setDeliveryStreet}
+              addressCity={deliveryCity}
+              setAddressCity={setDeliveryCity}
+              addressNumber={deliveryNumber}
+              setAddressNumber={setDeliveryNumber}
+              addressNeighborhood={deliveryNeighborhood}
+              setAddressNeighborhood={setDeliveryNeighborhood}
+              addressComplement={deliveryComplement}
+              setAddressComplement={setDeliveryComplement}
+              onConfirm={handleFinish}
+              onBack={() => setStep('ORDERING')}
+            />
+          </div>
         );
       case 'PAYMENT':
         return (

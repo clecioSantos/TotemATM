@@ -17,9 +17,10 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
 
   const isPickup = order.deliveryMode === "pickup";
 
-  const statusMap = {
+  const statusMap: Record<string, { label: string; class: string }> = {
     pending: { label: "Pendente", class: "status-pending" },
     paid: { label: "Pago", class: "status-paid" },
+    awating_customization: { label: "Aguardando Alinhamento", class: "status-awaiting" },
     preparing: { label: "Preparando", class: "status-preparing" },
     ready: { label: "Pronto", class: "status-ready" },
     delivering: { label: isPickup ? "Aguardando Retirada" : "Em entrega", class: "status-delivering" },
@@ -30,7 +31,8 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
   const getNextStatus = (current: Order['status']): Order['status'] | null => {
     const flow: Record<string, Order['status']> = {
       pending: 'paid',
-      paid: 'preparing',
+      paid: order.requiresCustomerContact ? 'awating_customization' : 'preparing',
+      awating_customization: 'preparing',
       preparing: 'ready',
       ready: 'delivering',
       delivering: 'finished',
@@ -79,6 +81,18 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
         <div className="order-details">
           <div className="details-divider" />
           
+          {order.isScheduled && (
+            <div className="order-address-delivery-info" style={{ marginBottom: '1.5rem', padding: '1rem', background: '#fef3c7', borderRadius: '12px', border: '1px solid #fcd34d' }}>
+              <p style={{ fontSize: '10px', fontWeight: 'bold', color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>🕒 Pedido Agendado</p>
+              <p style={{ fontSize: '14px', color: '#78350f', fontWeight: '600' }}>
+                {order.scheduledDate} - {order.scheduledTime}
+              </p>
+              {order.requiresCustomerContact && (
+                <p style={{ fontSize: '12px', color: '#92400e', marginTop: '4px' }}>⚠ Requer alinhamento com o cliente</p>
+              )}
+            </div>
+          )}
+
           {order.address && (
             <div className="order-address-delivery-info" style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
               <p style={{ fontSize: '10px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Endereço de Entrega</p>

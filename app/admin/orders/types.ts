@@ -3,7 +3,7 @@ import { Product as SharedProduct, Order as SharedOrder } from '@totem/shared/ty
 export type Product = SharedProduct;
 
 export interface Order extends Omit<SharedOrder, 'address' | 'status'> {
-  status: 'pending' | 'paid' | 'preparing' | 'ready' | 'delivering' | 'finished' | 'cancelled';
+  status: 'pending' | 'paid' | 'preparing' | 'ready' | 'delivering' | 'finished' | 'cancelled' | 'awating_customization';
   userName?: string;
   address?: {
     street: string;
@@ -12,4 +12,8 @@ export interface Order extends Omit<SharedOrder, 'address' | 'status'> {
     complement?: string;
   };
   deliveryMode?: string;
+  isScheduled?: boolean;
+  scheduledDate?: string;
+  scheduledTime?: string;
+  requiresCustomerContact?: boolean;
 }

@@ -365,6 +365,46 @@ function ConfigurationsContent() {
               </div>
 
               <div className="company-form-section">
+                <h4 className="form-section-title">Agendamento de Pedidos</h4>
+                <label className="toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={companyData.schedulingEnabled === true}
+                    onChange={(e) => setCompanyData((prev: any) => ({ ...prev, schedulingEnabled: e.target.checked }))}
+                    className="toggle-input"
+                  />
+                  <span className="toggle-text">Aceitar Pedidos Agendados</span>
+                </label>
+                {companyData.schedulingEnabled && (
+                  <div className="mt-4 space-y-4">
+                    <div className="form-group">
+                      <label className="form-label">Intervalo dos horários</label>
+                      <select
+                        value={companyData.schedulingSlotMinutes || 30}
+                        onChange={(e) => setCompanyData((prev: any) => ({ ...prev, schedulingSlotMinutes: Number(e.target.value) }))}
+                        className="form-input"
+                      >
+                        <option value={15}>15 minutos</option>
+                        <option value={30}>30 minutos</option>
+                        <option value={60}>60 minutos</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Antecedência máxima (dias)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={90}
+                        value={companyData.schedulingMaxDays || 30}
+                        onChange={(e) => setCompanyData((prev: any) => ({ ...prev, schedulingMaxDays: Number(e.target.value) }))}
+                        className="form-input"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="company-form-section">
                 <h4 className="form-section-title">Tempo de Preparo (minutos)</h4>
                 <div className="prep-time-grid">
                   <div className="form-group">
