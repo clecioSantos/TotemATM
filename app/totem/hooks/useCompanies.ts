@@ -17,10 +17,12 @@ export const useCompanies = () => {
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       try {
-        const items = snapshot.docs.map(doc => ({
-          id: doc.id,
-          name: doc.data().name || doc.id,
-        })) as Company[];
+        const items = snapshot.docs
+          .filter(doc => doc.data().enabled !== false)
+          .map(doc => ({
+            id: doc.id,
+            name: doc.data().name || doc.id,
+          })) as Company[];
         setCompanies(items);
         setLoading(false);
       } catch (mapError) {

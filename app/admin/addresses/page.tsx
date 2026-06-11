@@ -29,6 +29,17 @@ function AddressesManagementContent() {
   const [citySettings, setCitySettings] = useState<any[]>([]);
   const [deliveryCosts, setDeliveryCosts] = useState<any[]>([]);
   const [selectedCityId, setSelectedCityId] = useState<string>("");
+  const [pickupEnabled, setPickupEnabled] = useState(false);
+
+  useEffect(() => {
+    if (!user?.companyId) return;
+    const unsub = onSnapshot(doc(firestore, "companies", user.companyId), (snap) => {
+      if (snap.exists()) {
+        setPickupEnabled(snap.data().pickupEnabled === true);
+      }
+    });
+    return () => unsub();
+  }, [user?.companyId]);
   
   const [modalConfig, setModalConfig] = useState<{ type: 'city' | 'nb' | 'price' | 'city_price' | null, data?: any }>({ type: null, data: null });
 
@@ -222,6 +233,33 @@ function AddressesManagementContent() {
           Apenas proprietários podem alterar os dados desta página.
         </div>
       )}
+
+      <div className="mb-6 p-4 bg-brand-surface rounded-xl border border-brand-border flex items-center justify-between">
+        <div>
+          <p className="font-bold text-sm text-brand-dark">Retirada na Loja</p>
+          <p className="text-xs text-brand-muted">Cliente pode retirar o pedido pessoalmente (frete grátis)</p>
+        </div>
+        <button
+          onClick={async () => {
+            if (!user?.companyId) return;
+            const newValue = !pickupEnabled;
+            setPickupEnabled(newValue);
+            try {
+              await updateDoc(doc(firestore, "companies", user.companyId), { pickupEnabled: newValue });
+            } catch (err) {
+              logger.error("ADDRESSES_PAGE", "Erro ao salvar pickupEnabled", err);
+              setPickupEnabled(!newValue);
+            }
+          }}
+          className={`relative w-12 h-6 rounded-full transition-all ${
+            pickupEnabled ? 'bg-brand-primary' : 'bg-brand-border'
+          }`}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${
+            pickupEnabled ? 'translate-x-6' : ''
+          }`} />
+        </button>
+      </div>
 
       <div className="addresses-vertical-list">
         <CityTable 

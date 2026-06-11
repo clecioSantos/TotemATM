@@ -15,13 +15,15 @@ interface Props {
 export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  const isPickup = order.deliveryMode === "pickup";
+
   const statusMap = {
     pending: { label: "Pendente", class: "status-pending" },
     paid: { label: "Pago", class: "status-paid" },
     preparing: { label: "Preparando", class: "status-preparing" },
     ready: { label: "Pronto", class: "status-ready" },
-    delivering: { label: "Em entrega", class: "status-delivering" },
-    finished: { label: "Finalizado", class: "status-finished" },
+    delivering: { label: isPickup ? "Aguardando Retirada" : "Em entrega", class: "status-delivering" },
+    finished: { label: isPickup ? "Retirado" : "Finalizado", class: "status-finished" },
     cancelled: { label: "Cancelado", class: "status-cancelled" },
   };
 

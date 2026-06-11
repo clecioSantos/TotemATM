@@ -17,7 +17,7 @@ interface IdentificationScreenProps {
   setAddressNeighborhood: (val: string) => void;
   addressComplement: string;
   setAddressComplement: (val: string) => void;
-  onConfirm: (deliveryFee: number) => void;
+  onConfirm: (deliveryFee: number, deliveryMode?: string) => void;
   onBack: () => void;
 }
 
@@ -48,6 +48,30 @@ export default function IdentificationScreen({
   const [availableNeighborhoods, setAvailableNeighborhoods] = useState<any[]>([]);
   const [citySettings, setCitySettings] = useState<any[]>([]);
   const [deliveryCosts, setDeliveryCosts] = useState<any[]>([]);
+  const [companyData, setCompanyData] = useState<any>(null);
+  const [deliveryMode, setDeliveryMode] = useState<"delivery" | "pickup">("delivery");
+
+  // Carregar dados da empresa para saber se pickup está habilitado
+  useEffect(() => {
+    if (!companyId) return;
+    const ref = doc(firestore, "companies", companyId);
+    const unsub = onSnapshot(ref, (snap) => {
+      if (snap.exists()) setCompanyData(snap.data());
+    });
+    return () => unsub();
+  }, [companyId]);
+
+  const pickupEnabled = companyData?.pickupEnabled === true;
+
+  useEffect(() => {
+    if (deliveryMode === "pickup") {
+      setAddressStreet("");
+      setAddressCity("");
+      setAddressNumber("");
+      setAddressNeighborhood("");
+      setAddressComplement("");
+    }
+  }, [deliveryMode]);
 
   // Cálculo do Custo de Entrega e Validação de Região
   const currentNbId = availableNeighborhoods.find(n => 
@@ -55,7 +79,7 @@ export default function IdentificationScreen({
   )?.id;
 
   const costSetting = deliveryCosts.find(c => c.neighborhoodId === currentNbId);
-  const deliveryPrice = Number(costSetting?.deliveryPrice ?? 0);
+  const deliveryPrice = deliveryMode === "pickup" ? 0 : Number(costSetting?.deliveryPrice ?? 0);
 
   // O bairro é suportado apenas se a flag enabled for true
   const isNeighborhoodSupported = costSetting?.enabled === true;
@@ -183,58 +207,11 @@ export default function IdentificationScreen({
     setIsSubmitting(true);
 
     if (!user) {
-      onConfirm(deliveryPrice);
-      setIsSubmitting(false);
+      onConfirm(deliveryPrice, deliveryMode);
       return;
     }
-
-    try {
-      if (selectedAddressId === "new") {
-        if (saveForFuture && addressStreet && addressNumber && addressNeighborhood && addressCity) {
-          // 1. Desabilitar qualquer outro endereço ativo
-          const addressesRef = collection(firestore, "addresses");
-          const qEnabled = query(addressesRef, where("userId", "==", user.uid), where("enabled", "==", true));
-          const snapshot = await getDocs(qEnabled);
-          const batch = writeBatch(firestore);
-          snapshot.docs.forEach((doc) => {
-            batch.update(doc.ref, { enabled: false });
-          });
-          await batch.commit();
-
-          // 2. Salvar o novo como ativo/habilitado
-          await addDoc(collection(firestore, "addresses"), {
-            userId: user.uid,
-            street: addressStreet,
-            cityId: addressCity,
-            number: addressNumber,
-            neighborhood: addressNeighborhood,
-            complement: addressComplement,
-            enabled: true,
-            createdAt: serverTimestamp()
-          });
-        }
-      } else {
-        // Enviar pedido com endereço existente: torná-lo o único habilitado/ativo
-        const addressesRef = collection(firestore, "addresses");
-        const qAll = query(addressesRef, where("userId", "==", user.uid));
-        const snapshot = await getDocs(qAll);
-        const batch = writeBatch(firestore);
-        snapshot.docs.forEach((docSnap) => {
-          if (docSnap.id === selectedAddressId) {
-            batch.update(docSnap.ref, { enabled: true });
-          } else if (docSnap.data().enabled === true) {
-            batch.update(docSnap.ref, { enabled: false });
-          }
-        });
-        await batch.commit();
-      }
-    } catch (e) {
-      console.error("Erro ao atualizar regras de habilitar endereço no envio:", e);
-    } finally {
-      onConfirm(deliveryPrice);
-      // Não resetamos isSubmitting aqui porque onConfirm provavelmente redireciona para a tela de pagamento
-      // Caso a tela de pagamento falhe, o usuário voltará e o estado seria resetado pelo componente.
-    }
+    // ... salvar endereço futuro ...
+    onConfirm(deliveryPrice, deliveryMode);
   };
 
   return (
@@ -244,10 +221,39 @@ export default function IdentificationScreen({
       <div className="bg-brand-surface w-full max-w-md rounded-[24px] border border-brand-border p-6 md:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.05)] flex flex-col">
         
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-brand-dark tracking-tight">Onde entregamos?</h1>
-          <p className="text-sm text-brand-muted mt-1">Informe o endereço para receber seu pedido.</p>
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-brand-dark tracking-tight">
+            {deliveryMode === "delivery" ? "Onde entregamos?" : "Retirar na Loja"}
+          </h1>
+          <p className="text-sm text-brand-muted mt-1">
+            {deliveryMode === "delivery" ? "Informe o endereço para receber seu pedido." : "Seu pedido será preparado e aguardará retirada."}
+          </p>
         </div>
+
+        {pickupEnabled && (
+          <div className="mb-6 flex gap-2">
+            <button
+              onClick={() => setDeliveryMode("delivery")}
+              className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
+                deliveryMode === "delivery"
+                  ? "bg-brand-primary text-white shadow-md"
+                  : "bg-brand-light text-brand-muted border border-brand-border"
+              }`}
+            >
+              Entrega
+            </button>
+            <button
+              onClick={() => setDeliveryMode("pickup")}
+              className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
+                deliveryMode === "pickup"
+                  ? "bg-brand-primary text-white shadow-md"
+                  : "bg-brand-light text-brand-muted border border-brand-border"
+              }`}
+            >
+              Retirar na Loja
+            </button>
+          </div>
+        )}
 
         {/* Endereços Salvos */}
         {user && addresses.length > 0 && (
@@ -363,9 +369,11 @@ export default function IdentificationScreen({
           )}
 
           {/* Taxa */}
-          {addressCity && isCityDeliveryEnabled && isNeighborhoodSupported && (
+          {(deliveryMode === "pickup" || (addressCity && isCityDeliveryEnabled && isNeighborhoodSupported)) && (
             <div className="flex justify-between items-center p-4 bg-brand-light rounded-[12px] border border-brand-border">
-              <span className="text-xs font-bold text-brand-muted uppercase">Taxa de Entrega</span>
+              <span className="text-xs font-bold text-brand-muted uppercase">
+                {deliveryMode === "pickup" ? "Retirada" : "Taxa de Entrega"}
+              </span>
               <span className="text-base font-bold text-brand-primary">
                 {deliveryPrice === 0 ? "GRÁTIS" : `R$ ${deliveryPrice.toFixed(2)}`}
               </span>
@@ -377,10 +385,10 @@ export default function IdentificationScreen({
         <div className="flex flex-col gap-3">
           <button 
             className="w-full bg-brand-primary hover:bg-brand-primaryHover text-white font-bold py-4 rounded-[12px] transition-all disabled:opacity-50" 
-            disabled={isSubmitting || !addressStreet || !addressNumber || !addressNeighborhood || !isCityDeliveryEnabled || !isNeighborhoodSupported} 
+            disabled={isSubmitting || (deliveryMode === "delivery" && (!addressStreet || !addressNumber || !addressNeighborhood || !isCityDeliveryEnabled || !isNeighborhoodSupported))} 
             onClick={handleConfirmAndSave}
           >
-            {isSubmitting ? "ENVIANDO..." : "CONFIRMAR E ENVIAR"}
+            {isSubmitting ? "ENVIANDO..." : deliveryMode === "pickup" ? "CONFIRMAR RETIRADA" : "CONFIRMAR E ENVIAR"}
           </button>
           
           <button 

@@ -209,14 +209,18 @@ export default function StoreListingPage() {
     }
   };
 
-  const statusLabels: Record<string, string> = {
-    pending: "Pendente",
-    paid: "Pago",
-    preparing: "Preparando",
-    ready: "Pronto",
-    delivering: "Em entrega",
-    finished: "Finalizado",
-    cancelled: "Cancelado",
+  const getStatusLabel = (o: any) => {
+    const isPickup = o.deliveryMode === "pickup";
+    const labels: Record<string, string> = {
+      pending: "Pendente",
+      paid: "Pago",
+      preparing: "Preparando",
+      ready: "Pronto",
+      delivering: isPickup ? "Aguardando Retirada" : "Em entrega",
+      finished: isPickup ? "Retirado" : "Finalizado",
+      cancelled: "Cancelado",
+    };
+    return labels[o.status] || o.status;
   };
 
   const finishedOrders = userOrders
@@ -243,12 +247,12 @@ export default function StoreListingPage() {
           </div>
           <div className="text-right">
             <div className="font-bold text-sm text-brand-primary">R$ {o.total?.toFixed(2)}</div>
-            <div className="text-[10px] uppercase font-bold text-brand-muted">{statusLabels[o.status] || o.status}</div>
-          </div>
+            <div className="text-[10px] uppercase font-bold text-brand-muted">{getStatusLabel(o)}</div>
         </div>
-        {expandedOrderId === o.id && (
-          <div className="p-3 bg-brand-light text-xs space-y-2 border-t border-brand-border">
-            <p><strong>Status:</strong> {statusLabels[o.status] || o.status}</p>
+      </div>
+      {expandedOrderId === o.id && (
+        <div className="p-3 bg-brand-light text-xs space-y-2 border-t border-brand-border">
+          <p><strong>Status:</strong> {getStatusLabel(o)}</p>
             <p><strong>Pedido:</strong> #{o.id.slice(-6).toUpperCase()}</p>
             <p><strong>Endereço:</strong> {o.address?.street}, {o.address?.number} {o.address?.complement ? `- ${o.address.complement}` : ""}</p>
             <p><strong>Bairro:</strong> {o.address?.neighborhood}</p>
