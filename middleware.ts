@@ -14,6 +14,7 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith('/api/auth') ||
       pathname.startsWith('/api/webhooks') ||
       pathname.startsWith('/api/payments/webhook') ||
+      pathname.startsWith('/totem') ||
       pathname === '/api/health' ||
       pathname.includes('/favicon.ico') ||
       pathname.includes('.')
@@ -64,6 +65,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api/webhooks/mercadopago|api|_next/static|_next/image|favicon.ico).*)",
+    "/((?!totem|api/webhooks/mercadopago|api|_next/static|_next/image|favicon.ico).*)",
   ],
 };

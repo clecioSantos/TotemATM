@@ -21,12 +21,23 @@ interface IdentificationScreenProps {
   onBack: () => void;
 }
 
+function getCartCompanyId(): string | null {
+  try {
+    if (typeof window === "undefined") return null;
+    const raw = localStorage.getItem("totem-cart");
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (Array.isArray(data.items) && data.items.length > 0) return data.companyId || null;
+  } catch {}
+  return null;
+}
+
 export default function IdentificationScreen({
   addressStreet, setAddressStreet, addressCity, setAddressCity, addressNumber, setAddressNumber, addressNeighborhood, setAddressNeighborhood, addressComplement, setAddressComplement, onConfirm, onBack
 }: IdentificationScreenProps) {
   const { user } = useAuth();
   const params = useParams();
-  const companyId = params?.companyId as string;
+  const companyId = getCartCompanyId() || (params?.companyId as string);
 
   const [addresses, setAddresses] = useState<any[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("new");

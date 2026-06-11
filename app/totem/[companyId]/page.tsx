@@ -73,7 +73,6 @@ function TotemContent({ params }: PageProps) {
   const [deliveryComplement, setDeliveryComplement] = useState("");
 
   const [currentOrderId, setCurrentOrderId] = useState("");
-  const [pixData, setPixData] = useState({ qrCode: "", copyPaste: "" });
   const [orderTotal, setOrderTotal] = useState(0);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [toast, setToast] = useState<{ message: string; type?: "error" | "info" } | null>(null);
@@ -287,7 +286,6 @@ function TotemContent({ params }: PageProps) {
           complement: deliveryComplement,
         },
         deliveryFee,
-        paymentMethod: 'PIX',
         paymentStatus: 'WAITING_PAYMENT',
       };
 
@@ -306,53 +304,8 @@ function TotemContent({ params }: PageProps) {
         return;
       }
 
-      const res = await fetch("/api/payments/pix", {
-        method: "POST",
-        body: JSON.stringify({
-          orderId,
-          amount: total,
-          customerName: "Cliente Totem",
-          companyId,
-        }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        logger.error("TotemPage", "Erro na API de PIX", undefined, {
-          status: res.status,
-          errorData,
-        });
-        setToast({ message: "Erro ao gerar pagamento. Tente novamente.", type: "error" });
-        setIsProcessingPayment(false);
-        return;
-      }
-
-      const data = await res.json();
-
-      if (data.sandbox) {
-        logger.info("TotemPage", `Sandbox ativo — pedido ${orderId} pago automaticamente`);
-        handlePaymentConfirmed();
-        return;
-      }
-
-      setPixData({ qrCode: data.qrCode || data.pixQrCode, copyPaste: data.pixCode || data.pixCopyPaste });
-
-      try {
-        await updateDoc(doc(firestore, "orders", orderId), {
-          paymentProvider: data.provider || "pagbank",
-          paymentExternalId: data.paymentId,
-          paymentStatus: "WAITING_PAYMENT",
-          paymentPayload: {
-            provider: data.provider,
-            paymentId: data.paymentId,
-            status: data.status,
-          },
-        });
-      } catch (updateError) {
-        logger.error("TotemPage", "Erro ao salvar dados de pagamento no pedido", updateError);
-      }
-
       setCurrentOrderId(orderId);
+      setOrderTotal(total);
       setStep('PAYMENT');
     } catch (error) {
       logger.error("TotemPage", "Erro ao finalizar pedido", error);
@@ -451,9 +404,10 @@ function TotemContent({ params }: PageProps) {
         return (
           <PaymentScreen
             orderId={currentOrderId}
-            pixData={pixData}
             total={orderTotal}
+            companyId={companyId}
             onPaymentConfirmed={handlePaymentConfirmed}
+            onCancel={() => setStep('ORDERING')}
           />
         );
       case 'FINISHED':

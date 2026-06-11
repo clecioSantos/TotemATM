@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   collection, onSnapshot, query, where, addDoc, serverTimestamp,
   doc, getDoc, orderBy
@@ -11,13 +11,36 @@ import { authService } from '@totem/shared/types/auth.service';
 import { logger } from '@/src/lib/logger';
 import { incrementSoldUnits } from '@/src/services/promotions.service';
 
+const CART_STORAGE_KEY = "totem-cart";
+
+function savePersistedCart(companyId: string, items: CartItem[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify({ companyId, items }));
+  } catch {}
+}
+
+function getPersistedStoreInfo(): { companyId: string; items: CartItem[] } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (Array.isArray(data.items)) return { companyId: data.companyId, items: data.items };
+  } catch {}
+  return null;
+}
+
 export const useTotem = (companyId: string) => {
   const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [condiments, setCondiments] = useState<Condiment[]>([]);
   const [flavors, setFlavors] = useState<CategoryFlavor[]>([]);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    const stored = getPersistedStoreInfo();
+    return stored?.items || [];
+  });
   const [loading, setLoading] = useState(true);
   const [companyName, setCompanyName] = useState<string>("");
   const [companyBanner, setCompanyBanner] = useState<string>("");
@@ -175,14 +198,31 @@ export const useTotem = (companyId: string) => {
     };
   }, [companyId]);
 
+  useEffect(() => {
+    if (cart.length === 0) {
+      savePersistedCart(companyId, []);
+      return;
+    }
+    const stored = getPersistedStoreInfo();
+    const originId = (stored?.companyId && stored.items.length > 0) ? stored.companyId : companyId;
+    savePersistedCart(originId, cart);
+  }, [cart]);
+
   const addToCart = (
     product: Product,
     selectedCondiments: Condiment[] = [],
     tamanhoSelecionado?: SelectedSize,
     saboresSelecionados?: SelectedFlavor[],
     requestedQty: number = 1
-  ): { message?: string; usedRegularPrice?: boolean } => {
+  ): { message?: string; usedRegularPrice?: boolean; clearedFromOtherStore?: boolean } => {
     try {
+      const stored = getPersistedStoreInfo();
+      const fromOtherStore = stored && stored.companyId !== companyId && stored.items.length > 0;
+
+      if (fromOtherStore) {
+        logger.info("useTotem", `Carrinho de outra loja (${stored!.companyId}) será limpo ao adicionar item da loja atual.`);
+      }
+
       const promo = getProductPromotion(product.id);
       let promoQty = 0;
       let regularQty = requestedQty;
@@ -222,8 +262,12 @@ export const useTotem = (companyId: string) => {
         adjustedSize = tamanhoSelecionado;
       }
 
+      if (fromOtherStore) {
+        savePersistedCart(companyId, []);
+      }
+
       setCart(prev => {
-        let updated = [...prev];
+        let updated = fromOtherStore ? [] : [...prev];
 
         if (promoQty > 0) {
           const existingPromo = updated.find(item => item.id === promoItemId);
@@ -262,7 +306,8 @@ export const useTotem = (companyId: string) => {
         return updated;
       });
 
-      return { message: message || undefined, usedRegularPrice: regularQty > 0 || undefined };
+      const addMessage = fromOtherStore ? "Itens de outra loja removidos do carrinho." : (message || undefined);
+      return { message: addMessage, usedRegularPrice: regularQty > 0 || undefined, clearedFromOtherStore: fromOtherStore || undefined };
     } catch (error) {
       logger.error("useTotem", "Erro ao adicionar ao carrinho", error);
       return { message: "Erro ao adicionar ao carrinho." };
@@ -273,7 +318,10 @@ export const useTotem = (companyId: string) => {
     setCart(prev => prev.filter(item => item.id !== itemId));
   };
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    setCart([]);
+    savePersistedCart(companyId, []);
+  };
 
   const updateQuantity = (itemId: string, delta: number) => {
     setCart(prev => prev.map(item => {
@@ -378,8 +426,11 @@ export const useTotem = (companyId: string) => {
       const deliveryFee = identification.deliveryFee || 0;
       const total = itemsTotal + deliveryFee;
 
+      const stored = getPersistedStoreInfo();
+      const orderCompanyId = (stored && stored.companyId) || companyId;
+
       const orderData = {
-        companyId: companyId,
+        companyId: orderCompanyId,
         customerName: user?.name || "Cliente",
         userName: user?.name || "Cliente",
         customerId: user?.uid || null,
@@ -417,7 +468,6 @@ export const useTotem = (companyId: string) => {
         logger.error("useTotem", "Erro ao atualizar unidades vendidas", err);
       }
 
-      clearCart();
       return { orderId: docRef.id };
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);

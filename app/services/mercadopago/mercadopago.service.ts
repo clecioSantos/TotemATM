@@ -175,6 +175,97 @@ export class MercadoPagoService {
     }
   }
 
+  static async createCardPayment(
+    params: {
+      orderId: string;
+      amount: number;
+      token: string;
+      paymentMethodId: string;
+      issuerId?: string;
+      installments: number;
+      payerEmail?: string;
+      description?: string;
+      accessToken?: string;
+      applicationFee?: number;
+    }
+  ): Promise<{ id: number; status: string; status_detail: string }> {
+    const { orderId, amount, token, paymentMethodId, issuerId, installments, payerEmail, description, accessToken, applicationFee } = params;
+
+    const body: Record<string, unknown> = {
+      transaction_amount: amount,
+      token,
+      description: description || `Pedido ${orderId}`,
+      installments,
+      payment_method_id: paymentMethodId,
+      payer: {
+        email: payerEmail || "cliente@exemplo.com",
+      },
+      external_reference: orderId,
+    };
+
+    if (issuerId) {
+      body.issuer_id = issuerId;
+    }
+
+    if (applicationFee !== undefined && applicationFee > 0) {
+      body.application_fee = applicationFee;
+    }
+
+    const url = `${this.getBaseUrl()}/payments`;
+    const apiToken = (accessToken || process.env.MERCADOPAGO_ACCESS_TOKEN)?.trim() || "";
+
+    logger.info("MERCADOPAGO", "Card Payment Request", {
+      url,
+      orderId,
+      amount,
+      installments,
+      paymentMethodId,
+      hasApplicationFee: applicationFee !== undefined && applicationFee > 0,
+      applicationFee,
+    });
+
+    try {
+      const response = await fetchJson<{ id: number; status: string; status_detail: string }>(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-Idempotency-Key": orderId,
+        },
+        body: JSON.stringify(body),
+        timeout: MERCADOPAGO_TIMEOUT_MS,
+        context: "MERCADOPAGO_CREATE_CARD_PAYMENT",
+      });
+
+      logger.info("MP_CARD_PAYMENT_CREATED", "Pagamento por cartão criado", {
+        orderId,
+        paymentId: response.id,
+        status: response.status,
+        statusDetail: response.status_detail,
+      });
+
+      return response;
+    } catch (error) {
+      const err = error as Error & { status?: number; responseData?: unknown };
+      logger.error("MP_CARD_PAYMENT_REJECTED", "Erro ao criar pagamento por cartão", error, {
+        orderId,
+        httpStatus: err.status,
+        responseData: err.responseData,
+      });
+
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const httpStatus = err.status || 500;
+      const apiMessage = err.responseData
+        ? `MercadoPago [${httpStatus}]: ${JSON.stringify(err.responseData)}`
+        : errorMessage;
+
+      const finalErr = new Error(apiMessage) as Error & { status: number };
+      finalErr.status = httpStatus;
+      throw finalErr;
+    }
+  }
+
   static async getPayment(paymentId: string, accessToken?: string): Promise<GetPaymentResponse> {
     const url = `${this.getBaseUrl()}/payments/${paymentId}`;
     const token = (accessToken || process.env.MERCADOPAGO_ACCESS_TOKEN)?.trim() || "";
