@@ -95,7 +95,7 @@ export class MercadoPagoService {
     };
 
     if (applicationFee !== undefined && applicationFee > 0) {
-      body.application_fee = toCents(applicationFee);
+      body.application_fee = applicationFee;
     }
 
     const idempotencyKey = orderId;
