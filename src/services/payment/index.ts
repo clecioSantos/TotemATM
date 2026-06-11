@@ -8,4 +8,4 @@ export type {
   PaymentStatusResponse,
   PaymentWebhookEvent,
 } from "./interfaces/payment.types";
-export { markOrderAsPaid } from "./services/order-payment.service";
+export { markOrderAsPaid, processApprovedPayment } from "./services/order-payment.service";

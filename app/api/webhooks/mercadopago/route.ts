@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { MercadoPagoProvider } from "@/app/services/mercadopago/mercadopago.provider";
-import { markOrderAsPaid } from "@/src/services/payment/services/order-payment.service";
+import { processApprovedPayment } from "@/src/services/payment/services/order-payment.service";
 import { logger } from "@/src/lib/logger";
 
 function parseSignatureHeader(signatureHeader: string): { ts: string; v1: string } | null {
@@ -169,10 +169,15 @@ export async function POST(req: NextRequest) {
     });
 
     if (event.status === "PAID") {
-      logger.info("MERCADOPAGO_WEBHOOK", "Iniciando markOrderAsPaid", {
+      logger.info("MERCADOPAGO_WEBHOOK", "Iniciando processApprovedPayment", {
         orderId: event.orderId,
+        paymentId: event.paymentId,
       });
-      await markOrderAsPaid(event.orderId);
+      await processApprovedPayment({
+        orderId: event.orderId,
+        paymentId: event.paymentId,
+        provider: "mercadopago",
+      });
       logger.info("MERCADOPAGO_WEBHOOK", `Pagamento aprovado para pedido ${event.orderId}`);
     } else {
       logger.info("MERCADOPAGO_WEBHOOK", `Evento nao-PAID: ${event.event} para pedido ${event.orderId}`);

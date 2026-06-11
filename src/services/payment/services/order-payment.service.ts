@@ -32,3 +32,39 @@ export async function markOrderAsPaid(orderId: string): Promise<boolean> {
     return false;
   }
 }
+
+export async function processApprovedPayment(params: {
+  orderId: string;
+  paymentId: string;
+  provider: string;
+  storeId?: string;
+}): Promise<boolean> {
+  const { orderId, paymentId, provider, storeId } = params;
+
+  logger.info("ORDER_PAYMENT", "processApprovedPayment: iniciando", {
+    orderId,
+    paymentId,
+    provider,
+    storeId,
+  });
+
+  const result = await markOrderAsPaid(orderId);
+
+  if (result) {
+    logger.info("ORDER_PAYMENT", "processApprovedPayment: sucesso", {
+      orderId,
+      paymentId,
+      provider,
+      storeId,
+    });
+  } else {
+    logger.warn("ORDER_PAYMENT", "processApprovedPayment: falha ao marcar como pago", {
+      orderId,
+      paymentId,
+      provider,
+      storeId,
+    });
+  }
+
+  return result;
+}

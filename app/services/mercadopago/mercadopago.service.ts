@@ -290,6 +290,26 @@ export class MercadoPagoService {
     return new Date(Date.now() + expiresIn * 1000);
   }
 
+  static async checkMercadoPagoPaymentStatus(
+    paymentId: string,
+    accessToken?: string
+  ): Promise<{
+    paymentId: string;
+    status: string;
+    statusDetail: string;
+    approved: boolean;
+    rawResponse: GetPaymentResponse;
+  }> {
+    const response = await this.getPayment(paymentId, accessToken);
+    return {
+      paymentId: String(response.id),
+      status: response.status,
+      statusDetail: response.status_detail || "",
+      approved: response.status === "approved",
+      rawResponse: response,
+    };
+  }
+
   static mapStatus(mpStatus: string): string {
     switch (mpStatus) {
       case "approved":

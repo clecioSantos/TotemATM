@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
 
     let mercadopagoAccessToken: string | undefined;
     let applicationFee: number | undefined;
+    let mercadopagoUserId: string | undefined;
 
     if (companyId) {
       try {
@@ -87,6 +88,7 @@ export async function POST(req: NextRequest) {
             }
 
             mercadopagoAccessToken = token;
+            mercadopagoUserId = companyData.mercadopago_user_id as string | undefined;
             applicationFee = companyData.platform_commission_percent
               ? (amount * companyData.platform_commission_percent) / 100
               : 0;
@@ -142,6 +144,48 @@ export async function POST(req: NextRequest) {
       hasQrCode: !!payment.qrCode,
       hasPixCode: !!payment.pixCode,
     });
+
+    try {
+      const db = getAdminDb();
+      const paymentUpdate: Record<string, unknown> = {
+        paymentId: payment.paymentId,
+        paymentProvider: payment.provider,
+        paymentStatus: payment.status,
+        updatedAt: new Date(),
+      };
+
+      if (companyId) {
+        paymentUpdate.storeId = companyId;
+      }
+
+      if (mercadopagoUserId) {
+        paymentUpdate.mercadopagoUserId = mercadopagoUserId;
+      }
+
+      await db.collection("orders").doc(cleanOrderId).update(paymentUpdate);
+
+      logger.info("API_PIX", `[${requestId}] Informações de pagamento salvas no pedido`, {
+        orderId: cleanOrderId,
+        paymentId: payment.paymentId,
+        provider: payment.provider,
+        companyId,
+      });
+    } catch (saveError) {
+      logger.warn("API_PIX", `[${requestId}] Erro ao salvar informações de pagamento no pedido`, saveError);
+    }
+
+    if (provider.name === "mercadopago" && !isSandbox) {
+      const { scheduleMercadoPagoFallbackChecks } = await import(
+        "@/app/services/mercadopago/mercadopago-fallback.service"
+      );
+      scheduleMercadoPagoFallbackChecks(
+        cleanOrderId,
+        payment.paymentId,
+        mercadopagoAccessToken,
+        companyId,
+        payment.expiresAt
+      );
+    }
 
     if (provider.name === "pagbank") {
       const envUrl = process.env.PAGBANK_API_URL;

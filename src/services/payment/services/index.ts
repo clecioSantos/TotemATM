@@ -1,1 +1,1 @@
-export { markOrderAsPaid } from "./order-payment.service";
+export { markOrderAsPaid, processApprovedPayment } from "./order-payment.service";
