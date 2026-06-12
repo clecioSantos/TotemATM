@@ -214,14 +214,26 @@ export class MercadoPagoService {
     const url = `${this.getBaseUrl()}/payments`;
     const apiToken = (accessToken || process.env.MERCADOPAGO_ACCESS_TOKEN)?.trim() || "";
 
+    const logSafeBody = JSON.parse(JSON.stringify(body));
+    if (logSafeBody.token) {
+      logSafeBody.token = maskToken(logSafeBody.token);
+    }
+    if (logSafeBody.payer?.email) {
+      logSafeBody.payer.email = logSafeBody.payer.email;
+    }
+    const apiTokenPreview = maskToken(apiToken);
+
     logger.info("MERCADOPAGO", "Card Payment Request", {
       url,
       orderId,
       amount,
       installments,
       paymentMethodId,
+      issuerId,
       hasApplicationFee: applicationFee !== undefined && applicationFee > 0,
       applicationFee,
+      apiTokenPreview,
+      payload: logSafeBody,
     });
 
     try {
@@ -252,16 +264,23 @@ export class MercadoPagoService {
         orderId,
         httpStatus: err.status,
         responseData: err.responseData,
+        paymentMethodId,
+        issuerId,
+        amount,
+        installments,
       });
 
       const errorMessage = error instanceof Error ? error.message : String(error);
       const httpStatus = err.status || 500;
-      const apiMessage = err.responseData
-        ? `MercadoPago [${httpStatus}]: ${JSON.stringify(err.responseData)}`
-        : errorMessage;
 
-      const finalErr = new Error(apiMessage) as Error & { status: number };
+      let parsedResponse: any = err.responseData;
+      if (parsedResponse && typeof parsedResponse === "string") {
+        try { parsedResponse = JSON.parse(parsedResponse); } catch {}
+      }
+
+      const finalErr = new Error(errorMessage) as Error & { status: number; responseData?: any };
       finalErr.status = httpStatus;
+      finalErr.responseData = parsedResponse;
       throw finalErr;
     }
   }

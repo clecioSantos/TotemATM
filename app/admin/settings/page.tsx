@@ -328,16 +328,71 @@ function ConfigurationsContent() {
 
               <div className="company-form-section">
                 <h4 className="form-section-title">Logo e Banner</h4>
-                <div className="company-form-grid company-form-grid--images">
-                  {["logo", "banner"].map((field) => (
-                    <div key={field} className="form-group">
-                      <label className="form-label">{field.charAt(0).toUpperCase() + field.slice(1)}</label>
-                      {companyData[field] && (
-                        <img src={companyData[field]} alt={field} className="image-preview" />
-                      )}
-                      <input type="file" onChange={(e) => handleImageUpload(e, field)} className="form-input" />
+
+                <div className="store-preview">
+                  {/* Banner */}
+                  <div
+                    className="store-preview-banner"
+                    style={{
+                      backgroundImage: companyData.banner
+                        ? `url(${companyData.banner})`
+                        : undefined,
+                    }}
+                  >
+                    {!companyData.banner && (
+                      <div className="store-preview-banner-fallback" />
+                    )}
+                    <div className="store-preview-overlay" />
+
+                    {/* Logo */}
+                    {companyData.logo && (
+                      <div className="store-preview-logo-wrapper">
+                        <img
+                          src={companyData.logo}
+                          alt="Logo"
+                          className="store-preview-logo"
+                        />
+                      </div>
+                    )}
+
+                    {/* Store info */}
+                    <div className="store-preview-info">
+                      <h3 className="store-preview-name">
+                        {companyData.name || "Nome da Loja"}
+                      </h3>
+                      <div className="store-preview-meta">
+                        <span>★ --</span>
+                        <span>🕒 -- min</span>
+                        <span>🚚 Entrega rápida</span>
+                      </div>
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Upload buttons */}
+                  <div className="store-preview-uploads">
+                    <label className="store-preview-upload-btn">
+                      {companyData.logo && (
+                        <img src={companyData.logo} alt="" className="store-preview-upload-thumb" />
+                      )}
+                      <span>{companyData.logo ? "Alterar Logo" : "Adicionar Logo"}</span>
+                      <input
+                        type="file"
+                        onChange={(e) => handleImageUpload(e, "logo")}
+                        hidden
+                      />
+                    </label>
+                    <label className="store-preview-upload-btn">
+                      {companyData.banner && (
+                        <img src={companyData.banner} alt="" className="store-preview-upload-thumb" />
+                      )}
+                      <span>{companyData.banner ? "Alterar Banner" : "Adicionar Banner"}</span>
+                      <input
+                        type="file"
+                        onChange={(e) => handleImageUpload(e, "banner")}
+                        hidden
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
 

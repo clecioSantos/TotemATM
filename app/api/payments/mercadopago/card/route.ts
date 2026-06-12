@@ -6,6 +6,16 @@ import { logger } from "@/src/lib/logger";
 
 export const dynamic = "force-dynamic";
 
+const MP_ERROR_MESSAGES: Record<number, string> = {
+  2131: "Não foi possível identificar a bandeira do cartão. Verifique os dados e tente novamente.",
+};
+
+function getMpErrorMessage(error: any, defaultMsg: string): string {
+  if (error?.cause?.[0]?.description) return error.cause[0].description;
+  if (error?.code && MP_ERROR_MESSAGES[error.code]) return MP_ERROR_MESSAGES[error.code];
+  return defaultMsg;
+}
+
 export async function POST(req: NextRequest) {
   const requestId = Math.random().toString(36).substring(2, 10);
 
@@ -21,6 +31,21 @@ export async function POST(req: NextRequest) {
     const customerName = body.customerName as string | undefined;
     const description = body.description as string | undefined;
     const companyId = body.companyId as string | undefined;
+
+    logger.info("API_CARD", `[${requestId}] Payload recebido`, {
+      hasOrderId: !!orderId,
+      hasAmount: !!amount,
+      hasToken: !!token,
+      hasPaymentMethodId: !!paymentMethodId,
+      paymentMethodId,
+      hasIssuerId: !!issuerId,
+      issuerId,
+      installments,
+      hasCustomerEmail: !!customerEmail,
+      hasCustomerName: !!customerName,
+      hasCompanyId: !!companyId,
+      companyId,
+    });
 
     if (!orderId || !amount || !token || !paymentMethodId) {
       return NextResponse.json(
@@ -75,6 +100,7 @@ export async function POST(req: NextRequest) {
             logger.info("API_CARD", `[${requestId}] Usando token Mercado Pago da loja`, {
               companyId,
               applicationFee,
+              hasToken: !!mercadopagoAccessToken,
             });
           }
         }
@@ -82,6 +108,18 @@ export async function POST(req: NextRequest) {
         logger.warn("API_CARD", `[${requestId}] Erro ao buscar dados da loja`, companyError);
       }
     }
+
+    logger.info("API_CARD", `[${requestId}] Chamando MercadoPagoService.createCardPayment`, {
+      cleanOrderId,
+      amount,
+      paymentMethodId,
+      issuerId,
+      installments,
+      hasToken: !!token,
+      hasAccessToken: !!mercadopagoAccessToken,
+      hasApplicationFee: applicationFee !== undefined,
+      applicationFee,
+    });
 
     const payment = await MercadoPagoService.createCardPayment({
       orderId: cleanOrderId,
@@ -111,6 +149,8 @@ export async function POST(req: NextRequest) {
         paymentId: payment.id,
         storeId: companyId,
         amount,
+        paymentMethodId,
+        issuerId,
       });
 
       await processApprovedPayment({
@@ -153,17 +193,42 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     const httpStatus = error?.status || 500;
+    const responseData = error?.responseData;
 
     logger.error("API_CARD", `[${requestId}] Erro ao processar pagamento por cartão`, error, {
       errorMessage: error?.message || String(error),
+      httpStatus,
+      responseData,
     });
 
-    const userMessage = httpStatus === 401 || httpStatus === 403
-      ? "Erro de autenticação com o gateway de pagamento."
-      : error?.message || "Erro ao processar pagamento";
+    let userMessage: string;
+
+    if (httpStatus === 401 || httpStatus === 403) {
+      userMessage = "Erro de autenticação com o gateway de pagamento.";
+    } else if (responseData) {
+      let parsed: any;
+      try {
+        parsed = typeof responseData === "string" ? JSON.parse(responseData) : responseData;
+      } catch {
+        parsed = responseData;
+      }
+
+      const mpCode = parsed?.code || parsed?.cause?.[0]?.code;
+      if (mpCode && MP_ERROR_MESSAGES[mpCode]) {
+        userMessage = MP_ERROR_MESSAGES[mpCode];
+      } else {
+        userMessage = parsed?.cause?.[0]?.description || parsed?.message || error?.message || "Erro ao processar pagamento";
+      }
+    } else {
+      userMessage = error?.message || "Erro ao processar pagamento";
+    }
 
     return NextResponse.json(
-      { success: false, error: userMessage },
+      {
+        success: false,
+        error: userMessage,
+        ...(responseData ? { code: responseData?.code, cause: responseData?.cause } : {}),
+      },
       { status: httpStatus }
     );
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { doc, updateDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, orderBy } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
@@ -396,7 +396,7 @@ function TotemContent({ params }: PageProps) {
     }
   };
 
-  const handlePaymentConfirmed = () => {
+  const handlePaymentConfirmed = useCallback(() => {
     try {
       setStep('FINISHED');
       clearCart();
@@ -411,7 +411,7 @@ function TotemContent({ params }: PageProps) {
     } catch (error) {
       logger.error("TotemPage", "Erro ao confirmar pagamento", error);
     }
-  };
+  }, [clearCart, router]);
 
   const closeAllModals = () => {
     setIsProfileOpen(false);

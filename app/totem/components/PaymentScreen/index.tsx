@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
 import { Copy, CheckCircle, Loader2, CreditCard, X } from "lucide-react";
@@ -70,7 +70,7 @@ export default function PaymentScreen({ orderId, total, companyId: pageCompanyId
         )}
 
         {method === "credit_card" && (
-          <CardPaymentForm orderId={orderId} total={total} onPaymentConfirmed={onPaymentConfirmed} />
+          <CardPaymentForm orderId={orderId} total={total} companyId={companyId} onPaymentConfirmed={onPaymentConfirmed} />
         )}
 
         <button
@@ -96,6 +96,9 @@ function PixPaymentContent({ orderId, total, companyId, onPaymentConfirmed }: {
   const [error, setError] = useState("");
   const [isCopied, setIsCopied] = useState(false);
 
+  const onConfirmedRef = useRef(onPaymentConfirmed);
+  onConfirmedRef.current = onPaymentConfirmed;
+
   useEffect(() => {
     if (!orderId) return;
 
@@ -106,7 +109,7 @@ function PixPaymentContent({ orderId, total, companyId, onPaymentConfirmed }: {
           const data = snapshot.data();
           if (data?.paymentStatus === "PAID") {
             logger.info("PaymentScreen", `Pagamento PIX confirmado para pedido ${orderId}`);
-            onPaymentConfirmed();
+            onConfirmedRef.current();
           }
         } catch (error) {
           logger.error("PaymentScreen", "Erro ao processar snapshot do pedido", error);
@@ -119,7 +122,7 @@ function PixPaymentContent({ orderId, total, companyId, onPaymentConfirmed }: {
     );
 
     return () => unsubscribe();
-  }, [orderId, onPaymentConfirmed]);
+  }, [orderId]);
 
   useEffect(() => {
     const fetchPix = async () => {
@@ -146,7 +149,7 @@ function PixPaymentContent({ orderId, total, companyId, onPaymentConfirmed }: {
 
         if (data.sandbox) {
           logger.info("PaymentScreen", `Sandbox ativo — pedido ${orderId} pago automaticamente`);
-          onPaymentConfirmed();
+          onConfirmedRef.current();
           return;
         }
 
@@ -170,7 +173,7 @@ function PixPaymentContent({ orderId, total, companyId, onPaymentConfirmed }: {
     };
 
     fetchPix();
-  }, [orderId, total, companyId, onPaymentConfirmed]);
+  }, [orderId, total, companyId]);
 
   const copyToClipboard = () => {
     if (!pixData) return;
@@ -232,6 +235,13 @@ function PixPaymentContent({ orderId, total, companyId, onPaymentConfirmed }: {
   );
 }
 
+interface MercadoPagoCardToken {
+  id: string;
+  payment_method_id: string;
+  issuer_id: string;
+  cardholder: Record<string, unknown>;
+}
+
 declare global {
   interface Window {
     MercadoPago: new (publicKey: string) => {
@@ -241,14 +251,15 @@ declare global {
         cardExpirationMonth: string;
         cardExpirationYear: string;
         securityCode: string;
-      }) => Promise<{ id: string }>;
+      }) => Promise<MercadoPagoCardToken>;
     };
   }
 }
 
-function CardPaymentForm({ orderId, total, onPaymentConfirmed }: {
+function CardPaymentForm({ orderId, total, companyId, onPaymentConfirmed }: {
   orderId: string;
   total: number;
+  companyId: string;
   onPaymentConfirmed: () => void;
 }) {
   const [cardNumber, setCardNumber] = useState("");
@@ -258,6 +269,9 @@ function CardPaymentForm({ orderId, total, onPaymentConfirmed }: {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
   const [sdkLoaded, setSdkLoaded] = useState(false);
+
+  const onConfirmedRef = useRef(onPaymentConfirmed);
+  onConfirmedRef.current = onPaymentConfirmed;
 
   useEffect(() => {
     if (document.getElementById("mercadopago-sdk")) {
@@ -288,7 +302,7 @@ function CardPaymentForm({ orderId, total, onPaymentConfirmed }: {
           const data = snapshot.data();
           if (data?.paymentStatus === "PAID") {
             logger.info("PaymentScreen", `Pagamento cartão confirmado para pedido ${orderId}`);
-            onPaymentConfirmed();
+            onConfirmedRef.current();
           }
         } catch (error) {
           logger.error("PaymentScreen", "Erro ao processar snapshot do pedido", error);
@@ -301,7 +315,7 @@ function CardPaymentForm({ orderId, total, onPaymentConfirmed }: {
     );
 
     return () => unsubscribe();
-  }, [orderId, onPaymentConfirmed]);
+  }, [orderId]);
 
   const formatCardNumber = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 16);
@@ -347,9 +361,13 @@ function CardPaymentForm({ orderId, total, onPaymentConfirmed }: {
     setProcessing(true);
 
     try {
-      const mp = new window.MercadoPago(
-        process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY || ""
-      );
+      const publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY || "";
+      logger.info("CARD_FORM", "Iniciando tokenização", {
+        publicKeyPreview: publicKey.substring(0, 10) + "...",
+        cardBrand: digits.startsWith("5") ? "mastercard" : digits.startsWith("4") ? "visa" : "unknown",
+      });
+
+      const mp = new window.MercadoPago(publicKey);
 
       const cardToken = await mp.createCardToken({
         cardNumber: digits,
@@ -359,17 +377,33 @@ function CardPaymentForm({ orderId, total, onPaymentConfirmed }: {
         securityCode: cardCvv.replace(/\D/g, ""),
       });
 
+      const paymentMethodId = cardToken.payment_method_id;
+      const issuerId = cardToken.issuer_id;
+
+      logger.info("CARD_FORM", "Token gerado com sucesso", {
+        tokenPreview: (cardToken.id || "").substring(0, 6) + "...",
+        paymentMethodId,
+        issuerId,
+        installments: 1,
+        amount: total,
+        hasCompanyId: !!companyId,
+      });
+
+      const payload = {
+        orderId,
+        amount: total,
+        token: cardToken.id,
+        payment_method_id: paymentMethodId,
+        issuer_id: issuerId,
+        installments: 1,
+        customerName: "Cliente Totem",
+        companyId,
+      };
+
       const res = await fetch("/api/payments/mercadopago/card", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId,
-          amount: total,
-          token: cardToken.id,
-          payment_method_id: "visa",
-          installments: 1,
-          customerName: "Cliente Totem",
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -378,18 +412,33 @@ function CardPaymentForm({ orderId, total, onPaymentConfirmed }: {
         logger.info("MP_CARD_PAYMENT_APPROVED", "Pagamento por cartão aprovado no frontend", {
           orderId,
           paymentId: data.paymentId,
+          paymentMethodId,
+          issuerId,
         });
-        onPaymentConfirmed();
+        onConfirmedRef.current();
       } else {
-        setError(data.error || data.statusDetail || "Pagamento não aprovado");
+        const mpError = data.cause?.[0]?.description || data.statusDetail || data.error;
+        setError(mpError || "Pagamento não aprovado");
         setProcessing(false);
+
+        logger.warn("CARD_FORM", "Pagamento rejeitado", {
+          orderId,
+          paymentMethodId,
+          issuerId,
+          error: data.error,
+          statusDetail: data.statusDetail,
+          cause: data.cause,
+          code: data.code,
+        });
       }
     } catch (err: any) {
       const message = err?.message || "Erro ao processar pagamento";
       setError(message);
       setProcessing(false);
+
+      logger.error("CARD_FORM", "Erro ao processar pagamento", err);
     }
-  }, [sdkLoaded, cardNumber, cardholderName, cardExpiry, cardCvv, orderId, total, onPaymentConfirmed]);
+  }, [sdkLoaded, cardNumber, cardholderName, cardExpiry, cardCvv, orderId, total, companyId]);
 
   return (
     <div className="space-y-4">
