@@ -785,33 +785,35 @@ export default function OrderingScreen({
                     </div>
                   </div>
                 )}
-              </div>
-              <div className="shrink-0 pt-8 border-t border-gray-200/60">
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-brand-dark">Quantidade</span>
-                  {(() => {
-                    if (!selectedProduct) return null;
-                    const promo = getProductPromotion?.(selectedProduct.id);
-                    if (promo?.maxPerOrder != null) {
-                      return <span className="text-xs text-brand-muted">Máx. {promo.maxPerOrder} unidade(s) no valor promocional</span>;
-                    }
-                    return null;
-                  })()}
-                </div>
-                <div className="flex items-center justify-between mt-4 mb-6">
-                  <div className="flex items-center gap-4 border border-gray-200/60 rounded-2xl p-2">
+
+                {/* Quantidade */}
+                <div className="space-y-3 pt-4 border-t border-gray-200/60">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-lg text-brand-dark">Quantidade</h4>
+                    {(() => {
+                      if (!selectedProduct) return null;
+                      const promo = getProductPromotion?.(selectedProduct.id);
+                      if (promo?.maxPerOrder != null) {
+                        return <span className="text-xs text-brand-muted">Máx. {promo.maxPerOrder} unidade(s) no valor promocional</span>;
+                      }
+                      return null;
+                    })()}
+                  </div>
+                  <div className="flex items-center gap-3">
                     <button
-                      className="p-3 text-2xl font-bold text-brand-muted disabled:opacity-50"
+                      className="w-10 h-10 rounded-xl border border-gray-200/60 text-lg font-bold text-brand-muted disabled:opacity-50 flex items-center justify-center"
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
                       disabled={quantity <= 1}
                     >-</button>
-                    <span className="text-2xl font-bold w-12 text-center text-brand-dark">{quantity}</span>
+                    <span className="text-lg font-bold w-10 text-center text-brand-dark">{quantity}</span>
                     <button
-                      className="p-3 text-2xl font-bold text-brand-primary disabled:opacity-50"
+                      className="w-10 h-10 rounded-xl border border-gray-200/60 text-lg font-bold text-brand-primary flex items-center justify-center"
                       onClick={() => setQuantity(quantity + 1)}
                     >+</button>
                   </div>
                 </div>
+              </div>
+              <div className="shrink-0">
                 <button
                   className="w-full h-[64px] flex items-center justify-between px-8 bg-brand-primary hover:bg-brand-primaryHover text-white rounded-[16px] font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={productSizes.length > 0 && !selectedSize}

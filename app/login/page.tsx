@@ -59,6 +59,7 @@ function LoginForm() {
         const data = await res.json();
         const userRole = data.role || "client";
 
+        await userCredential.user.getIdToken(true);
         await userCredential.user.reload();
 
         if (!userCredential.user.emailVerified && userRole !== "admin" && userRole !== "owner") {

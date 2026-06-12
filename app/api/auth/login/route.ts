@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { getAdminAuth, getAdminDb } from "../../../../src/services/firebase-admin";
+import { getAdminAuth, getAdminDb, setUserClaims } from "../../../../src/services/firebase-admin";
 import { logger } from "@/src/lib/logger";
 
 export async function POST(request: Request) {
@@ -42,6 +42,8 @@ export async function POST(request: Request) {
     } catch (dbError) {
       logger.error("API_LOGIN", "Erro ao buscar role do usuário no Firestore", dbError, { uid });
     }
+
+    await setUserClaims(uid, role);
 
     const expiresIn = 60 * 60 * 24 * 5 * 1000;
     let sessionCookie;

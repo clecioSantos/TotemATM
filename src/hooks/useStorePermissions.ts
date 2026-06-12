@@ -37,7 +37,7 @@ export function useStorePermissions() {
 
         const currentUser = users.find((u: StoreUser) => u.uid === user.uid);
 
-        if (currentUser?.role === "admin" || user.uid === ownerId) {
+        if (user.role === "owner" || currentUser?.role === "admin" || user.uid === ownerId) {
           setPermissions(adminStorePermissions);
         } else if (currentUser?.role === "collaborator") {
           setPermissions(currentUser.permissions);

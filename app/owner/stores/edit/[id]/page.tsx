@@ -6,6 +6,8 @@ import { firestore } from "@/src/services/firebase";
 import { useRouter, useParams } from "next/navigation";
 import { StoreUser, adminStorePermissions, computeStoreIds } from "@totem/shared/types/auth";
 import { StoreUsersSection } from "@/src/components/StoreUsersSection";
+import { onAuthStateChanged, getIdTokenResult } from "firebase/auth";
+import { auth } from "@/src/services/firebase";
 
 export default function EditStorePage() {
   const router = useRouter();
@@ -168,8 +170,29 @@ export default function EditStorePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log("[DEBUG] handleSubmit - storeId:", storeId);
+
+      const tokenResult = await getIdTokenResult(auth.currentUser!);
+      console.log("[DEBUG] Auth token claims:", tokenResult.claims);
+      console.log("[DEBUG] Auth token role:", tokenResult.claims.role);
+      console.log("[DEBUG] Auth uid:", auth.currentUser?.uid);
+
+      const companyDoc = await getDoc(doc(firestore, "companies", storeId));
+      if (companyDoc.exists()) {
+        const data = companyDoc.data();
+        console.log("[DEBUG] Company ownerId:", data.ownerId);
+        console.log("[DEBUG] Company adminIds:", data.adminIds);
+        console.log("[DEBUG] Current user UID matches ownerId:", data.ownerId === auth.currentUser?.uid);
+      } else {
+        console.log("[DEBUG] Company document does NOT exist");
+      }
+
       const { userIds, adminIds } = computeStoreIds(users);
-      const updateData = { ...formData, users, userIds, adminIds };
+      const updateData: Record<string, unknown> = { ...formData, users, userIds, adminIds };
+      if (!updateData.ownerId) {
+        updateData.ownerId = auth.currentUser?.uid;
+      }
+      console.log("[DEBUG] adminIds being sent:", adminIds);
 
       const newCommission = formData.platform_commission_percent ?? 6.00;
       if (previousCommission !== null && newCommission !== previousCommission) {
@@ -183,30 +206,37 @@ export default function EditStorePage() {
           changedById: "system",
           timestamp: new Date(),
         });
+        console.log("[DEBUG] Commission audit log created");
         setPreviousCommission(newCommission);
       }
 
+      console.log("[DEBUG] Attempting updateDoc on companies/", storeId);
       await updateDoc(doc(firestore, "companies", storeId), updateData);
+      console.log("[DEBUG] updateDoc SUCCESS");
 
       for (const storeUser of users) {
         try {
           const userRef = doc(firestore, "users", storeUser.uid);
           const userSnap = await getDoc(userRef);
           if (userSnap.exists() && userSnap.data().companyId !== storeId) {
+            console.log("[DEBUG] Updating user profile:", storeUser.uid);
             await updateDoc(userRef, {
               companyId: storeId,
               role: storeUser.role === "admin" ? "admin" : "collaborator",
             });
+            console.log("[DEBUG] User profile updated:", storeUser.uid);
           }
         } catch (err) {
-          console.error(`Erro ao atualizar perfil do usuário ${storeUser.uid}:`, err);
+          console.error(`[DEBUG] Erro ao atualizar perfil do usuário ${storeUser.uid}:`, err);
         }
       }
 
       alert("Loja atualizada!");
       router.push("/owner/stores");
     } catch (error) {
-      console.error("Erro ao atualizar loja:", error);
+      console.error("[DEBUG] Erro ao atualizar loja:", error);
+      console.error("[DEBUG] Error code:", (error as any)?.code);
+      console.error("[DEBUG] Error message:", (error as any)?.message);
       alert("Erro ao atualizar loja.");
     }
   };
