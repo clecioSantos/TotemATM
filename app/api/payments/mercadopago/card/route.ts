@@ -47,9 +47,9 @@ export async function POST(req: NextRequest) {
       companyId,
     });
 
-    if (!orderId || !amount || !token || !paymentMethodId) {
+    if (!orderId || !amount || !token) {
       return NextResponse.json(
-        { success: false, error: "orderId, amount, token e payment_method_id são obrigatórios" },
+        { success: false, error: "orderId, amount e token são obrigatórios" },
         { status: 400 }
       );
     }

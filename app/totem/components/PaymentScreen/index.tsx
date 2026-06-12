@@ -237,8 +237,16 @@ function PixPaymentContent({ orderId, total, companyId, onPaymentConfirmed }: {
 
 interface MercadoPagoCardToken {
   id: string;
-  payment_method_id: string;
-  issuer_id: string;
+  first_six_digits: string;
+  payment_method?: {
+    id: string;
+    name: string;
+    type: string;
+  };
+  issuer?: {
+    id: string;
+    name: string;
+  };
   cardholder: Record<string, unknown>;
 }
 
@@ -377,28 +385,35 @@ function CardPaymentForm({ orderId, total, companyId, onPaymentConfirmed }: {
         securityCode: cardCvv.replace(/\D/g, ""),
       });
 
-      const paymentMethodId = cardToken.payment_method_id;
-      const issuerId = cardToken.issuer_id;
+      const paymentMethodId = cardToken.payment_method?.id;
+      const issuerId = cardToken.issuer?.id;
+      const firstSixDigits = cardToken.first_six_digits;
 
       logger.info("CARD_FORM", "Token gerado com sucesso", {
         tokenPreview: (cardToken.id || "").substring(0, 6) + "...",
         paymentMethodId,
         issuerId,
+        firstSixDigits,
         installments: 1,
         amount: total,
         hasCompanyId: !!companyId,
       });
 
-      const payload = {
+      const payload: Record<string, unknown> = {
         orderId,
         amount: total,
         token: cardToken.id,
-        payment_method_id: paymentMethodId,
-        issuer_id: issuerId,
         installments: 1,
         customerName: "Cliente Totem",
         companyId,
       };
+
+      if (paymentMethodId) {
+        payload.payment_method_id = paymentMethodId;
+      }
+      if (issuerId) {
+        payload.issuer_id = issuerId;
+      }
 
       const res = await fetch("/api/payments/mercadopago/card", {
         method: "POST",
