@@ -42,7 +42,6 @@ export interface Company {
   mercadopago_connected_at?: Date;
   platform_commission_percent?: number;
   enabled?: boolean;
-  whatsapp?: string;
   schedulingEnabled?: boolean;
   schedulingSlotMinutes?: number;
   schedulingMaxDays?: number;
