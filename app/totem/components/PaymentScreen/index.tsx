@@ -22,11 +22,13 @@ interface PaymentScreenProps {
   orderId: string;
   total: number;
   companyId: string;
+  customerName?: string;
+  customerEmail?: string;
   onPaymentConfirmed: () => void;
   onCancel: () => void;
 }
 
-export default function PaymentScreen({ orderId, total, companyId: pageCompanyId, onPaymentConfirmed, onCancel }: PaymentScreenProps) {
+export default function PaymentScreen({ orderId, total, companyId: pageCompanyId, customerName, customerEmail, onPaymentConfirmed, onCancel }: PaymentScreenProps) {
   const companyId = getPaymentCompanyId(pageCompanyId);
   const [method, setMethod] = useState<"pix" | "credit_card" | null>(null);
 
@@ -66,11 +68,11 @@ export default function PaymentScreen({ orderId, total, companyId: pageCompanyId
         </div>
 
         {method === "pix" && (
-          <PixPaymentContent orderId={orderId} total={total} companyId={companyId} onPaymentConfirmed={onPaymentConfirmed} />
+          <PixPaymentContent orderId={orderId} total={total} companyId={companyId} customerName={customerName} customerEmail={customerEmail} onPaymentConfirmed={onPaymentConfirmed} />
         )}
 
         {method === "credit_card" && (
-          <CardPaymentForm orderId={orderId} total={total} companyId={companyId} onPaymentConfirmed={onPaymentConfirmed} />
+          <CardPaymentForm orderId={orderId} total={total} companyId={companyId} customerName={customerName} customerEmail={customerEmail} onPaymentConfirmed={onPaymentConfirmed} />
         )}
 
         <button
@@ -85,10 +87,12 @@ export default function PaymentScreen({ orderId, total, companyId: pageCompanyId
   );
 }
 
-function PixPaymentContent({ orderId, total, companyId, onPaymentConfirmed }: {
+function PixPaymentContent({ orderId, total, companyId, customerName, customerEmail, onPaymentConfirmed }: {
   orderId: string;
   total: number;
   companyId: string;
+  customerName?: string;
+  customerEmail?: string;
   onPaymentConfirmed: () => void;
 }) {
   const [pixData, setPixData] = useState<{ qrCode: string; copyPaste: string } | null>(null);
@@ -135,7 +139,8 @@ function PixPaymentContent({ orderId, total, companyId, onPaymentConfirmed }: {
           body: JSON.stringify({
             orderId,
             amount: total,
-            customerName: "Cliente Totem",
+            customerName: customerName || "Cliente Totem",
+            customerEmail: customerEmail || undefined,
             companyId,
           }),
         });
@@ -249,10 +254,12 @@ declare global {
   }
 }
 
-function CardPaymentForm({ orderId, total, companyId, onPaymentConfirmed }: {
+function CardPaymentForm({ orderId, total, companyId, customerName, customerEmail, onPaymentConfirmed }: {
   orderId: string;
   total: number;
   companyId: string;
+  customerName?: string;
+  customerEmail?: string;
   onPaymentConfirmed: () => void;
 }) {
   const [cardNumber, setCardNumber] = useState("");
@@ -385,7 +392,8 @@ function CardPaymentForm({ orderId, total, companyId, onPaymentConfirmed }: {
         amount: total,
         token: cardToken.id,
         installments: 1,
-        customerName: "Cliente Totem",
+        customerName: customerName || "Cliente Totem",
+        customerEmail: customerEmail || undefined,
         companyId,
       };
 
@@ -425,7 +433,7 @@ function CardPaymentForm({ orderId, total, companyId, onPaymentConfirmed }: {
 
       logger.error("CARD_FORM", "Erro ao processar pagamento", err);
     }
-  }, [sdkLoaded, cardNumber, cardholderName, cardExpiry, cardCvv, orderId, total, companyId]);
+  }, [sdkLoaded, cardNumber, cardholderName, cardExpiry, cardCvv, orderId, total, companyId, customerName, customerEmail]);
 
   return (
     <div className="space-y-4">

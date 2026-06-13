@@ -180,28 +180,37 @@ export class MercadoPagoService {
       orderId: string;
       amount: number;
       token: string;
-      paymentMethodId: string;
+      paymentMethodId?: string;
       issuerId?: string;
       installments: number;
       payerEmail?: string;
+      payerName?: string;
       description?: string;
       accessToken?: string;
       applicationFee?: number;
     }
   ): Promise<{ id: number; status: string; status_detail: string }> {
-    const { orderId, amount, token, paymentMethodId, issuerId, installments, payerEmail, description, accessToken, applicationFee } = params;
+    const { orderId, amount, token, paymentMethodId, issuerId, installments, payerEmail, payerName, description, accessToken, applicationFee } = params;
+
+    const payer: Record<string, unknown> = {
+      email: payerEmail || "cliente@exemplo.com",
+    };
+    if (payerName) {
+      payer.name = payerName;
+    }
 
     const body: Record<string, unknown> = {
       transaction_amount: amount,
       token,
       description: description || `Pedido ${orderId}`,
       installments,
-      payment_method_id: paymentMethodId,
-      payer: {
-        email: payerEmail || "cliente@exemplo.com",
-      },
+      payer,
       external_reference: orderId,
     };
+
+    if (paymentMethodId) {
+      body.payment_method_id = paymentMethodId;
+    }
 
     if (issuerId) {
       body.issuer_id = issuerId;

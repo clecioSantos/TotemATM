@@ -551,6 +551,8 @@ function TotemContent({ params }: PageProps) {
             orderId={currentOrderId}
             total={orderTotal}
             companyId={companyId}
+            customerName={user?.name}
+            customerEmail={user?.email}
             onPaymentConfirmed={handlePaymentConfirmed}
             onCancel={() => setStep('ORDERING')}
           />

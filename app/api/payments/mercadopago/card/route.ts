@@ -129,6 +129,7 @@ export async function POST(req: NextRequest) {
       issuerId,
       installments,
       payerEmail: customerEmail,
+      payerName: customerName,
       description,
       accessToken: mercadopagoAccessToken,
       applicationFee,
