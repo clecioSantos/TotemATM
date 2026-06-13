@@ -235,21 +235,6 @@ function PixPaymentContent({ orderId, total, companyId, onPaymentConfirmed }: {
   );
 }
 
-interface MercadoPagoCardToken {
-  id: string;
-  first_six_digits: string;
-  payment_method?: {
-    id: string;
-    name: string;
-    type: string;
-  };
-  issuer?: {
-    id: string;
-    name: string;
-  };
-  cardholder: Record<string, unknown>;
-}
-
 declare global {
   interface Window {
     MercadoPago: new (publicKey: string) => {
@@ -259,7 +244,7 @@ declare global {
         cardExpirationMonth: string;
         cardExpirationYear: string;
         securityCode: string;
-      }) => Promise<MercadoPagoCardToken>;
+      }) => Promise<{ id: string; first_six_digits?: string }>;
     };
   }
 }
@@ -385,14 +370,10 @@ function CardPaymentForm({ orderId, total, companyId, onPaymentConfirmed }: {
         securityCode: cardCvv.replace(/\D/g, ""),
       });
 
-      const paymentMethodId = cardToken.payment_method?.id;
-      const issuerId = cardToken.issuer?.id;
       const firstSixDigits = cardToken.first_six_digits;
 
       logger.info("CARD_FORM", "Token gerado com sucesso", {
         tokenPreview: (cardToken.id || "").substring(0, 6) + "...",
-        paymentMethodId,
-        issuerId,
         firstSixDigits,
         installments: 1,
         amount: total,
@@ -408,13 +389,6 @@ function CardPaymentForm({ orderId, total, companyId, onPaymentConfirmed }: {
         companyId,
       };
 
-      if (paymentMethodId) {
-        payload.payment_method_id = paymentMethodId;
-      }
-      if (issuerId) {
-        payload.issuer_id = issuerId;
-      }
-
       const res = await fetch("/api/payments/mercadopago/card", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -427,8 +401,7 @@ function CardPaymentForm({ orderId, total, companyId, onPaymentConfirmed }: {
         logger.info("MP_CARD_PAYMENT_APPROVED", "Pagamento por cartão aprovado no frontend", {
           orderId,
           paymentId: data.paymentId,
-          paymentMethodId,
-          issuerId,
+          firstSixDigits,
         });
         onConfirmedRef.current();
       } else {
@@ -438,8 +411,7 @@ function CardPaymentForm({ orderId, total, companyId, onPaymentConfirmed }: {
 
         logger.warn("CARD_FORM", "Pagamento rejeitado", {
           orderId,
-          paymentMethodId,
-          issuerId,
+          firstSixDigits,
           error: data.error,
           statusDetail: data.statusDetail,
           cause: data.cause,
