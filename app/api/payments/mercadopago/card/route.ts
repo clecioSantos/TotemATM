@@ -24,15 +24,14 @@ export async function POST(req: NextRequest) {
     const orderId = body.orderId as string | undefined;
     const amount = body.amount as number | undefined;
     const token = body.token as string | undefined;
-    const paymentMethodId = body.payment_method_id as string | undefined;
-    const issuerId = body.issuer_id as string | undefined;
+    const paymentMethodId = body.paymentMethodId as string | undefined;
+    const issuerId = body.issuerId as string | undefined;
     const installments = (body.installments as number) || 1;
     const customerEmail = body.customerEmail as string | undefined;
-    const customerName = body.customerName as string | undefined;
     const description = body.description as string | undefined;
     const companyId = body.companyId as string | undefined;
 
-    logger.info("API_CARD", `[${requestId}] Payload recebido`, {
+    logger.info("API_CARD", `[${requestId}] Payload recebido do frontend`, {
       hasOrderId: !!orderId,
       hasAmount: !!amount,
       hasToken: !!token,
@@ -42,14 +41,20 @@ export async function POST(req: NextRequest) {
       issuerId,
       installments,
       hasCustomerEmail: !!customerEmail,
-      hasCustomerName: !!customerName,
+      customerEmail,
       hasCompanyId: !!companyId,
       companyId,
     });
 
-    if (!orderId || !amount || !token) {
+    if (!orderId || !amount || !token || !paymentMethodId || !customerEmail) {
+      const missing: string[] = [];
+      if (!orderId) missing.push("orderId");
+      if (!amount) missing.push("amount");
+      if (!token) missing.push("token");
+      if (!paymentMethodId) missing.push("paymentMethodId");
+      if (!customerEmail) missing.push("customerEmail");
       return NextResponse.json(
-        { success: false, error: "orderId, amount e token são obrigatórios" },
+        { success: false, error: `Campos obrigatórios ausentes: ${missing.join(", ")}` },
         { status: 400 }
       );
     }
@@ -97,11 +102,13 @@ export async function POST(req: NextRequest) {
               );
             }
 
-            logger.info("API_CARD", `[${requestId}] Usando token Mercado Pago da loja`, {
+            logger.info("API_CARD", `[${requestId}] Usando token Mercado Pago da loja (OAuth)`, {
               companyId,
               applicationFee,
-              hasToken: !!mercadopagoAccessToken,
+              hasAccessToken: !!mercadopagoAccessToken,
             });
+          } else {
+            logger.info("API_CARD", `[${requestId}] Loja não conectada ao Mercado Pago, usando token da plataforma`);
           }
         }
       } catch (companyError) {
@@ -117,8 +124,9 @@ export async function POST(req: NextRequest) {
       installments,
       hasToken: !!token,
       hasAccessToken: !!mercadopagoAccessToken,
-      hasApplicationFee: applicationFee !== undefined,
+      hasApplicationFee: applicationFee !== undefined && applicationFee > 0,
       applicationFee,
+      hasCustomerEmail: !!customerEmail,
     });
 
     const payment = await MercadoPagoService.createCardPayment({
@@ -129,7 +137,6 @@ export async function POST(req: NextRequest) {
       issuerId,
       installments,
       payerEmail: customerEmail,
-      payerName: customerName,
       description,
       accessToken: mercadopagoAccessToken,
       applicationFee,

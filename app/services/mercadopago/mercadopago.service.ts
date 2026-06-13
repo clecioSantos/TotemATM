@@ -180,37 +180,28 @@ export class MercadoPagoService {
       orderId: string;
       amount: number;
       token: string;
-      paymentMethodId?: string;
+      paymentMethodId: string;
       issuerId?: string;
       installments: number;
-      payerEmail?: string;
-      payerName?: string;
+      payerEmail: string;
       description?: string;
       accessToken?: string;
       applicationFee?: number;
     }
   ): Promise<{ id: number; status: string; status_detail: string }> {
-    const { orderId, amount, token, paymentMethodId, issuerId, installments, payerEmail, payerName, description, accessToken, applicationFee } = params;
-
-    const payer: Record<string, unknown> = {
-      email: payerEmail || "cliente@exemplo.com",
-    };
-    if (payerName) {
-      payer.name = payerName;
-    }
+    const { orderId, amount, token, paymentMethodId, issuerId, installments, payerEmail, description, accessToken, applicationFee } = params;
 
     const body: Record<string, unknown> = {
       transaction_amount: amount,
       token,
+      payment_method_id: paymentMethodId,
       description: description || `Pedido ${orderId}`,
       installments,
-      payer,
+      payer: {
+        email: payerEmail,
+      },
       external_reference: orderId,
     };
-
-    if (paymentMethodId) {
-      body.payment_method_id = paymentMethodId;
-    }
 
     if (issuerId) {
       body.issuer_id = issuerId;
@@ -227,21 +218,19 @@ export class MercadoPagoService {
     if (logSafeBody.token) {
       logSafeBody.token = maskToken(logSafeBody.token);
     }
-    if (logSafeBody.payer?.email) {
-      logSafeBody.payer.email = logSafeBody.payer.email;
-    }
     const apiTokenPreview = maskToken(apiToken);
 
-    logger.info("MERCADOPAGO", "Card Payment Request", {
+    logger.info("MERCADOPAGO", "Card Payment Request — enviando para /v1/payments", {
       url,
       orderId,
       amount,
-      installments,
       paymentMethodId,
       issuerId,
+      installments,
       hasApplicationFee: applicationFee !== undefined && applicationFee > 0,
       applicationFee,
       apiTokenPreview,
+      hasAccessToken: !!accessToken,
       payload: logSafeBody,
     });
 

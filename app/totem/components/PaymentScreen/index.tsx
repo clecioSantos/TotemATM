@@ -240,6 +240,21 @@ function PixPaymentContent({ orderId, total, companyId, customerName, customerEm
   );
 }
 
+interface MercadoPagoCardToken {
+  id: string;
+  first_six_digits: string;
+  payment_method: {
+    id: string;
+    name: string;
+    type: string;
+  };
+  issuer: {
+    id: string;
+    name: string;
+  };
+  cardholder: Record<string, unknown>;
+}
+
 declare global {
   interface Window {
     MercadoPago: new (publicKey: string) => {
@@ -249,7 +264,7 @@ declare global {
         cardExpirationMonth: string;
         cardExpirationYear: string;
         securityCode: string;
-      }) => Promise<{ id: string; first_six_digits?: string }>;
+      }) => Promise<MercadoPagoCardToken>;
     };
   }
 }
@@ -362,14 +377,9 @@ function CardPaymentForm({ orderId, total, companyId, customerName, customerEmai
 
     try {
       const publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY || "";
-      logger.info("CARD_FORM", "Iniciando tokenização", {
-        publicKeyPreview: publicKey.substring(0, 10) + "...",
-        cardBrand: digits.startsWith("5") ? "mastercard" : digits.startsWith("4") ? "visa" : "unknown",
-      });
-
       const mp = new window.MercadoPago(publicKey);
 
-      const cardToken = await mp.createCardToken({
+      const cardToken: MercadoPagoCardToken = await mp.createCardToken({
         cardNumber: digits,
         cardholderName: cardholderName.trim().toUpperCase(),
         cardExpirationMonth: expiryDigits.slice(0, 2),
@@ -377,18 +387,20 @@ function CardPaymentForm({ orderId, total, companyId, customerName, customerEmai
         securityCode: cardCvv.replace(/\D/g, ""),
       });
 
+      const paymentMethodId = cardToken.payment_method?.id;
+      const issuerId = cardToken.issuer?.id;
       const firstSixDigits = cardToken.first_six_digits;
 
-      const resolvedName = customerName || auth.currentUser?.displayName || "Cliente Totem";
       const resolvedEmail = customerEmail || auth.currentUser?.email || undefined;
 
       logger.info("CARD_FORM", "Token gerado com sucesso", {
         tokenPreview: (cardToken.id || "").substring(0, 6) + "...",
         firstSixDigits,
+        paymentMethodId,
+        issuerId,
         installments: 1,
         amount: total,
-        hasCompanyId: !!companyId,
-        resolvedName,
+        hasToken: true,
         hasResolvedEmail: !!resolvedEmail,
       });
 
@@ -396,8 +408,9 @@ function CardPaymentForm({ orderId, total, companyId, customerName, customerEmai
         orderId,
         amount: total,
         token: cardToken.id,
+        paymentMethodId,
+        issuerId,
         installments: 1,
-        customerName: resolvedName,
         customerEmail: resolvedEmail,
         companyId,
       };
@@ -438,7 +451,7 @@ function CardPaymentForm({ orderId, total, companyId, customerName, customerEmai
 
       logger.error("CARD_FORM", "Erro ao processar pagamento", err);
     }
-  }, [sdkLoaded, cardNumber, cardholderName, cardExpiry, cardCvv, orderId, total, companyId, customerName, customerEmail]);
+  }, [sdkLoaded, cardNumber, cardholderName, cardExpiry, cardCvv, orderId, total, companyId, customerEmail]);
 
   return (
     <div className="space-y-4">
