@@ -46,12 +46,11 @@ export async function POST(req: NextRequest) {
       companyId,
     });
 
-    if (!orderId || !amount || !token || !paymentMethodId || !customerEmail) {
+    if (!orderId || !amount || !token || !customerEmail) {
       const missing: string[] = [];
       if (!orderId) missing.push("orderId");
       if (!amount) missing.push("amount");
       if (!token) missing.push("token");
-      if (!paymentMethodId) missing.push("paymentMethodId");
       if (!customerEmail) missing.push("customerEmail");
       return NextResponse.json(
         { success: false, error: `Campos obrigatórios ausentes: ${missing.join(", ")}` },

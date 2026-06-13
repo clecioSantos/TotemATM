@@ -180,7 +180,7 @@ export class MercadoPagoService {
       orderId: string;
       amount: number;
       token: string;
-      paymentMethodId: string;
+      paymentMethodId?: string;
       issuerId?: string;
       installments: number;
       payerEmail: string;
@@ -194,7 +194,6 @@ export class MercadoPagoService {
     const body: Record<string, unknown> = {
       transaction_amount: amount,
       token,
-      payment_method_id: paymentMethodId,
       description: description || `Pedido ${orderId}`,
       installments,
       payer: {
@@ -202,6 +201,10 @@ export class MercadoPagoService {
       },
       external_reference: orderId,
     };
+
+    if (paymentMethodId) {
+      body.payment_method_id = paymentMethodId;
+    }
 
     if (issuerId) {
       body.issuer_id = issuerId;
@@ -248,11 +251,16 @@ export class MercadoPagoService {
         context: "MERCADOPAGO_CREATE_CARD_PAYMENT",
       });
 
-      logger.info("MP_CARD_PAYMENT_CREATED", "Pagamento por cartão criado", {
+      logger.info("MP_CARD_PAYMENT_CREATED", "Resposta do Mercado Pago", {
         orderId,
         paymentId: response.id,
         status: response.status,
         statusDetail: response.status_detail,
+        transactionAmount: body.transaction_amount,
+        paymentMethodId: body.payment_method_id,
+        hasIssuerId: !!body.issuer_id,
+        issuerId: body.issuer_id,
+        installments: body.installments,
       });
 
       return response;

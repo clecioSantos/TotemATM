@@ -242,17 +242,10 @@ function PixPaymentContent({ orderId, total, companyId, customerName, customerEm
 
 interface MercadoPagoCardToken {
   id: string;
-  first_six_digits: string;
-  payment_method: {
-    id: string;
-    name: string;
-    type: string;
-  };
-  issuer: {
-    id: string;
-    name: string;
-  };
-  cardholder: Record<string, unknown>;
+  first_six_digits?: string;
+  payment_method?: { id: string; name?: string; type?: string };
+  issuer?: { id: string; name?: string };
+  [key: string]: unknown;
 }
 
 declare global {
@@ -387,9 +380,10 @@ function CardPaymentForm({ orderId, total, companyId, customerName, customerEmai
         securityCode: cardCvv.replace(/\D/g, ""),
       });
 
-      const paymentMethodId = cardToken.payment_method?.id;
-      const issuerId = cardToken.issuer?.id;
-      const firstSixDigits = cardToken.first_six_digits;
+      const tokenKeys = Object.keys(cardToken);
+      const paymentMethodId = (cardToken as any).payment_method?.id || (cardToken as any).payment_method_id;
+      const issuerId = (cardToken as any).issuer?.id || (cardToken as any).issuer_id;
+      const firstSixDigits = cardToken.first_six_digits || (cardToken as any).first_six_digits;
 
       const resolvedEmail = customerEmail || auth.currentUser?.email || undefined;
 
@@ -398,6 +392,7 @@ function CardPaymentForm({ orderId, total, companyId, customerName, customerEmai
         firstSixDigits,
         paymentMethodId,
         issuerId,
+        tokenKeys,
         installments: 1,
         amount: total,
         hasToken: true,
@@ -408,12 +403,26 @@ function CardPaymentForm({ orderId, total, companyId, customerName, customerEmai
         orderId,
         amount: total,
         token: cardToken.id,
-        paymentMethodId,
         issuerId,
         installments: 1,
         customerEmail: resolvedEmail,
         companyId,
       };
+
+      if (paymentMethodId) {
+        payload.paymentMethodId = paymentMethodId;
+      }
+
+      logger.info("CARD_FORM", "Enviando payload para API", {
+        hasPaymentMethodId: !!payload.paymentMethodId,
+        paymentMethodId: payload.paymentMethodId,
+        hasIssuerId: !!issuerId,
+        issuerId,
+        installments: 1,
+        amount: total,
+        hasToken: true,
+        hasCustomerEmail: !!resolvedEmail,
+      });
 
       const res = await fetch("/api/payments/mercadopago/card", {
         method: "POST",
@@ -421,7 +430,24 @@ function CardPaymentForm({ orderId, total, companyId, customerName, customerEmai
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      let data: any;
+      const responseText = await res.text();
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        data = { error: responseText };
+      }
+
+      logger.info("CARD_FORM", "Resposta da API", {
+        httpStatus: res.status,
+        success: data?.success,
+        status: data?.status,
+        paymentId: data?.paymentId,
+        error: data?.error,
+        statusDetail: data?.statusDetail,
+        code: data?.code,
+        cause: data?.cause,
+      });
 
       if (data.success && data.status === "approved") {
         logger.info("MP_CARD_PAYMENT_APPROVED", "Pagamento por cartão aprovado no frontend", {
