@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { doc, onSnapshot, updateDoc } from "firebase/firestore";
-import { firestore } from "@/src/services/firebase";
+import { firestore, auth } from "@/src/services/firebase";
 import { Copy, CheckCircle, Loader2, CreditCard, X } from "lucide-react";
 import { logger } from "@/src/lib/logger";
 import "./styles.css";
@@ -379,12 +379,17 @@ function CardPaymentForm({ orderId, total, companyId, customerName, customerEmai
 
       const firstSixDigits = cardToken.first_six_digits;
 
+      const resolvedName = customerName || auth.currentUser?.displayName || "Cliente Totem";
+      const resolvedEmail = customerEmail || auth.currentUser?.email || undefined;
+
       logger.info("CARD_FORM", "Token gerado com sucesso", {
         tokenPreview: (cardToken.id || "").substring(0, 6) + "...",
         firstSixDigits,
         installments: 1,
         amount: total,
         hasCompanyId: !!companyId,
+        resolvedName,
+        hasResolvedEmail: !!resolvedEmail,
       });
 
       const payload: Record<string, unknown> = {
@@ -392,8 +397,8 @@ function CardPaymentForm({ orderId, total, companyId, customerName, customerEmai
         amount: total,
         token: cardToken.id,
         installments: 1,
-        customerName: customerName || "Cliente Totem",
-        customerEmail: customerEmail || undefined,
+        customerName: resolvedName,
+        customerEmail: resolvedEmail,
         companyId,
       };
 
