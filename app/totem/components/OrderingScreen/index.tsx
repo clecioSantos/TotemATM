@@ -303,7 +303,7 @@ export default function OrderingScreen({
           </div>
 
           {/* Categories - sticky, follows banner */}
-          <div className="sticky top-0 z-20 bg-white border-b border-gray-200/60 p-4 flex gap-2 overflow-x-auto no-scrollbar">
+          <div className="sticky top-0 z-20 bg-white border-b border-gray-200/60 p-4 lg:px-6 lg:py-4 flex gap-2 overflow-x-auto no-scrollbar justify-center lg:justify-start">
             <button
               onClick={() => setActiveCategory("featured")}
               className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold transition-colors ${
@@ -340,7 +340,7 @@ export default function OrderingScreen({
           </div>
 
           {/* Products list */}
-          <div className="p-4 space-y-4">
+          <div className="p-4 max-w-4xl mx-auto space-y-4 lg:p-6 lg:space-y-5">
             {filteredProducts.map(product => {
               const promo = getProductPromotion?.(product.id);
               const displayPrice = getPrice(product);
@@ -349,10 +349,10 @@ export default function OrderingScreen({
               return (
                 <div
                   key={product.id}
-                  className="bg-white rounded-[16px] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-gray-200/60 p-3 flex flex-row items-center cursor-pointer transition-all duration-200 hover:translate-y-[-2px] hover:shadow-md"
+                  className="bg-white rounded-[16px] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-gray-200/60 p-3 lg:p-5 flex flex-row items-center cursor-pointer transition-all duration-200 hover:translate-y-[-2px] hover:shadow-md"
                   onClick={() => setSelectedProduct(product)}
                 >
-                  <div className="relative w-[30%] aspect-[4/3] shrink-0 rounded-xl overflow-hidden">
+                  <div className="relative w-[30%] lg:w-[25%] aspect-[4/3] shrink-0 rounded-xl overflow-hidden">
                     <img
                       src={product.imageUrl || "https://placehold.co/400x400?text=Sem+Imagem"}
                       alt={product.name}
@@ -401,8 +401,9 @@ export default function OrderingScreen({
         </main>
 
         {cart.length > 0 && (
-          <div className="fixed bottom-6 left-6 right-6 z-40">
+          <div className="lg:hidden fixed bottom-6 left-6 right-6 z-40">
             <button
+              type="button"
               className="w-full h-[60px] bg-brand-primary text-white rounded-[18px] shadow-[0_15px_40px_rgba(220,38,38,0.3)] flex items-center justify-between px-6 font-bold text-lg"
               onClick={() => setIsMobileCartOpen(true)}
             >
@@ -416,7 +417,7 @@ export default function OrderingScreen({
       </div>
 
       {/* Desktop Cart Sidebar */}
-      <aside className="hidden lg:flex flex-col w-96 bg-brand-surface border-l border-brand-border/40 p-6 shrink-0 h-full overflow-hidden shadow-sm">
+      <aside className="hidden lg:flex flex-col w-[28rem] bg-brand-surface border-l border-brand-border/40 p-6 shrink-0 h-full overflow-hidden shadow-sm">
         <div className="flex items-center gap-2 border-b border-brand-border/40 pb-4 shrink-0">
           <ShoppingBag className="h-5 w-5 text-brand-primary" />
           <h2 className="text-lg font-bold text-brand-dark">Seu Pedido</h2>
@@ -636,8 +637,8 @@ export default function OrderingScreen({
 
       {/* Product Detail Modal */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white">
-          <div className="relative w-full h-full flex flex-col md:flex-row overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="relative w-full h-full md:w-auto md:h-auto md:max-w-5xl md:max-h-[90vh] flex flex-col md:flex-row overflow-hidden bg-white md:rounded-2xl md:shadow-2xl">
             <button
               className="absolute top-6 left-6 z-20 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
               onClick={() => {

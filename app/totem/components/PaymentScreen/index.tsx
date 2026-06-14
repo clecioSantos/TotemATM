@@ -33,8 +33,8 @@ export default function PaymentScreen({ orderId, total, companyId: pageCompanyId
   const [method, setMethod] = useState<"pix" | "credit_card" | null>(null);
 
   return (
-    <div className="min-h-screen w-screen bg-brand-light flex items-center justify-center p-4">
-      <div className="bg-brand-surface w-full max-w-md rounded-[24px] border border-brand-border p-8 shadow-[0_4px_24px_rgba(0,0,0,0.05)]">
+    <div className="min-h-screen w-screen bg-gradient-to-b from-brand-light to-gray-100 flex items-center justify-center p-4 lg:p-8">
+      <div className="bg-brand-surface w-full max-w-lg rounded-[24px] border border-brand-border p-8 lg:p-10 shadow-[0_8px_32px_rgba(0,0,0,0.08)]">
 
         <div className="mb-6 text-center">
           <h2 className="text-2xl font-bold text-brand-dark">Finalizar Pedido</h2>

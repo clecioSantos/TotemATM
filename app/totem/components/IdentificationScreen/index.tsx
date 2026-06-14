@@ -237,10 +237,10 @@ export default function IdentificationScreen({
   };
 
   return (
-    <div className="min-h-screen w-screen bg-brand-light flex items-center justify-center p-4 md:p-6 text-brand-dark select-none">
+    <div className="min-h-screen w-screen bg-gradient-to-b from-brand-light to-gray-100 flex items-center justify-center p-4 lg:p-8 text-brand-dark select-none">
       
       {/* Central Card */}
-      <div className="bg-brand-surface w-full max-w-md rounded-[24px] border border-brand-border p-6 md:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.05)] flex flex-col">
+      <div className="bg-brand-surface w-full max-w-lg rounded-[24px] border border-brand-border p-6 lg:p-10 shadow-[0_8px_32px_rgba(0,0,0,0.08)] flex flex-col">
         
         {/* Header */}
         <div className="text-center mb-6">

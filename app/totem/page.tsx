@@ -516,6 +516,7 @@ export default function StoreListingPage() {
 
       <div className="p-4">
         {/* Event Blocks */}
+        <div className="lg:flex lg:flex-wrap">
         {!promosLoading && events.map((ev) => {
           const storeIds = getStoresForEvent(ev.id);
           const eventStores = stores.filter((s) => {
@@ -528,7 +529,7 @@ export default function StoreListingPage() {
           const containerRefId = `event-container-${ev.id}`;
 
           return (
-            <div key={ev.id} className="mb-6" style={{ padding: "0 2% 2% 2%" }}>
+            <div key={ev.id} className="mb-6 lg:w-1/2 lg:inline-block lg:align-top lg:px-2 w-full" style={{ padding: "0 2% 2% 2%" }}>
               <div className="w-full rounded-[16px] overflow-hidden shadow-sm bg-white">
                 {/* Title */}
                 <div className="px-4 pt-4 pb-2">
@@ -589,6 +590,7 @@ export default function StoreListingPage() {
             </div>
           );
         })}
+        </div>
 
         {/* Categories */}
         <div className="flex gap-4 overflow-x-auto pb-4 mb-2 scrollbar-hide">

@@ -113,8 +113,8 @@ export default function OrderSummaryScreen({
   const itemCount = cart.reduce((s, i) => s + i.quantity, 0);
 
   return (
-    <div className="min-h-screen w-screen bg-brand-light flex items-center justify-center p-4">
-      <div className="bg-brand-surface w-full max-w-md rounded-[24px] border border-brand-border shadow-[0_4px_24px_rgba(0,0,0,0.05)] overflow-hidden">
+    <div className="min-h-screen w-screen bg-gradient-to-b from-brand-light to-gray-100 flex items-center justify-center p-4 lg:p-8">
+      <div className="bg-brand-surface w-full max-w-lg rounded-[24px] border border-brand-border shadow-[0_8px_32px_rgba(0,0,0,0.08)] overflow-hidden">
         <div className="p-6 border-b border-brand-border flex items-center gap-3">
           <button onClick={onBack} className="p-1 hover:bg-brand-light rounded-lg transition-colors">
             <ArrowLeft size={20} className="text-brand-muted" />
