@@ -458,7 +458,13 @@ function TotemContent({ params }: PageProps) {
       updateItemObservation,
       clearCart,
     },
-    onFinish: () => setStep('IDENTIFICATION'),
+    onFinish: () => {
+      if (!user) {
+        router.push(`/login?redirect=/totem/${companyId}`);
+        return;
+      }
+      setStep('IDENTIFICATION');
+    },
     onCancel: () => router.push('/totem'),
     unreadCount,
     onOpenNotifications: () => { closeAllModals(); setIsNotificationsOpen(true); },

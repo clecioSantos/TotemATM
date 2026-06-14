@@ -215,11 +215,24 @@ export default function IdentificationScreen({
     if (isSubmitting) return;
     setIsSubmitting(true);
 
-    if (!user) {
-      onConfirm(deliveryPrice, deliveryMode);
-      return;
+    if (user && saveForFuture && selectedAddressId === "new" && addressStreet && addressNumber) {
+      try {
+        const neighborhoodObj = availableNeighborhoods.find(n => n.name === addressNeighborhood);
+        await addDoc(collection(firestore, "addresses"), {
+          userId: user.uid,
+          street: addressStreet,
+          number: addressNumber,
+          neighborhood: addressNeighborhood,
+          cityId: addressCity,
+          complement: addressComplement || "",
+          enabled: true,
+          createdAt: serverTimestamp(),
+        });
+      } catch (err) {
+        console.error("Erro ao salvar endereço:", err);
+      }
     }
-    // ... salvar endereço futuro ...
+
     onConfirm(deliveryPrice, deliveryMode);
   };
 
@@ -366,6 +379,18 @@ export default function IdentificationScreen({
                   />
                 </div>
               </div>
+
+              {user && (
+                <label className="flex items-center gap-2 cursor-pointer mt-1">
+                  <input
+                    type="checkbox"
+                    checked={saveForFuture}
+                    onChange={(e) => setSaveForFuture(e.target.checked)}
+                    className="w-4 h-4 rounded border-brand-border accent-brand-primary"
+                  />
+                  <span className="text-xs font-medium text-brand-muted">Salvar endereço para próximos pedidos</span>
+                </label>
+              )}
             </>
           ) : (
             <div className="p-4 rounded-[12px] border border-brand-primary bg-brand-light flex items-center gap-3">
