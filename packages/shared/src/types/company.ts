@@ -46,4 +46,5 @@ export interface Company {
   schedulingSlotMinutes?: number;
   schedulingMaxDays?: number;
   blockedSchedulingDates?: string[];
+  couponsEnabled?: boolean;
 }

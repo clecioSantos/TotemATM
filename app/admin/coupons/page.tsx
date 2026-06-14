@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { doc, getDoc } from "firebase/firestore";
+import { firestore } from "@/src/services/firebase";
 import { useAuth } from "@/app/admin/orders/AuthContext";
 import { Tag, Plus, Loader2, CheckCircle, XCircle, Trash2, Search } from "lucide-react";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
@@ -28,11 +31,26 @@ interface CouponData {
 
 function CouponsContent() {
   const { user } = useAuth();
+  const router = useRouter();
   const [coupons, setCoupons] = useState<CouponData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user?.companyId) return;
+    Promise.all([
+      getDoc(doc(firestore, "settings", "global")),
+      getDoc(doc(firestore, "companies", user.companyId)),
+    ]).then(([globalSnap, companySnap]) => {
+      const global = globalSnap.exists() ? globalSnap.data().couponsEnabled : undefined;
+      const store = companySnap.exists() ? companySnap.data().couponsEnabled : undefined;
+      if (global === false || store !== true) {
+        router.replace("/admin");
+      }
+    }).catch(() => {});
+  }, [user?.companyId, router]);
 
   const [form, setForm] = useState({
     code: "",

@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, doc, getDoc, setDoc } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { logger } from "@/src/lib/logger";
 import {
   Store, Calendar, Tag, TrendingUp, ShoppingBag,
-  Loader2, Store as StoreIcon
+  Loader2, Store as StoreIcon, Settings, Ticket
 } from "lucide-react";
 
 function OwnerDashboardContent() {
@@ -15,6 +15,14 @@ function OwnerDashboardContent() {
   const [events, setEvents] = useState<any[]>([]);
   const [promotions, setPromotions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [globalCouponsEnabled, setGlobalCouponsEnabled] = useState<boolean | null>(null);
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  useEffect(() => {
+    getDoc(doc(firestore, "settings", "global")).then((snap) => {
+      if (snap.exists()) setGlobalCouponsEnabled(snap.data().couponsEnabled === true);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const unsubCompanies = onSnapshot(collection(firestore, "companies"), (snap) => {
@@ -159,6 +167,46 @@ function OwnerDashboardContent() {
               <div className={`text-3xl font-extrabold ${card.text}`}>{card.value}</div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Configurações Globais */}
+      <div>
+        <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <Settings size={18} className="text-gray-600" /> Configurações Globais
+        </h2>
+        <div className="bg-white rounded-xl border border-gray-200 p-5 max-w-lg">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={globalCouponsEnabled === true}
+              onChange={async (e) => {
+                const newValue = e.target.checked;
+                setGlobalCouponsEnabled(newValue);
+                setSavingSettings(true);
+                try {
+                  await setDoc(doc(firestore, "settings", "global"), { couponsEnabled: newValue }, { merge: true });
+                } catch (err) {
+                  setGlobalCouponsEnabled(globalCouponsEnabled);
+                  logger.error("OWNER", "Erro ao salvar configuração global", err);
+                } finally {
+                  setSavingSettings(false);
+                }
+              }}
+              disabled={savingSettings}
+              className="w-5 h-5 rounded border-gray-300 accent-blue-600 mt-0.5"
+            />
+            <div>
+              <div className="flex items-center gap-2">
+                <Ticket size={16} className="text-gray-500" />
+                <span className="text-sm font-medium text-gray-700">Cupons de Desconto</span>
+                {savingSettings && <Loader2 size={14} className="animate-spin text-gray-400" />}
+              </div>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Quando desabilitado, desativa cupons em todas as lojas da plataforma.
+              </p>
+            </div>
+          </label>
         </div>
       </div>
     </div>

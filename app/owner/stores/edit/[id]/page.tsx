@@ -349,6 +349,21 @@ export default function EditStorePage() {
           </label>
         </div>
 
+        <div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.couponsEnabled === true}
+              onChange={(e) => setFormData({ ...formData, couponsEnabled: e.target.checked })}
+              className="w-5 h-5 rounded border-gray-300 accent-blue-600"
+            />
+            <div>
+              <span className="text-sm font-medium text-gray-700">Cupons de Desconto</span>
+              <p className="text-xs text-gray-500">Habilita a criação e uso de cupons promocionais na loja.</p>
+            </div>
+          </label>
+        </div>
+
         <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700">Áreas de Atuação <span className="text-red-500">*</span></label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">

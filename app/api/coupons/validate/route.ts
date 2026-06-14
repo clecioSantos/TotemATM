@@ -62,20 +62,17 @@ export async function POST(req: NextRequest) {
     }
 
     // 5. Limite total
-    const usageSnap = await db.collection("coupon_usage").where("couponId", "==", coupon.id).count().get();
-    const totalUsage = usageSnap.data()?.count || 0;
+    const usageSnap = await db.collection("coupon_usage").where("couponId", "==", coupon.id).get();
+    const totalUsage = usageSnap.size;
     if (coupon.usageLimit && totalUsage >= coupon.usageLimit) {
       return NextResponse.json({ valid: false, reason: "Limite de utilização atingido." });
     }
 
     // 6. Limite por cliente
     if (customerId && coupon.perCustomerLimit) {
-      const customerSnap = await db.collection("coupon_usage")
-        .where("couponId", "==", coupon.id)
-        .where("customerId", "==", customerId)
-        .count()
-        .get();
-      const customerUsage = customerSnap.data()?.count || 0;
+      let customerUsage = 0;
+      const customerDocs = usageSnap.docs.filter((d: any) => d.data().customerId === customerId);
+      customerUsage = customerDocs.length;
       if (customerUsage >= coupon.perCustomerLimit) {
         return NextResponse.json({ valid: false, reason: "Você já utilizou este cupom." });
       }
@@ -94,10 +91,11 @@ export async function POST(req: NextRequest) {
     if (coupon.firstPurchaseOnly && customerId) {
       const ordersSnap = await db.collection("orders")
         .where("customerId", "==", customerId)
-        .where("status", "in", ["finished", "paid", "preparing", "ready", "delivering"])
-        .limit(1)
         .get();
-      if (!ordersSnap.empty) {
+      const hasPaidOrder = ordersSnap.docs.some((d: any) =>
+        ["finished", "paid", "preparing", "ready", "delivering"].includes(d.data().status)
+      );
+      if (hasPaidOrder) {
         return NextResponse.json({ valid: false, reason: "Este cupom é válido apenas para a primeira compra." });
       }
     }

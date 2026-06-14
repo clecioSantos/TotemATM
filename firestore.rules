@@ -171,6 +171,38 @@ service cloud.firestore {
     }
 
     // =============================================
+    // CUPONS DE DESCONTO
+    // - Leitura: autenticados (para validação no checkout)
+    // - Escrita: owner/admin da loja
+    // =============================================
+
+    match /coupons/{couponId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && isStoreAdmin(request.resource.data.storeId);
+      allow update, delete: if isAuth()
+        && resource.data.storeId != null
+        && isStoreAdmin(resource.data.storeId);
+    }
+
+    // =============================================
+    // USO DE CUPONS (apenas server-side via Admin SDK)
+    // =============================================
+
+    match /coupon_usage/{usageId} {
+      allow read: if isAuth();
+      allow write: if false;
+    }
+
+    // =============================================
+    // CONFIGURAÇÕES GLOBAIS (apenas owner/admin)
+    // =============================================
+
+    match /settings/{settingId} {
+      allow read: if isAuth();
+      allow write: if isAuth() && (request.auth.token.role == "owner" || request.auth.token.role == "admin");
+    }
+
+    // =============================================
     // ESTADOS OAUTH MERCADO PAGO (server-side via Admin SDK)
     // =============================================
 

@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { ArrowRight, ArrowLeft, MapPin, Home, PlusCircle, Check, ShieldAlert, Ticket, X, Loader2 } from "lucide-react";
 import { useAuth } from "@totem/shared/types/AuthProvider";
 import { firestore } from "@/src/services/firebase";
-import { collection, addDoc, query, where, onSnapshot, serverTimestamp, updateDoc, doc, writeBatch, getDocs } from "firebase/firestore";
+import { collection, addDoc, query, where, onSnapshot, serverTimestamp, updateDoc, doc, writeBatch, getDocs, getDoc } from "firebase/firestore";
 import { useParams } from "next/navigation";
 import { logger } from "@/src/lib/logger";
 
@@ -215,6 +215,19 @@ export default function IdentificationScreen({
   // A cidade deve estar habilitada nas configurações da loja
   const isCityDeliveryEnabled = citySettings.find(s => s.cityId === addressCity)?.enabled === true;
   const [appliedCoupon, setAppliedCoupon] = useState<CouponApplied | null>(null);
+  const [couponsEnabled, setCouponsEnabled] = useState(false);
+
+  useEffect(() => {
+    if (!companyId) return;
+    Promise.all([
+      getDoc(doc(firestore, "settings", "global")),
+      getDoc(doc(firestore, "companies", companyId)),
+    ]).then(([globalSnap, companySnap]) => {
+      const global = globalSnap.exists() ? globalSnap.data().couponsEnabled : undefined;
+      const store = companySnap.exists() ? companySnap.data().couponsEnabled : undefined;
+      setCouponsEnabled(global !== false && store === true);
+    }).catch(() => {});
+  }, [companyId]);
 
   useEffect(() => {
     if (!user) return;
@@ -511,20 +524,22 @@ export default function IdentificationScreen({
         </div>
 
         {/* Cupom de desconto */}
-        <CouponInput
-          companyId={companyId}
-          customerId={user?.uid}
-          deliveryMode={deliveryMode}
-          cartTotal={cartTotal}
-          onCouponApplied={(c) => {
-            setAppliedCoupon(c);
-            if (onCouponChange) onCouponChange(c);
-          }}
-          onCouponRemoved={() => {
-            setAppliedCoupon(null);
-            if (onCouponChange) onCouponChange(null);
-          }}
-        />
+        {couponsEnabled && (
+          <CouponInput
+            companyId={companyId}
+            customerId={user?.uid}
+            deliveryMode={deliveryMode}
+            cartTotal={cartTotal}
+            onCouponApplied={(c) => {
+              setAppliedCoupon(c);
+              if (onCouponChange) onCouponChange(c);
+            }}
+            onCouponRemoved={() => {
+              setAppliedCoupon(null);
+              if (onCouponChange) onCouponChange(null);
+            }}
+          />
+        )}
 
         {/* Buttons */}
         <div className="flex flex-col gap-3">
