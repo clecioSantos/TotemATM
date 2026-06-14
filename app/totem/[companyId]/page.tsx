@@ -8,6 +8,7 @@ import { useTotem } from "@totem/hooks/useTotem";
 import { useAuth } from "@totem/shared/types/AuthProvider";
 import OrderingScreen from "../components/OrderingScreen";
 import IdentificationScreen from "../components/IdentificationScreen";
+import OrderSummaryScreen from "../components/OrderSummaryScreen";
 import FinishedScreen from "../components/FinishedScreen";
 import PaymentScreen from "../components/PaymentScreen";
 import NotificationsPanel from "../components/NotificationsPanel";
@@ -22,7 +23,7 @@ interface PageProps {
   params: { companyId: string };
 }
 
-type TotemStep = 'WELCOME' | 'ORDERING' | 'IDENTIFICATION' | 'PAYMENT' | 'FINISHED';
+type TotemStep = 'WELCOME' | 'ORDERING' | 'IDENTIFICATION' | 'REVIEW' | 'PAYMENT' | 'FINISHED';
 
 export default function TotemPage() {
   const params = useParams();
@@ -79,6 +80,8 @@ function TotemContent({ params }: PageProps) {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [toast, setToast] = useState<{ message: string; type?: "error" | "info" } | null>(null);
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [reviewDeliveryFee, setReviewDeliveryFee] = useState(0);
+  const [reviewDeliveryMode, setReviewDeliveryMode] = useState<string>("delivery");
 
   useEffect(() => {
     if (toast) {
@@ -323,11 +326,8 @@ function TotemContent({ params }: PageProps) {
       return;
     }
 
-    setIsProcessingPayment(true);
-
     if (hasRequiredScheduling && (!scheduledDate || !scheduledTime)) {
       setToast({ message: "Este pedido exige agendamento. Selecione data e horário.", type: "error" });
-      setIsProcessingPayment(false);
       return;
     }
 
@@ -338,19 +338,26 @@ function TotemContent({ params }: PageProps) {
           message: `Horário muito próximo. O agendamento precisa de pelo menos ${prepHours}h de antecedência.`,
           type: "error",
         });
-        setIsProcessingPayment(false);
         return;
       }
     }
 
+    setReviewDeliveryFee(deliveryFee);
+    setReviewDeliveryMode(deliveryMode || "delivery");
+    setStep('REVIEW');
+  };
+
+  const handleProceedToPayment = async () => {
+    setIsProcessingPayment(true);
+
     try {
-      let total = cartTotal + deliveryFee;
+      let total = cartTotal + reviewDeliveryFee;
       if (appliedCoupon) {
         total = Math.max(0, total - appliedCoupon.discountValue);
       }
       setOrderTotal(total);
 
-      const isPickup = deliveryMode === "pickup";
+      const isPickup = reviewDeliveryMode === "pickup";
 
       const orderData: any = {
         address: isPickup ? null : {
@@ -359,8 +366,8 @@ function TotemContent({ params }: PageProps) {
           neighborhood: deliveryNeighborhood,
           complement: deliveryComplement,
         },
-        deliveryFee: isPickup ? 0 : deliveryFee,
-        deliveryMode: deliveryMode || "delivery",
+        deliveryFee: isPickup ? 0 : reviewDeliveryFee,
+        deliveryMode: reviewDeliveryMode || "delivery",
         paymentStatus: 'WAITING_PAYMENT',
       };
 
@@ -474,6 +481,24 @@ function TotemContent({ params }: PageProps) {
     switch (step) {
       case 'ORDERING':
         return <OrderingScreen {...orderingScreenProps} />;
+      case 'REVIEW':
+        return (
+          <OrderSummaryScreen
+            companyId={companyId}
+            companyName={companyName}
+            cart={cart}
+            cartTotal={cartTotal}
+            deliveryFee={reviewDeliveryFee}
+            deliveryMode={reviewDeliveryMode}
+            deliveryStreet={deliveryStreet}
+            deliveryNumber={deliveryNumber}
+            deliveryNeighborhood={deliveryNeighborhood}
+            deliveryComplement={deliveryComplement}
+            onCouponChange={(c) => setAppliedCoupon(c)}
+            onConfirm={handleProceedToPayment}
+            onBack={() => setStep('IDENTIFICATION')}
+          />
+        );
       case 'IDENTIFICATION':
         return (
           <div>
@@ -553,8 +578,6 @@ function TotemContent({ params }: PageProps) {
               onConfirm={handleFinish}
               onBack={() => setStep('ORDERING')}
               companyId={companyId}
-              cartTotal={cartTotal}
-              onCouponChange={(c) => setAppliedCoupon(c)}
             />
           </div>
         );

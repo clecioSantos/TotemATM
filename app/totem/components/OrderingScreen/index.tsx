@@ -485,6 +485,14 @@ export default function OrderingScreen({
                       ) * item.quantity).toFixed(2)}
                     </span>
                   </div>
+                  <input
+                    type="text"
+                    placeholder="Observação (ex: sem alface)"
+                    value={item.observation || ""}
+                    onChange={(e) => actions.updateItemObservation(item.id, e.target.value)}
+                    className="w-full mt-1.5 px-3 py-2 bg-brand-light border border-brand-border/40 rounded-[6px] text-xs font-medium text-brand-dark outline-none focus:border-brand-primary transition-colors placeholder:text-brand-muted/60"
+                    maxLength={100}
+                  />
                 </div>
               ))}
             </div>
@@ -591,6 +599,14 @@ export default function OrderingScreen({
                       ) * item.quantity).toFixed(2)}
                     </span>
                   </div>
+                  <input
+                    type="text"
+                    placeholder="Observação (ex: sem alface)"
+                    value={item.observation || ""}
+                    onChange={(e) => actions.updateItemObservation(item.id, e.target.value)}
+                    className="w-full px-3 py-2.5 bg-brand-surface border border-brand-border/40 rounded-[8px] text-xs font-medium text-brand-dark outline-none focus:border-brand-primary transition-colors placeholder:text-brand-muted/60"
+                    maxLength={100}
+                  />
                 </div>
               ))}
             </div>
