@@ -15,7 +15,7 @@ import NotificationsPanel from "../components/NotificationsPanel";
 import { useNotifications } from "../hooks/useNotifications";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { logger } from "@/src/lib/logger";
-import { X, MapPin, LogOut, ChevronRight, Plus, Trash2 } from "lucide-react";
+import { X, MapPin, LogOut, ChevronRight, Plus, Trash2, Mail, Send, MessageSquare, Loader2 } from "lucide-react";
 import Link from "next/link";
 import "@/page.css";
 
@@ -64,6 +64,11 @@ function TotemContent({ params }: PageProps) {
   const [isOrdersOpen, setIsOrdersOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAddressesOpen, setIsAddressesOpen] = useState(false);
+  const [isContactOpen, setIsContactOpen] = useState(false);
+  const [contactSubject, setContactSubject] = useState("");
+  const [contactMessage, setContactMessage] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [sendingContact, setSendingContact] = useState(false);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [userOrders, setUserOrders] = useState<any[]>([]);
   const [addresses, setAddresses] = useState<any[]>([]);
@@ -665,6 +670,9 @@ function TotemContent({ params }: PageProps) {
                       Acessar Painel Owner
                     </Link>
                   ) : null}
+                  <button onClick={() => { setIsProfileOpen(false); setIsContactOpen(true); }} className="w-full flex items-center gap-3 p-3 bg-[#FAFAFA] rounded-lg font-bold text-sm">
+                    <Mail size={18} /> Entrar em Contato
+                  </button>
                   <button onClick={() => signOut()} className="flex items-center gap-2 text-red-500 font-bold w-full">
                     <LogOut size={18} /> Sair
                   </button>
@@ -779,6 +787,94 @@ function TotemContent({ params }: PageProps) {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Modal */}
+      {isContactOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setIsContactOpen(false); setContactSubject(""); setContactMessage(""); setContactPhone(""); }}>
+          <div className="bg-white w-full max-w-[430px] rounded-t-[24px] p-6 shadow-2xl animate-slide-up" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-bold text-lg">Fale Conosco</h3>
+              <button onClick={() => { setIsContactOpen(false); setContactSubject(""); setContactMessage(""); setContactPhone(""); }}>
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-bold text-brand-muted uppercase tracking-widest block mb-1">Assunto</label>
+                <select
+                  value={contactSubject}
+                  onChange={e => setContactSubject(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-brand-border bg-brand-light text-sm font-medium outline-none focus:border-brand-primary transition-colors"
+                >
+                  <option value="">Selecione...</option>
+                  <option value="question">Pergunta</option>
+                  <option value="add-company">Quero adicionar minha empresa no Bora</option>
+                  <option value="complaint">Reclamação</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-brand-muted uppercase tracking-widest block mb-1">Telefone para contato</label>
+                <input
+                  type="tel"
+                  value={contactPhone}
+                  onChange={e => setContactPhone(e.target.value)}
+                  placeholder="(11) 99999-9999"
+                  className="w-full px-4 py-3 rounded-xl border border-brand-border bg-brand-light text-sm font-medium outline-none focus:border-brand-primary transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-brand-muted uppercase tracking-widest block mb-1">Mensagem</label>
+                <textarea
+                  value={contactMessage}
+                  onChange={e => setContactMessage(e.target.value)}
+                  placeholder="Digite sua mensagem..."
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-xl border border-brand-border bg-brand-light text-sm font-medium outline-none focus:border-brand-primary transition-colors resize-none"
+                />
+              </div>
+
+              <button
+                onClick={async () => {
+                  if (!contactSubject || !contactMessage.trim()) return;
+                  setSendingContact(true);
+                  try {
+                    await addDoc(collection(firestore, "contacts"), {
+                      subject: contactSubject,
+                      message: contactMessage.trim(),
+                      phone: contactPhone.trim() || null,
+                      userId: user?.uid || null,
+                      userEmail: user?.email || null,
+                      userName: user?.name || null,
+                      companyId: companyId || null,
+                      createdAt: serverTimestamp(),
+                    });
+                    setToast({ message: "Mensagem enviada com sucesso! Entraremos em contato em breve.", type: "info" });
+                  } catch {
+                    setToast({ message: "Erro ao enviar mensagem. Tente novamente.", type: "error" });
+                  } finally {
+                    setSendingContact(false);
+                    setIsContactOpen(false);
+                    setContactSubject("");
+                    setContactMessage("");
+                    setContactPhone("");
+                  }
+                }}
+                disabled={!contactSubject || !contactMessage.trim() || sendingContact}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-brand-primary text-white font-bold rounded-xl transition-all disabled:opacity-50"
+              >
+                {sendingContact ? (
+                  <><Loader2 size={18} className="animate-spin" /> Enviando...</>
+                ) : (
+                  <><Send size={18} /> Enviar Mensagem</>
+                )}
+              </button>
             </div>
           </div>
         </div>

@@ -194,6 +194,20 @@ service cloud.firestore {
     }
 
     // =============================================
+    // CONTATOS / MENSAGENS
+    // - Leitura: autenticados
+    // - Criação: qualquer um (inclusive não autenticados para o formulário público)
+    // - Update/Delete: owner/admin
+    // =============================================
+
+    match /contacts/{contactId} {
+      allow read: if isAuth();
+      allow create: if true;
+      allow update: if isAuth() && (request.auth.token.role == "owner" || request.auth.token.role == "admin");
+      allow delete: if isAuth() && (request.auth.token.role == "owner" || request.auth.token.role == "admin");
+    }
+
+    // =============================================
     // CONFIGURAÇÕES GLOBAIS (apenas owner/admin)
     // =============================================
 

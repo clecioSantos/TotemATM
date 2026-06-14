@@ -1,4 +1,4 @@
-export type NotificationType = "order_review" | "review_reply";
+export type NotificationType = "order_review" | "review_reply" | "contact_reply";
 
 export interface AppNotification {
   id: string;
@@ -7,6 +7,7 @@ export interface AppNotification {
   title: string;
   message: string;
   relatedOrderId: string;
+  relatedContactId?: string;
   isRead: boolean;
   isResolved: boolean;
   createdAt: Date | { seconds: number; nanoseconds: number };

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { logger } from "@/src/lib/logger";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
-import { Eye, EyeOff, Loader2, CheckCircle, ArrowRight, Mail, RefreshCw } from "lucide-react";
+import { Eye, EyeOff, Loader2, CheckCircle, ArrowRight, Mail, RefreshCw, X, Send } from "lucide-react";
 
 const benefits = [
   "Gestão de pedidos em tempo real",
@@ -28,6 +28,12 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [touched, setTouched] = useState({ email: false, password: false });
+  const [isContactOpen, setIsContactOpen] = useState(false);
+  const [contactSubject, setContactSubject] = useState("");
+  const [contactMessage, setContactMessage] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [sendingContact, setSendingContact] = useState(false);
+  const [contactToast, setContactToast] = useState<{ message: string; type?: "error" | "info" } | null>(null);
 
   const emailRef = useRef<HTMLInputElement>(null);
 
@@ -246,11 +252,125 @@ function LoginForm() {
             </Link>
           </p>
 
-          <p className="text-center text-xs text-[#999] mt-6 lg:hidden">
+          <div className="text-center mt-6">
+            <button
+              onClick={() => setIsContactOpen(true)}
+              className="text-sm text-[#FF6B00] font-semibold hover:underline inline-flex items-center gap-1.5"
+            >
+              <Mail size={14} /> Fale Conosco
+            </button>
+          </div>
+
+          <p className="text-center text-xs text-[#999] mt-4 lg:hidden">
             © 2026 Bora De Delivery
           </p>
         </div>
       </div>
+
+      {/* Contact Modal */}
+      {isContactOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setIsContactOpen(false); setContactSubject(""); setContactMessage(""); setContactPhone(""); }}>
+          <div className="bg-white w-full max-w-md rounded-t-[24px] p-6 shadow-2xl animate-slide-up" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-bold text-lg">Fale Conosco</h3>
+              <button onClick={() => { setIsContactOpen(false); setContactSubject(""); setContactMessage(""); setContactPhone(""); }}>
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-[#666] uppercase tracking-widest block mb-1">Assunto</label>
+                <select
+                  value={contactSubject}
+                  onChange={e => setContactSubject(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-[#EAEAEA] bg-[#FAFAFA] text-sm font-medium outline-none focus:border-[#FF6B00] transition-colors"
+                >
+                  <option value="">Selecione...</option>
+                  <option value="question">Pergunta</option>
+                  <option value="add-company">Quero adicionar minha empresa no Bora</option>
+                  <option value="complaint">Reclamação</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#666] uppercase tracking-widest block mb-1">Telefone para contato</label>
+                <input
+                  type="tel"
+                  value={contactPhone}
+                  onChange={e => setContactPhone(e.target.value)}
+                  placeholder="(11) 99999-9999"
+                  className="w-full px-4 py-3 rounded-xl border border-[#EAEAEA] bg-[#FAFAFA] text-sm font-medium outline-none focus:border-[#FF6B00] transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#666] uppercase tracking-widest block mb-1">Mensagem</label>
+                <textarea
+                  value={contactMessage}
+                  onChange={e => setContactMessage(e.target.value)}
+                  placeholder="Digite sua mensagem..."
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-xl border border-[#EAEAEA] bg-[#FAFAFA] text-sm font-medium outline-none focus:border-[#FF6B00] transition-colors resize-none"
+                />
+              </div>
+
+              <button
+                onClick={async () => {
+                  if (!contactSubject || !contactMessage.trim()) return;
+                  setSendingContact(true);
+                  try {
+                    const { addDoc, collection, serverTimestamp } = await import("firebase/firestore");
+                    const { firestore } = await import("../../src/services/firebase");
+                    await addDoc(collection(firestore, "contacts"), {
+                      subject: contactSubject,
+                      message: contactMessage.trim(),
+                      phone: contactPhone.trim() || null,
+                      userId: null,
+                      userEmail: null,
+                      userName: null,
+                      companyId: null,
+                      createdAt: serverTimestamp(),
+                    });
+                    setContactToast({ message: "Mensagem enviada com sucesso! Entraremos em contato em breve.", type: "info" });
+                  } catch {
+                    setContactToast({ message: "Erro ao enviar mensagem. Tente novamente.", type: "error" });
+                  } finally {
+                    setSendingContact(false);
+                    setIsContactOpen(false);
+                    setContactSubject("");
+                    setContactMessage("");
+                    setContactPhone("");
+                  }
+                }}
+                disabled={!contactSubject || !contactMessage.trim() || sendingContact}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-[#FF6B00] text-white font-bold rounded-xl transition-all disabled:opacity-50"
+              >
+                {sendingContact ? (
+                  <><Loader2 size={18} className="animate-spin" /> Enviando...</>
+                ) : (
+                  <><Send size={18} /> Enviar Mensagem</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {contactToast && (
+        <div className="fixed bottom-6 left-4 right-4 z-[60] max-w-md mx-auto animate-slide-up p-4 rounded-xl text-sm font-bold shadow-lg"
+          style={{
+            background: contactToast.type === "error" ? "#fef2f2" : "#f0fdf4",
+            color: contactToast.type === "error" ? "#991b1b" : "#166534",
+            border: `1px solid ${contactToast.type === "error" ? "#fecaca" : "#bbf7d0"}`,
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <span>{contactToast.message}</span>
+            <button onClick={() => setContactToast(null)} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer" }}>✕</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

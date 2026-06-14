@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  collection, query, where, getDocs, doc, updateDoc,
+  collection, query, where, onSnapshot, doc, updateDoc,
   Timestamp
 } from 'firebase/firestore';
 import { firestore } from '@/src/services/firebase';
@@ -12,18 +12,19 @@ export function useNotifications(userId?: string) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchNotifications = useCallback(async () => {
+  useEffect(() => {
     if (!userId) {
       setNotifications([]);
       setLoading(false);
       return;
     }
-    try {
-      const q = query(
-        collection(firestore, 'notifications'),
-        where('userId', '==', userId)
-      );
-      const snap = await getDocs(q);
+
+    const q = query(
+      collection(firestore, 'notifications'),
+      where('userId', '==', userId)
+    );
+
+    const unsubscribe = onSnapshot(q, (snap) => {
       const items = snap.docs.map(d => {
         const data = d.data();
         return {
@@ -40,22 +41,20 @@ export function useNotifications(userId?: string) {
         return bTime - aTime;
       });
       setNotifications(items);
-    } catch (e) {
+      setLoading(false);
+    }, (e) => {
       console.error('Erro ao buscar notificações', e);
-    }
-    setLoading(false);
-  }, [userId]);
+      setLoading(false);
+    });
 
-  useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
+    return () => unsubscribe();
+  }, [userId]);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
       await updateDoc(doc(firestore, 'notifications', notificationId), { isRead: true });
-      setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n));
     } catch (e) {
       console.error('Erro ao marcar notificação como lida', e);
     }
@@ -64,11 +63,10 @@ export function useNotifications(userId?: string) {
   const markAsResolved = useCallback(async (notificationId: string) => {
     try {
       await updateDoc(doc(firestore, 'notifications', notificationId), { isResolved: true, isRead: true });
-      setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, isResolved: true, isRead: true } : n));
     } catch (e) {
       console.error('Erro ao marcar notificação como resolvida', e);
     }
   }, []);
 
-  return { notifications, loading, unreadCount, markAsRead, markAsResolved, refetch: fetchNotifications };
+  return { notifications, loading, unreadCount, markAsRead, markAsResolved, refetch: () => {} };
 }

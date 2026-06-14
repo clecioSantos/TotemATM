@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Bell, Star, ChevronRight } from "lucide-react";
+import { doc, getDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { firestore } from "@/src/services/firebase";
+import { X, Bell, Star, ChevronRight, Send, Loader2 } from "lucide-react";
 import { AppNotification } from "@totem/shared/types";
 import { useNotifications } from "../hooks/useNotifications";
 import { useReviewByOrderId } from "../hooks/useReviews";
 import ReviewModal from "./ReviewModal";
+import { logger } from "@/src/lib/logger";
 
 interface Props {
   userId?: string;
@@ -16,7 +19,11 @@ interface Props {
 export default function NotificationsPanel({ userId, isOpen, onClose }: Props) {
   const { notifications, loading, unreadCount, markAsRead, markAsResolved, refetch } = useNotifications(userId);
   const [reviewingOrderId, setReviewingOrderId] = useState<string | null>(null);
+  const [viewingContactId, setViewingContactId] = useState<string | null>(null);
+  const [contactData, setContactData] = useState<any>(null);
   const [localNotifications, setLocalNotifications] = useState<AppNotification[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [sendingNew, setSendingNew] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -30,6 +37,13 @@ export default function NotificationsPanel({ userId, isOpen, onClose }: Props) {
     }
   }, [notifications, isOpen]);
 
+  useEffect(() => {
+    if (!viewingContactId) { setContactData(null); return; }
+    getDoc(doc(firestore, "contacts", viewingContactId)).then(snap => {
+      if (snap.exists()) setContactData({ id: snap.id, ...snap.data() });
+    });
+  }, [viewingContactId]);
+
   if (!isOpen) return null;
 
   const handleNotificationClick = async (n: AppNotification) => {
@@ -37,7 +51,86 @@ export default function NotificationsPanel({ userId, isOpen, onClose }: Props) {
     if (n.type === 'order_review' || n.type === 'review_reply') {
       setReviewingOrderId(n.relatedOrderId);
     }
+    if (n.type === 'contact_reply' && n.relatedContactId) {
+      setViewingContactId(n.relatedContactId);
+    }
   };
+
+  const subjectLabels: Record<string, string> = {
+    question: "Pergunta",
+    "add-company": "Quero adicionar minha empresa no Bora",
+    complaint: "Reclamação",
+  };
+
+  if (viewingContactId && contactData) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setViewingContactId(null); }}>
+        <div className="bg-white w-full max-w-[430px] rounded-t-[24px] p-6 shadow-2xl animate-slide-up" onClick={e => e.stopPropagation()} style={{ maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-lg">Resposta do Contato</h3>
+            <button onClick={() => setViewingContactId(null)}><X className="h-5 w-5" /></button>
+          </div>
+          <div className="flex-1 overflow-y-auto space-y-4">
+            <div className="bg-gray-50 rounded-xl p-4">
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Sua mensagem</p>
+              <p className="text-xs text-gray-400 mb-1">{subjectLabels[contactData.subject] || contactData.subject}</p>
+              <p className="text-sm text-gray-700">{contactData.message}</p>
+            </div>
+            {contactData.reply && (
+              <div className="bg-green-50 border-l-4 border-green-400 rounded-xl p-4">
+                <p className="text-[10px] font-bold text-green-700 uppercase tracking-widest mb-1">Resposta</p>
+                <p className="text-sm text-gray-700">{contactData.reply}</p>
+                {contactData.repliedAt?.toDate?.() && (
+                  <p className="text-[10px] text-gray-400 mt-1">{contactData.repliedAt.toDate().toLocaleString()}</p>
+                )}
+              </div>
+            )}
+            <div className="border-t border-gray-200 pt-4">
+              <p className="text-xs font-bold text-gray-500 mb-2">Enviar nova mensagem</p>
+              <textarea
+                value={newMessage}
+                onChange={e => setNewMessage(e.target.value)}
+                placeholder="Digite sua mensagem..."
+                rows={3}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-[#FF6B00] transition-colors resize-none"
+              />
+              <button
+                onClick={async () => {
+                  if (!newMessage.trim()) return;
+                  setSendingNew(true);
+                  try {
+                    const msgData: any = {
+                      subject: contactData.subject,
+                      message: newMessage.trim(),
+                      phone: contactData.phone || null,
+                      userId: userId || null,
+                      userEmail: contactData.userEmail || null,
+                      userName: contactData.userName || null,
+                      companyId: contactData.companyId || null,
+                      reply: null,
+                      repliedAt: null,
+                      createdAt: serverTimestamp(),
+                    };
+                    await addDoc(collection(firestore, "contacts"), msgData);
+                    setNewMessage("");
+                    setViewingContactId(null);
+                  } catch (err) {
+                    logger.error("NOTIFICATIONS", "Erro ao enviar nova mensagem", err);
+                  } finally {
+                    setSendingNew(false);
+                  }
+                }}
+                disabled={!newMessage.trim() || sendingNew}
+                className="mt-2 w-full flex items-center justify-center gap-2 py-3 bg-[#FF6B00] text-white font-bold rounded-xl transition-all disabled:opacity-50"
+              >
+                {sendingNew ? <><Loader2 size={18} className="animate-spin" /> Enviando...</> : <><Send size={18} /> Enviar</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

@@ -10,7 +10,8 @@ import {
   ChevronLeft, 
   Menu,
   ArrowLeft,
-  Calendar
+  Calendar,
+  MessageSquare
 } from "lucide-react";
 // Assuming CSS from admin will work or we will need to create/import own
 import "../../admin/components/Sidebar/page.css"; 
@@ -28,6 +29,7 @@ export default function OwnerSidebar({ collapsed, onToggle }: SidebarProps) {
     { name: "Lojas", path: "/owner/stores", icon: <Store size={20} /> },
     { name: "Usuários", path: "/owner/users", icon: <Users size={20} /> },
     { name: "Eventos", path: "/owner/events", icon: <Calendar size={20} /> },
+    { name: "Mensagens", path: "/owner/contacts", icon: <MessageSquare size={20} /> },
   ];
 
   return (
