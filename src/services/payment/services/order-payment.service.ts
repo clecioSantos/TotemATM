@@ -57,6 +57,39 @@ export async function processApprovedPayment(params: {
       provider,
       storeId,
     });
+
+    // Registrar uso de cupom se houver
+    try {
+      const db = getAdminDb();
+      const orderDoc = await db.collection("orders").doc(orderId).get();
+      const orderData = orderDoc.data();
+
+      if (orderData?.couponId && orderData?.couponCode) {
+        const usageRef = db.collection("coupon_usage").doc();
+        await usageRef.set({
+          couponId: orderData.couponId,
+          storeId: orderData.companyId || storeId,
+          customerId: orderData.customerId,
+          orderId,
+          discountApplied: orderData.discountValue || 0,
+          createdAt: new Date(),
+        });
+
+        const couponRef = db.collection("coupons").doc(orderData.couponId);
+        const couponDoc = await couponRef.get();
+        const currentCount = couponDoc.data()?.usageCount || 0;
+        await couponRef.update({ usageCount: currentCount + 1 });
+
+        logger.info("COUPON_USAGE", "Uso de cupom registrado", {
+          couponId: orderData.couponId,
+          couponCode: orderData.couponCode,
+          orderId,
+          discount: orderData.discountValue,
+        });
+      }
+    } catch (couponError) {
+      logger.warn("ORDER_PAYMENT", "Erro ao registrar uso de cupom", couponError);
+    }
   } else {
     logger.warn("ORDER_PAYMENT", "processApprovedPayment: falha ao marcar como pago", {
       orderId,

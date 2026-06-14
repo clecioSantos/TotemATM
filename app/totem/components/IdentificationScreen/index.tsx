@@ -1,10 +1,20 @@
 "use client";
 import { useState, useEffect } from "react";
-import { ArrowRight, ArrowLeft, MapPin, Home, PlusCircle, Check, ShieldAlert } from "lucide-react";
+import { ArrowRight, ArrowLeft, MapPin, Home, PlusCircle, Check, ShieldAlert, Ticket, X, Loader2 } from "lucide-react";
 import { useAuth } from "@totem/shared/types/AuthProvider";
 import { firestore } from "@/src/services/firebase";
 import { collection, addDoc, query, where, onSnapshot, serverTimestamp, updateDoc, doc, writeBatch, getDocs } from "firebase/firestore";
 import { useParams } from "next/navigation";
+import { logger } from "@/src/lib/logger";
+
+interface CouponApplied {
+  id: string;
+  code: string;
+  type: "percentage" | "fixed";
+  value: number;
+  discountValue: number;
+  finalTotal: number;
+}
 
 interface IdentificationScreenProps {
   addressStreet: string;
@@ -19,6 +29,124 @@ interface IdentificationScreenProps {
   setAddressComplement: (val: string) => void;
   onConfirm: (deliveryFee: number, deliveryMode?: string) => void;
   onBack: () => void;
+  companyId: string;
+  cartTotal?: number;
+  onCouponChange?: (coupon: CouponApplied | null) => void;
+}
+
+function CouponInput({ companyId, customerId, deliveryMode, cartTotal, onCouponApplied, onCouponRemoved }: {
+  companyId: string;
+  customerId?: string;
+  deliveryMode: string;
+  cartTotal?: number;
+  onCouponApplied: (coupon: CouponApplied) => void;
+  onCouponRemoved: () => void;
+}) {
+  const [code, setCode] = useState("");
+  const [applied, setApplied] = useState<CouponApplied | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [validating, setValidating] = useState(false);
+
+  let debounceTimer: any = null;
+
+  const validateCoupon = async () => {
+    const trimmed = code.toUpperCase().trim();
+    if (!trimmed) return;
+    setValidating(true);
+    setError("");
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: trimmed,
+          storeId: companyId,
+          subtotal: cartTotal || 0,
+          customerId,
+          deliveryMode,
+        }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        const couponInfo: CouponApplied = {
+          id: data.coupon.id,
+          code: data.coupon.code,
+          type: data.coupon.type,
+          value: data.coupon.value,
+          discountValue: data.discountValue,
+          finalTotal: data.finalTotal,
+        };
+        setApplied(couponInfo);
+        onCouponApplied(couponInfo);
+      } else {
+        setError(data.reason || "Cupom inválido");
+      }
+    } catch (err) {
+      setError("Erro ao validar cupom");
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  const handleApply = () => {
+    if (applied) {
+      setApplied(null);
+      setCode("");
+      setError("");
+      onCouponRemoved();
+      return;
+    }
+    validateCoupon();
+  };
+
+  return (
+    <div className="border-t border-brand-border pt-4 mt-2">
+      <div className="flex items-center gap-2 mb-2">
+        <Ticket size={16} className="text-brand-muted" />
+        <span className="text-xs font-bold text-brand-muted uppercase">Cupom de Desconto</span>
+      </div>
+
+      {applied ? (
+        <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-[12px]">
+          <div>
+            <span className="text-sm font-bold text-green-700">{applied.code}</span>
+            <span className="text-xs text-green-600 ml-2">
+              -R$ {applied.discountValue.toFixed(2)}
+              {applied.type === "percentage" && ` (${applied.value}%)`}
+            </span>
+          </div>
+          <button onClick={handleApply} className="p-1 hover:bg-green-100 rounded-lg transition-colors">
+            <X size={16} className="text-green-600" />
+          </button>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => { setCode(e.target.value.toUpperCase()); setError(""); }}
+            placeholder="Digite o código"
+            className="flex-1 bg-brand-light border border-brand-border px-4 py-3 rounded-[12px] text-sm font-semibold outline-none focus:border-brand-primary transition-colors uppercase"
+            maxLength={20}
+            disabled={validating}
+            onKeyDown={(e) => { if (e.key === "Enter") handleApply(); }}
+          />
+          <button
+            onClick={handleApply}
+            disabled={!code.trim() || validating}
+            className="px-5 py-3 bg-brand-primary text-white font-bold rounded-[12px] text-sm hover:bg-brand-primaryHover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {validating ? <Loader2 size={16} className="animate-spin" /> : "Aplicar"}
+          </button>
+        </div>
+      )}
+
+      {error && (
+        <p className="text-xs text-red-500 font-medium mt-1.5">{error}</p>
+      )}
+    </div>
+  );
 }
 
 function getCartCompanyId(): string | null {
@@ -33,11 +161,11 @@ function getCartCompanyId(): string | null {
 }
 
 export default function IdentificationScreen({
-  addressStreet, setAddressStreet, addressCity, setAddressCity, addressNumber, setAddressNumber, addressNeighborhood, setAddressNeighborhood, addressComplement, setAddressComplement, onConfirm, onBack
+  addressStreet, setAddressStreet, addressCity, setAddressCity, addressNumber, setAddressNumber, addressNeighborhood, setAddressNeighborhood, addressComplement, setAddressComplement, onConfirm, onBack, companyId: companyIdProp, cartTotal, onCouponChange
 }: IdentificationScreenProps) {
   const { user } = useAuth();
   const params = useParams();
-  const companyId = getCartCompanyId() || (params?.companyId as string);
+  const companyId = companyIdProp || getCartCompanyId() || (params?.companyId as string);
 
   const [addresses, setAddresses] = useState<any[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("new");
@@ -86,6 +214,7 @@ export default function IdentificationScreen({
 
   // A cidade deve estar habilitada nas configurações da loja
   const isCityDeliveryEnabled = citySettings.find(s => s.cityId === addressCity)?.enabled === true;
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponApplied | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -380,6 +509,22 @@ export default function IdentificationScreen({
             </div>
           )}
         </div>
+
+        {/* Cupom de desconto */}
+        <CouponInput
+          companyId={companyId}
+          customerId={user?.uid}
+          deliveryMode={deliveryMode}
+          cartTotal={cartTotal}
+          onCouponApplied={(c) => {
+            setAppliedCoupon(c);
+            if (onCouponChange) onCouponChange(c);
+          }}
+          onCouponRemoved={() => {
+            setAppliedCoupon(null);
+            if (onCouponChange) onCouponChange(null);
+          }}
+        />
 
         {/* Buttons */}
         <div className="flex flex-col gap-3">

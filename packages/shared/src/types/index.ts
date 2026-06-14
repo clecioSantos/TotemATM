@@ -118,6 +118,7 @@ export type { OrderReview } from './reviews';
 export type { Company } from './company';
 export type { StorePermissions, StoreUser } from './auth';
 export type { PromotionEvent, PromotionEventStatus, Promotion, PromotionType, PromotionStatus } from './promotions';
+export type { Coupon, CouponType, CouponUsage, CouponValidationResult } from './coupons';
 
 export interface OrderFormPayload {
   customerName: string;

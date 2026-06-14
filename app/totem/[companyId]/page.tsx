@@ -78,6 +78,7 @@ function TotemContent({ params }: PageProps) {
   const [orderTotal, setOrderTotal] = useState(0);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [toast, setToast] = useState<{ message: string; type?: "error" | "info" } | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
 
   useEffect(() => {
     if (toast) {
@@ -370,6 +371,12 @@ function TotemContent({ params }: PageProps) {
         orderData.requiresCustomerContact = true;
       }
 
+      if (appliedCoupon) {
+        orderData.couponId = appliedCoupon.id;
+        orderData.couponCode = appliedCoupon.code;
+        orderData.discountValue = appliedCoupon.discountValue;
+      }
+
       const result = await finishOrder(orderData);
 
       if (result.error) {
@@ -542,6 +549,9 @@ function TotemContent({ params }: PageProps) {
               setAddressComplement={setDeliveryComplement}
               onConfirm={handleFinish}
               onBack={() => setStep('ORDERING')}
+              companyId={companyId}
+              cartTotal={cartTotal}
+              onCouponChange={(c) => setAppliedCoupon(c)}
             />
           </div>
         );
