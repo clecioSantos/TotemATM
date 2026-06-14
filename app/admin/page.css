@@ -825,3 +825,38 @@
 .help-saiba-mais:hover {
   background: rgba(255, 107, 0, 0.08);
 }
+
+.help-footer {
+  margin-top: 40px;
+  padding: 32px;
+  background: var(--bg-light);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--border);
+  text-align: center;
+}
+
+.help-footer-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.help-contact-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 32px;
+  background: var(--primary);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.help-contact-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}

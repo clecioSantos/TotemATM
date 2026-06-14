@@ -27,6 +27,7 @@ interface OrderSummaryScreenProps {
   deliveryNumber: string;
   deliveryNeighborhood: string;
   deliveryComplement: string;
+  convenienceFee: number;
   onCouponChange: (coupon: CouponApplied | null) => void;
   onConfirm: () => void;
   onBack: () => void;
@@ -35,7 +36,7 @@ interface OrderSummaryScreenProps {
 export default function OrderSummaryScreen({
   companyId, companyName, cart, cartTotal,
   deliveryFee, deliveryMode, deliveryStreet, deliveryNumber,
-  deliveryNeighborhood, deliveryComplement,
+  deliveryNeighborhood, deliveryComplement, convenienceFee,
   onCouponChange, onConfirm, onBack,
 }: OrderSummaryScreenProps) {
   const { user } = useAuth();
@@ -60,7 +61,8 @@ export default function OrderSummaryScreen({
   const subtotal = cartTotal;
   const delivery = deliveryMode === "pickup" ? 0 : deliveryFee;
   const discount = appliedCoupon?.discountValue || 0;
-  const total = Math.max(0, subtotal + delivery - discount);
+  const convenience = convenienceFee || 0;
+  const total = Math.max(0, subtotal + delivery + convenience - discount);
 
   const validateCoupon = async () => {
     const trimmed = couponCode.toUpperCase().trim();
@@ -240,6 +242,12 @@ export default function OrderSummaryScreen({
               {delivery === 0 ? "Grátis" : `R$ ${delivery.toFixed(2)}`}
             </span>
           </div>
+          {convenience > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-brand-muted">Taxa de Conveniência</span>
+              <span className="font-semibold text-brand-dark">R$ {convenience.toFixed(2)}</span>
+            </div>
+          )}
           {discount > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-green-600 font-medium">Desconto</span>

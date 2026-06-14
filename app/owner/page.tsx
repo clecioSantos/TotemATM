@@ -7,7 +7,7 @@ import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { logger } from "@/src/lib/logger";
 import {
   Store, Calendar, Tag, TrendingUp, ShoppingBag,
-  Loader2, Store as StoreIcon, Settings, Ticket
+  Loader2, Store as StoreIcon, Settings, Ticket, DollarSign
 } from "lucide-react";
 
 function OwnerDashboardContent() {
@@ -16,11 +16,15 @@ function OwnerDashboardContent() {
   const [promotions, setPromotions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [globalCouponsEnabled, setGlobalCouponsEnabled] = useState<boolean | null>(null);
+  const [globalConvenienceFee, setGlobalConvenienceFee] = useState<number>(0);
   const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => {
     getDoc(doc(firestore, "settings", "global")).then((snap) => {
-      if (snap.exists()) setGlobalCouponsEnabled(snap.data().couponsEnabled === true);
+      if (snap.exists()) {
+        setGlobalCouponsEnabled(snap.data().couponsEnabled === true);
+        setGlobalConvenienceFee(snap.data().convenienceFee || 0);
+      }
     }).catch(() => {});
   }, []);
 
@@ -207,6 +211,43 @@ function OwnerDashboardContent() {
               </p>
             </div>
           </label>
+
+          <div className="border-t border-gray-100 mt-4 pt-4">
+            <label className="flex items-center gap-3">
+              <DollarSign size={16} className="text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">Taxa de Conveniência (R$)</span>
+            </label>
+            <p className="text-xs text-gray-500 mt-0.5 mb-2">
+              Valor adicional cobrado em todos os pedidos da plataforma.
+            </p>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                value={globalConvenienceFee}
+                onChange={(e) => setGlobalConvenienceFee(Math.max(0, parseFloat(e.target.value) || 0))}
+                step="0.50"
+                min="0"
+                className="w-32 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm font-semibold outline-none focus:border-blue-500 transition-colors"
+              />
+              <button
+                onClick={async () => {
+                  setSavingSettings(true);
+                  try {
+                    await setDoc(doc(firestore, "settings", "global"), { convenienceFee: globalConvenienceFee }, { merge: true });
+                  } catch (err) {
+                    logger.error("OWNER", "Erro ao salvar taxa de conveniência", err);
+                  } finally {
+                    setSavingSettings(false);
+                  }
+                }}
+                disabled={savingSettings}
+                className="px-5 py-2.5 bg-blue-600 text-white font-bold rounded-xl text-sm hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {savingSettings ? <Loader2 size={16} className="animate-spin" /> : null}
+                Atualizar
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { doc, updateDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, orderBy } from "firebase/firestore";
+import { doc, updateDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, orderBy, getDoc } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
 import { useTotem } from "@totem/hooks/useTotem";
 import { useAuth } from "@totem/shared/types/AuthProvider";
@@ -98,6 +98,13 @@ function TotemContent({ params }: PageProps) {
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [reviewDeliveryFee, setReviewDeliveryFee] = useState(0);
   const [reviewDeliveryMode, setReviewDeliveryMode] = useState<string>("delivery");
+  const [convenienceFee, setConvenienceFee] = useState(0);
+
+  useEffect(() => {
+    getDoc(doc(firestore, "settings", "global")).then((snap) => {
+      if (snap.exists()) setConvenienceFee(snap.data().convenienceFee || 0);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (toast) {
@@ -367,7 +374,7 @@ function TotemContent({ params }: PageProps) {
     setIsProcessingPayment(true);
 
     try {
-      let total = cartTotal + reviewDeliveryFee;
+      let total = cartTotal + reviewDeliveryFee + convenienceFee;
       if (appliedCoupon) {
         total = Math.max(0, total - appliedCoupon.discountValue);
       }
@@ -401,6 +408,10 @@ function TotemContent({ params }: PageProps) {
         orderData.couponId = appliedCoupon.id;
         orderData.couponCode = appliedCoupon.code;
         orderData.discountValue = appliedCoupon.discountValue;
+      }
+
+      if (convenienceFee > 0) {
+        orderData.convenienceFee = convenienceFee;
       }
 
       const result = await finishOrder(orderData);
@@ -517,6 +528,7 @@ function TotemContent({ params }: PageProps) {
             deliveryNumber={deliveryNumber}
             deliveryNeighborhood={deliveryNeighborhood}
             deliveryComplement={deliveryComplement}
+            convenienceFee={convenienceFee}
             onCouponChange={(c) => setAppliedCoupon(c)}
             onConfirm={handleProceedToPayment}
             onBack={() => setStep('IDENTIFICATION')}
