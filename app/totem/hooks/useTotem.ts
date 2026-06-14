@@ -478,6 +478,8 @@ export const useTotem = (companyId: string) => {
         orderData.scheduledDate = identification.scheduledDate;
         orderData.scheduledTime = identification.scheduledTime;
         orderData.scheduledAt = new Date(`${identification.scheduledDate}T${identification.scheduledTime}`);
+      }
+
       if (identification.requiresCustomerContact) {
         orderData.requiresCustomerContact = true;
       }
@@ -487,7 +489,6 @@ export const useTotem = (companyId: string) => {
         orderData.couponCode = identification.couponCode;
         orderData.discountValue = identification.discountValue;
         orderData.total = orderData.total as number - (identification.discountValue || 0);
-      }
       }
 
       const docRef = await addDoc(collection(db, 'orders'), orderData);

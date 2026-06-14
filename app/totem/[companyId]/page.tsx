@@ -344,7 +344,10 @@ function TotemContent({ params }: PageProps) {
     }
 
     try {
-      const total = cartTotal + deliveryFee;
+      let total = cartTotal + deliveryFee;
+      if (appliedCoupon) {
+        total = Math.max(0, total - appliedCoupon.discountValue);
+      }
       setOrderTotal(total);
 
       const isPickup = deliveryMode === "pickup";
