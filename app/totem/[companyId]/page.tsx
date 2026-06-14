@@ -47,6 +47,17 @@ function TotemContent({ params }: PageProps) {
     }
   }, [companyId, router]);
 
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const pendingStep = localStorage.getItem("totem_pending_step");
+      if (pendingStep === "IDENTIFICATION") {
+        localStorage.removeItem("totem_pending_step");
+        setStep("IDENTIFICATION");
+      }
+    } catch {}
+  }, [user]);
+
   const [step, setStep] = useState<TotemStep>('ORDERING');
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -460,6 +471,7 @@ function TotemContent({ params }: PageProps) {
     },
     onFinish: () => {
       if (!user) {
+        try { localStorage.setItem("totem_pending_step", "IDENTIFICATION"); } catch {}
         router.push(`/login?redirect=/totem/${companyId}`);
         return;
       }
