@@ -39,6 +39,8 @@ export async function GET(req: NextRequest) {
     const stateData = stateDoc.data()!;
     const companyId = stateData.companyId as string;
     const storedBaseUrl = (stateData.baseUrl as string) || "";
+    const storedRedirect = (stateData.redirect as string) || "";
+    const fallbackUrl = storedRedirect || `/admin/financeiro`;
 
     await db.collection("mercadopago_oauth_states").doc(state).delete();
 
@@ -49,7 +51,7 @@ export async function GET(req: NextRequest) {
       const isTimeout = error instanceof Error && error.name === "AbortError";
       logger.error("MERCADOPAGO", isTimeout ? "OAUTH_CALLBACK: timeout na API do Mercado Pago" : "OAUTH_CALLBACK: erro na troca do código", error);
       const baseUrl = getRedirectBaseUrl(storedBaseUrl, req);
-      return NextResponse.redirect(`${baseUrl}/admin/financeiro?error=oauth_token_exchange`);
+      return NextResponse.redirect(`${baseUrl}${fallbackUrl}?error=oauth_token_exchange`);
     }
 
     const expiresAt = MercadoPagoService.calculateExpiresAt(tokenData.expires_in as number);
@@ -71,7 +73,8 @@ export async function GET(req: NextRequest) {
     });
 
     const baseUrl = getRedirectBaseUrl(storedBaseUrl, req);
-    return NextResponse.redirect(`${baseUrl}/admin/financeiro?success=connected`);
+    const redirectUrl = storedRedirect || `/admin/financeiro?success=connected`;
+    return NextResponse.redirect(`${baseUrl}${redirectUrl}`);
   } catch (error) {
     logger.error("MERCADOPAGO", "OAUTH_CALLBACK: erro interno", error);
     return NextResponse.redirect(new URL(`/admin/financeiro?error=oauth_internal`, req.url));

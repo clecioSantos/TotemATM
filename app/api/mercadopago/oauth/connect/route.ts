@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const companyId = searchParams.get("companyId") || "";
     const userId = searchParams.get("userId") || "";
+    const redirect = searchParams.get("redirect") || "";
 
     const state = crypto.randomBytes(32).toString("hex");
     const baseUrl = getBaseUrl();
@@ -31,6 +32,7 @@ export async function GET(req: NextRequest) {
       companyId,
       userId,
       baseUrl,
+      redirect,
       createdAt: new Date(),
     });
 
