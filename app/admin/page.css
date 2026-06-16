@@ -860,3 +860,78 @@
   opacity: 0.9;
   transform: translateY(-1px);
 }
+
+.setup-status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  margin: 16px 24px 0;
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.setup-status-card:hover {
+  border-color: #fb923c;
+  box-shadow: 0 4px 12px rgba(251, 146, 60, 0.15);
+  transform: translateY(-1px);
+}
+
+.setup-status-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.setup-status-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #fb923c;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.setup-status-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f1f1f;
+  margin: 0;
+}
+
+.setup-status-desc {
+  font-size: 12px;
+  color: #666;
+  margin: 2px 0 0;
+}
+
+.setup-status-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.setup-progress-bar {
+  width: 80px;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.setup-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #fb923c, #f97316);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}

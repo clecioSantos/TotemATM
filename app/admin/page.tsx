@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { collection, onSnapshot, query, orderBy, limit, Timestamp, where, doc, getDocs, updateDoc } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
 import { useAuth } from "@totem/shared/types/AuthProvider";
+import { useStoreSetupStatus } from "@/src/hooks/useStoreSetupStatus";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
   ResponsiveContainer, AreaChart, Area
@@ -13,7 +14,7 @@ import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import {
   TrendingUp, TrendingDown, Clock, ShoppingBag, DollarSign, Users,
   UtensilsCrossed, Package, AlertTriangle, Store, CheckCircle2, XCircle,
-  Truck, Landmark, CreditCard, Wallet, RefreshCw, Loader2, Power, Tag
+  Truck, Landmark, CreditCard, Wallet, RefreshCw, Loader2, Power, Tag, ArrowRight, X, Rocket
 } from "lucide-react";
 import "./page.css";
 
@@ -504,6 +505,7 @@ function WeeklyPerformance({ thisWeek, lastWeek }: { thisWeek: any[]; lastWeek: 
 
 function AdminDashboardContent() {
   const { user } = useAuth();
+  const { status: setupStatus } = useStoreSetupStatus(user?.companyId);
 
   const [company, setCompany] = useState<any>(null);
   const [todayOrders, setTodayOrders] = useState<any[]>([]);
@@ -513,6 +515,14 @@ function AdminDashboardContent() {
   const [prevCustomerIds, setPrevCustomerIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [showOnboardingPrompt, setShowOnboardingPrompt] = useState(false);
+
+  useEffect(() => {
+    if (setupStatus && !setupStatus.canOpen) {
+      const dismissed = localStorage.getItem("onboarding_dismissed");
+      if (dismissed !== "true") setShowOnboardingPrompt(true);
+    }
+  }, [setupStatus]);
 
   // Company info (real-time)
   useEffect(() => {
@@ -778,8 +788,28 @@ function AdminDashboardContent() {
   }
 
   return (
+    <>
     <div className="dashboard-view">
       <AlertBanner alerts={alerts} />
+      {setupStatus && !setupStatus.canOpen && (
+        <div className="setup-status-card" onClick={() => window.location.href = "/admin/onboarding"}>
+          <div className="setup-status-left">
+            <div className="setup-status-icon">
+              <Package size={18} />
+            </div>
+            <div>
+              <p className="setup-status-title">Configuração da Loja</p>
+              <p className="setup-status-desc">{setupStatus.completed.length} de 9 • {setupStatus.pending.length} pendente(s)</p>
+            </div>
+          </div>
+          <div className="setup-status-right">
+            <div className="setup-progress-bar">
+              <div className="setup-progress-fill" style={{ width: `${setupStatus.percent}%` }} />
+            </div>
+            <ArrowRight size={18} className="text-gray-400" />
+          </div>
+        </div>
+      )}
       <StoreHeader company={company} ordersToday={todayOrders} onToggleOpen={handleToggleOpen} />
 
       <div className="kpi-grid">
@@ -862,6 +892,36 @@ function AdminDashboardContent() {
         </div>
       </div>
     </div>
+
+      {/* Onboarding prompt modal */}
+      {showOnboardingPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl text-center">
+            <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-4">
+              <Rocket size={32} className="text-orange-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Tudo pronto para começar?</h2>
+            <p className="text-gray-500 mb-6">
+              Vamos configurar sua loja em poucos minutos.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => { setShowOnboardingPrompt(false); window.location.href = "/admin/onboarding"; }}
+                className="w-full py-3 bg-orange-600 text-white font-bold rounded-xl hover:bg-orange-700 transition-all"
+              >
+                Iniciar Configuração
+              </button>
+              <button
+                onClick={() => { setShowOnboardingPrompt(false); localStorage.setItem("onboarding_dismissed", "true"); }}
+                className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                Agora não
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

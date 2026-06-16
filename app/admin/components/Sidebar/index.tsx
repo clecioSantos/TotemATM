@@ -83,12 +83,13 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         </button>
       </div>
 
-      <div className="sidebar-content">
+      <div className="sidebar-content overflow-y-auto">
         <nav className="sidebar-menu">
           {menuItems.map((item) => (
             <Link 
               key={item.path} 
               href={item.path}
+              onClick={() => { if (window.innerWidth < 1024) onToggle(); }}
               className={`menu-item ${pathname === item.path ? "menu-item-active" : ""} ${collapsed ? "collapsed-item" : ""}`}
             >
               <span className="menu-icon">{item.icon}</span>

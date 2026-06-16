@@ -46,7 +46,7 @@ export default function OwnerSidebar({ collapsed, onToggle }: SidebarProps) {
         </button>
       </div>
 
-      <div className="sidebar-content">
+      <div className="sidebar-content overflow-y-auto">
         <nav className="sidebar-menu">
           {menuItems.map((item) => (
             <Link 

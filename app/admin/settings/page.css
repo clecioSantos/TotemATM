@@ -6,6 +6,13 @@
   padding: 32px;
   max-width: 500px;
   margin-top: 32px;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.form-input {
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .settings-card--wide {
@@ -438,6 +445,10 @@ select.form-input {
 }
 
 @media (max-width: 768px) {
+  .settings-card {
+    padding: 20px;
+  }
+
   .company-form-grid {
     grid-template-columns: 1fr;
   }
@@ -446,8 +457,13 @@ select.form-input {
     grid-template-columns: 1fr;
   }
 
+  .schedule-grid {
+    overflow-x: auto;
+  }
+
   .schedule-row {
     grid-template-columns: 80px 1fr 1fr;
+    min-width: 280px;
   }
 
   .areas-grid {

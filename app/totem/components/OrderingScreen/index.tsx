@@ -67,6 +67,7 @@ export default function OrderingScreen({
 }: OrderingScreenProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
+  const [detailScrollY, setDetailScrollY] = useState(0);
   const [activeCategory, setActiveCategory] = useState<string>("featured");
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -303,7 +304,7 @@ export default function OrderingScreen({
           </div>
 
           {/* Categories - sticky, follows banner */}
-          <div className="sticky top-0 z-20 bg-white border-b border-gray-200/60 p-4 lg:px-6 lg:py-4 flex gap-2 overflow-x-auto no-scrollbar justify-center lg:justify-start">
+          <div className="sticky top-0 z-20 bg-white border-b border-gray-200/60 p-4 flex gap-2 overflow-x-auto no-scrollbar">
             <button
               onClick={() => setActiveCategory("featured")}
               className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold transition-colors ${
@@ -340,7 +341,7 @@ export default function OrderingScreen({
           </div>
 
           {/* Products list */}
-          <div className="p-4 max-w-4xl mx-auto space-y-4 lg:p-6 lg:space-y-5">
+          <div className="p-4 space-y-4 lg:max-w-4xl lg:mx-auto lg:p-6 lg:space-y-5">
             {filteredProducts.map(product => {
               const promo = getProductPromotion?.(product.id);
               const displayPrice = getPrice(product);
@@ -350,7 +351,7 @@ export default function OrderingScreen({
                 <div
                   key={product.id}
                   className="bg-white rounded-[16px] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-gray-200/60 p-3 lg:p-5 flex flex-row items-center cursor-pointer transition-all duration-200 hover:translate-y-[-2px] hover:shadow-md"
-                  onClick={() => setSelectedProduct(product)}
+                  onClick={() => { setSelectedProduct(product); setDetailScrollY(0); }}
                 >
                   <div className="relative w-[30%] lg:w-[25%] aspect-[4/3] shrink-0 rounded-xl overflow-hidden">
                     <img
@@ -651,54 +652,69 @@ export default function OrderingScreen({
             >
               <ArrowLeft className="h-6 w-6 text-gray-900" />
             </button>
-            <div className="w-full md:w-1/2 bg-gray-100 shrink-0 overflow-hidden relative" style={{ height: "40vh" }}>
-              <img
-                src={selectedProduct.imageUrl || "https://placehold.co/600x600?text=Sem+Imagem"}
-                alt={selectedProduct.name}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-            </div>
-            <div className="w-full md:w-1/2 flex-1 min-h-0 flex flex-col p-8 md:p-16 bg-white">
-              <div className="mb-6 shrink-0">
-                <h2 className="text-4xl font-bold text-brand-dark mb-2">{selectedProduct.name}</h2>
-                <p className="text-brand-muted text-lg">{selectedProduct.description}</p>
-                {(() => {
-                  const promo = getProductPromotion?.(selectedProduct.id);
-                  const promoPrice = getPromotionalPrice?.(selectedProduct.id, selectedProduct.price);
-                  if (promo && promoPrice != null && promoPrice !== selectedProduct.price) {
-                    return (
-                      <div className="flex items-center gap-3 mt-2">
-                        <p className="text-2xl font-bold text-brand-primary">R$ {promoPrice.toFixed(2)}</p>
-                        <p className="text-lg text-gray-400 line-through">R$ {selectedProduct.price.toFixed(2)}</p>
-                        {promo.promotionType === "percentage_discount" && (
-                          <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">{promo.percentageOff}% OFF</span>
-                        )}
-                      </div>
-                    );
-                  }
-                  return (
-                    <p className="text-2xl font-bold text-brand-primary mt-2">
-                      R$ {selectedProduct.price.toFixed(2)}
-                    </p>
-                  );
-                })()}
-                {(() => {
-                  const cat = categories.find(c => c.id === selectedProduct.categoryId);
-                  if (cat?.requiresCustomerContact && cat.schedulingMode !== "none") {
-                    return (
-                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-4">
-                        <p className="text-xs font-bold text-purple-800">🔄 Requer alinhamento com a loja</p>
-                        {cat.customerInstructions && (
-                          <p className="text-[11px] text-purple-700 mt-1 whitespace-pre-wrap">{cat.customerInstructions}</p>
-                        )}
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
+            <div
+              className="w-full md:w-1/2 bg-gray-100 shrink-0 overflow-hidden relative transition-all duration-200"
+              style={{ height: Math.max(0, 40 - detailScrollY * 0.12) + "vh" }}
+            >
+              <div
+                className="absolute inset-0 transition-transform duration-200"
+                style={{ transform: `translateY(${Math.min(detailScrollY * 0.25, 25)}px)` }}
+              >
+                <img
+                  src={selectedProduct.imageUrl || "https://placehold.co/600x600?text=Sem+Imagem"}
+                  alt={selectedProduct.name}
+                  className="w-full h-full object-cover"
+                />
               </div>
-              <div className="flex-1 min-h-0 overflow-y-auto space-y-6">
+              <div
+                className="absolute inset-0 transition-opacity duration-200"
+                style={{ opacity: Math.min(detailScrollY / 60, 1) }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
+              </div>
+              {/* Product info overlay on image */}
+              <div className="absolute bottom-0 left-0 right-0 z-10 px-4 pb-3 md:p-6 text-white">
+                <h2 className="font-bold leading-tight text-[1.1rem] md:text-2xl">
+                  {selectedProduct.name}
+                </h2>
+                <div className="flex items-center gap-2 mt-0.5">
+                  {(() => {
+                    const promo = getProductPromotion?.(selectedProduct.id);
+                    const promoPrice = getPromotionalPrice?.(selectedProduct.id, selectedProduct.price);
+                    const showPrice = promo && promoPrice != null && promoPrice !== selectedProduct.price;
+                    return (
+                      <>
+                        <span className="font-bold text-[0.9rem] md:text-xl">
+                          R$ {(showPrice ? promoPrice : selectedProduct.price).toFixed(2)}
+                        </span>
+                        {showPrice && (
+                          <span className="text-xs text-white/70 line-through">R$ {selectedProduct.price.toFixed(2)}</span>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+            <div className="w-full md:w-1/2 flex-1 min-h-0 flex flex-col p-4 md:p-16 bg-white">
+              {(() => {
+                const cat = categories.find(c => c.id === selectedProduct.categoryId);
+                if (cat?.requiresCustomerContact && cat.schedulingMode !== "none") {
+                  return (
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4 shrink-0">
+                      <p className="text-xs font-bold text-purple-800">🔄 Requer alinhamento com a loja</p>
+                      {cat.customerInstructions && (
+                        <p className="text-[11px] text-purple-700 mt-1 whitespace-pre-wrap">{cat.customerInstructions}</p>
+                      )}
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+              <div
+                className="flex-1 min-h-0 overflow-y-auto space-y-6"
+                onScroll={(e) => setDetailScrollY(e.currentTarget.scrollTop)}
+              >
                 {/* Tamanhos */}
                 {productSizes.length > 0 && (
                   <div className="space-y-3">

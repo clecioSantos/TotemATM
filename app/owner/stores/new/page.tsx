@@ -249,12 +249,12 @@ export default function NewStorePage() {
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow grid grid-cols-1 md:grid-cols-2 gap-4">
         {textFields.map((field) => (
           <div key={field.name}>
-            <label className="block text-sm font-medium text-gray-700">{field.label} <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700">{field.label} {field.name === "name" && <span className="text-red-500">*</span>}</label>
             <input
               type="text"
               name={field.name}
               value={(formData as any)[field.name] || ""}
-              required
+              required={field.name === "name"}
               onChange={handleChange}
               className="mt-1 block w-full border border-gray-300 rounded-md p-2"
             />
@@ -262,11 +262,10 @@ export default function NewStorePage() {
         ))}
         <div className="grid grid-cols-2 gap-4">
             <div>
-                <label className="block text-sm font-medium text-gray-700">Estado <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700">Estado</label>
                 <select
                     name="estado"
                     value={formData.estado}
-                    required
                     onChange={(e) => setFormData({...formData, estado: e.target.value})}
                     className="mt-1 block w-full border border-gray-300 rounded-md p-2"
                 >
@@ -277,12 +276,11 @@ export default function NewStorePage() {
                 </select>
             </div>
             <div>
-                <label className="block text-sm font-medium text-gray-700">Cidade <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700">Cidade</label>
                 <div className="flex gap-2">
                     <select
                         name="cidade"
                         value={formData.cidade}
-                        required
                         onChange={(e) => setFormData({...formData, cidade: e.target.value})}
                         className="mt-1 block w-full border border-gray-300 rounded-md p-2"
                     >
@@ -324,7 +322,7 @@ export default function NewStorePage() {
         </div>
 
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Horário de Funcionamento <span className="text-red-500">*</span></label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Horário de Funcionamento</label>
           <div className="space-y-2">
             {diasSemana.map((dia) => (
               <div key={dia.id} className="grid grid-cols-3 gap-4 items-center">
@@ -347,28 +345,27 @@ export default function NewStorePage() {
         </div>
         <div className="grid grid-cols-2 gap-4">
             <div>
-                <label className="block text-sm font-medium text-gray-700">Tempo Preparo Mín (min) <span className="text-red-500">*</span></label>
-                <input type="number" name="tempoPreparoMin" value={formData.tempoPreparoMin} required onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+                <label className="block text-sm font-medium text-gray-700">Tempo Preparo Mín (min)</label>
+                <input type="number" name="tempoPreparoMin" value={formData.tempoPreparoMin} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
             </div>
             <div>
-                <label className="block text-sm font-medium text-gray-700">Tempo Preparo Máx (min) <span className="text-red-500">*</span></label>
-                <input type="number" name="tempoPreparoMax" value={formData.tempoPreparoMax} required onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+                <label className="block text-sm font-medium text-gray-700">Tempo Preparo Máx (min)</label>
+                <input type="number" name="tempoPreparoMax" value={formData.tempoPreparoMax} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
             </div>
         </div>
 
         {["logo", "banner"].map((field) => (
             <div key={field}>
-                <label className="block text-sm font-medium text-gray-700">{field.charAt(0).toUpperCase() + field.slice(1)} <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700">{field.charAt(0).toUpperCase() + field.slice(1)}</label>
                 <input
                     type="file"
-                    required
                     onChange={(e) => handleImageUpload(e, field)}
                     className="mt-1 block w-full border border-gray-300 rounded-md p-2"
                 />
             </div>
         ))}
         <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700">Áreas de Atuação <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700">Áreas de Atuação</label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
                 {areas.map((area) => (
                     <label key={area} className="flex items-center space-x-2">
