@@ -234,6 +234,20 @@ function AddressesManagementContent() {
         </div>
       )}
 
+      <CityTable
+        cities={cities}
+        selectedCityId={selectedCityId}
+        onSelectCity={setSelectedCityId}
+        onEditCity={(city) => setModalConfig({ type: 'city', data: city })}
+        onDeleteCity={handleDeleteCity}
+        isOwner={isOwner}
+        isAdmin={isAdmin}
+        onAddCity={() => setModalConfig({ type: 'city' })}
+        onSetDefaultPrice={handleSetDefaultPrice}
+        citySettings={citySettings}
+        onToggleDelivery={handleToggleDelivery}
+      />
+
       <div className="mb-6 p-4 bg-brand-surface rounded-xl border border-brand-border flex items-center justify-between">
         <div>
           <p className="font-bold text-sm text-brand-dark">Retirada na Loja</p>
