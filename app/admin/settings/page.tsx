@@ -421,15 +421,22 @@ function ConfigurationsContent() {
 
               <div className="company-form-section">
                 <h4 className="form-section-title">Agendamento de Pedidos</h4>
-                <label className="toggle-label">
-                  <input
-                    type="checkbox"
-                    checked={companyData.schedulingEnabled === true}
-                    onChange={(e) => setCompanyData((prev: any) => ({ ...prev, schedulingEnabled: e.target.checked }))}
-                    className="toggle-input"
-                  />
-                  <span className="toggle-text">Aceitar Pedidos Agendados</span>
-                </label>
+                <div className="toggle-switch-row">
+                  <div className="toggle-switch-description">
+                    <span className="toggle-switch-title">Aceitar Pedidos Agendados</span>
+                    <span className="toggle-switch-note">
+                      {companyData.schedulingEnabled ? 'Agendamento ativado' : 'Agendamento desativado'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCompanyData((prev: any) => ({ ...prev, schedulingEnabled: !prev.schedulingEnabled }))}
+                    className={`toggle-switch-button ${companyData.schedulingEnabled ? 'active' : ''}`}
+                    aria-pressed={companyData.schedulingEnabled}
+                  >
+                    <span className="toggle-thumb" />
+                  </button>
+                </div>
                 {companyData.schedulingEnabled && (
                   <div className="mt-4 space-y-4">
                     <div className="form-group">

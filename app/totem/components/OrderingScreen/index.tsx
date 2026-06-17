@@ -638,8 +638,8 @@ export default function OrderingScreen({
 
       {/* Product Detail Modal */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="relative w-full h-full md:w-auto md:h-auto md:max-w-5xl md:max-h-[90vh] flex flex-col md:flex-row overflow-hidden bg-white md:rounded-2xl md:shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 md:px-0">
+          <div className="relative w-full h-full md:w-[85vw] md:h-auto max-w-[95vw] lg:max-w-[1200px] md:max-h-[95vh] md:min-h-[75vh] mx-auto flex flex-col md:flex-row overflow-hidden bg-white md:rounded-2xl md:shadow-2xl">
             <button
               className="absolute top-6 left-6 z-20 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
               onClick={() => {
@@ -653,8 +653,8 @@ export default function OrderingScreen({
               <ArrowLeft className="h-6 w-6 text-gray-900" />
             </button>
             <div
-              className="w-full md:w-1/2 bg-gray-100 shrink-0 overflow-hidden relative transition-all duration-200"
-              style={{ height: Math.max(0, 40 - detailScrollY * 0.12) + "vh" }}
+              className="w-full md:w-1/2 bg-gray-100 shrink-0 overflow-hidden relative transition-all duration-200 min-h-[280px] md:min-h-[320px]"
+              style={{ height: Math.max(24, 40 - detailScrollY * 0.12) + "vh" }}
             >
               <div
                 className="absolute inset-0 transition-transform duration-200"
@@ -663,7 +663,7 @@ export default function OrderingScreen({
                 <img
                   src={selectedProduct.imageUrl || "https://placehold.co/600x600?text=Sem+Imagem"}
                   alt={selectedProduct.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain object-center bg-gray-100"
                 />
               </div>
               <div
@@ -696,7 +696,7 @@ export default function OrderingScreen({
                 </div>
               </div>
             </div>
-            <div className="w-full md:w-1/2 flex-1 min-h-0 flex flex-col p-4 md:p-16 bg-white">
+            <div className="w-full md:w-1/2 flex-1 min-h-0 flex flex-col p-4 md:px-16 md:py-12 bg-white">
               {(() => {
                 const cat = categories.find(c => c.id === selectedProduct.categoryId);
                 if (cat?.requiresCustomerContact && cat.schedulingMode !== "none") {
@@ -729,12 +729,12 @@ export default function OrderingScreen({
                               setSelectedSize(size);
                               setSelectedFlavors([]);
                             }}
-                            className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
+                            className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all min-w-0 ${
                               isSelected ? "border-brand-primary bg-brand-light" : "border-gray-200/60 bg-gray-50"
                             }`}
                           >
-                            <span className="font-medium text-brand-dark">{size.nome}</span>
-                            <span className="font-bold text-brand-muted">
+                            <span className="font-medium text-brand-dark min-w-0 truncate">{size.nome}</span>
+                            <span className="font-bold text-brand-muted ml-4 flex-shrink-0 text-right">
                               {(() => {
                                 if (!getPromotionalPrice || !selectedProduct) {
                                   return size.preco > 0 ? `R$ ${size.preco.toFixed(2)}` : "Grátis";
@@ -775,7 +775,7 @@ export default function OrderingScreen({
                             key={flavor.id}
                             onClick={() => toggleFlavor(flavor)}
                             disabled={isMaxed}
-                            className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
+                            className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all min-w-0 ${
                               isSelected
                                 ? "border-brand-primary bg-brand-light"
                                 : isMaxed
@@ -783,8 +783,8 @@ export default function OrderingScreen({
                                 : "border-gray-200/60 bg-gray-50"
                             }`}
                           >
-                            <span className="font-medium text-brand-dark">{flavor.nome}</span>
-                            <span className="font-bold text-brand-muted">
+                            <span className="font-medium text-brand-dark min-w-0 truncate">{flavor.nome}</span>
+                            <span className="font-bold text-brand-muted ml-4 flex-shrink-0 text-right">
                               {flavor.preco > 0 ? `+ R$ ${flavor.preco.toFixed(2)}` : ""}
                               {isSelected && <span className="ml-2 text-brand-primary">✓</span>}
                             </span>
@@ -806,12 +806,12 @@ export default function OrderingScreen({
                           <button
                             key={cond.id}
                             onClick={() => toggleCondiment(cond)}
-                            className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
+                            className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all min-w-0 ${
                               isSelected ? "border-brand-primary bg-brand-light" : "border-gray-200/60 bg-gray-50"
                             }`}
                           >
-                            <span className="font-medium text-brand-dark">{cond.name}</span>
-                            <span className="font-bold text-brand-muted">+ R$ {cond.price.toFixed(2)}</span>
+                            <span className="font-medium text-brand-dark min-w-0 truncate">{cond.name}</span>
+                            <span className="font-bold text-brand-muted ml-4 flex-shrink-0 text-right">+ R$ {cond.price.toFixed(2)}</span>
                           </button>
                         );
                       })}
@@ -848,7 +848,7 @@ export default function OrderingScreen({
               </div>
               <div className="shrink-0">
                 <button
-                  className="w-full h-[64px] flex items-center justify-between px-8 bg-brand-primary hover:bg-brand-primaryHover text-white rounded-[16px] font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full h-[64px] flex items-center justify-between gap-4 px-6 bg-brand-primary hover:bg-brand-primaryHover text-white rounded-[16px] font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={productSizes.length > 0 && !selectedSize}
                   onClick={() => {
                     const selectedSizeData: SelectedSize | undefined = selectedSize
@@ -866,8 +866,8 @@ export default function OrderingScreen({
                     setSelectedFlavors([]);
                   }}
                 >
-                  <span>Adicionar ao Pedido</span>
-                  <span>R$ {productTotal.toFixed(2)}</span>
+                  <span className="flex-1 min-w-0 truncate whitespace-nowrap text-left">Adicionar ao Pedido</span>
+                  <span className="flex-shrink-0 whitespace-nowrap">R$ {productTotal.toFixed(2)}</span>
                 </button>
               </div>
             </div>

@@ -251,34 +251,16 @@ function AddressesManagementContent() {
               setPickupEnabled(!newValue);
             }
           }}
-          className={`relative w-12 h-6 rounded-full transition-all ${
-            pickupEnabled ? 'bg-brand-primary' : 'bg-brand-border'
-          }`}
+          className={`toggle-switch-button ${pickupEnabled ? 'active' : ''}`}
+          aria-pressed={pickupEnabled}
         >
-          <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${
-            pickupEnabled ? 'translate-x-6' : ''
-          }`} />
+          <span className="toggle-thumb" />
         </button>
       </div>
 
-      <div className="addresses-vertical-list">
-        <CityTable 
-          cities={cities}
-          selectedCityId={selectedCityId}
-          onSelectCity={setSelectedCityId}
-          isOwner={isOwner}
-          isAdmin={isAdmin}
-          citySettings={citySettings}
-          onAddCity={() => setModalConfig({ type: 'city' })}
-          onEditCity={(city) => setModalConfig({ type: 'city', data: city })}
-          onDeleteCity={handleDeleteCity}
-          onToggleDelivery={handleToggleDelivery}
-          onSetDefaultPrice={(id) => setModalConfig({ type: 'city_price', data: { cityId: id } })}
-        />
-
-        <NeighborhoodTable 
-          neighborhoods={enrichedNeighborhoods}
-          selectedCityId={selectedCityId}
+      <NeighborhoodTable 
+        neighborhoods={enrichedNeighborhoods}
+        selectedCityId={selectedCityId}
           isOwner={isOwner}
           isAdmin={isAdmin}
           onAddNb={() => setModalConfig({ type: 'nb' })}
@@ -290,7 +272,6 @@ function AddressesManagementContent() {
           onEditPrice={(nb) => setModalConfig({ type: 'price', data: nb })}
           onToggleNb={handleToggleNb}
         />
-      </div>
 
       <Modal 
         isOpen={modalConfig.type !== null} 

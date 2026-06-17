@@ -1,52 +1,62 @@
 .form-container {
   display: flex;
   flex-direction: column;
-  gap: 18px; /* Reduzido de 20px */
+  gap: 16px;
 }
 
 .input-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .input-group label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .form-input {
-  height: 48px;
-  padding: 0 16px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-light);
-  font-size: 16px;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+  color: #1f1f1f;
   outline: none;
-  transition: border-color 0.2s;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .form-input:focus {
-  border-color: var(--text-primary);
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249,115,22,0.1);
 }
 
 .form-textarea {
-  min-height: 100px;
-  padding: 12px 16px;
+  min-height: 80px;
+  padding: 12px 14px;
   resize: vertical;
 }
 
 .form-submit {
-  height: 52px;
-  background: var(--text-primary);
-  color: var(--white);
+  height: 48px;
+  background: #f97316;
+  color: #fff;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 15px;
   cursor: pointer;
-  margin-top: 10px;
-  transition: var(--transition-default);
+  margin-top: 8px;
+  transition: all 0.2s;
+}
+
+.form-submit:hover {
+  background: #ea580c;
+  box-shadow: 0 4px 12px rgba(249,115,22,0.3);
 }
 
 .form-submit:active {
@@ -60,10 +70,10 @@
 }
 
 .checkbox-group input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 6px;
-  border: 1px solid #e4e4e7;
+  accent-color: #f97316;
   cursor: pointer;
 }
 
@@ -73,8 +83,8 @@
   gap: 12px;
   margin-bottom: 8px;
   padding: 8px;
-  background: var(--bg-light);
-  border-radius: var(--radius-md);
+  background: #f9fafb;
+  border-radius: 10px;
 }
 
 .current-image-preview img {
@@ -85,9 +95,9 @@
 }
 
 .sizes-section {
-  background: var(--bg-light);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 1px solid #f3f4f6;
   padding: 16px;
 }
 
@@ -99,35 +109,36 @@
 }
 
 .sizes-header label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
   margin: 0;
 }
 
 .add-size-btn {
   height: 36px;
   padding: 0 16px;
-  background: var(--surface);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-sm);
+  background: #fff;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: #f97316;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
 }
 
 .add-size-btn:hover {
-  border-color: var(--text-primary);
-  color: var(--text-primary);
-  background: var(--surface);
+  border-color: #f97316;
+  background: #fff7ed;
 }
 
 .sizes-empty {
   font-size: 13px;
-  color: var(--text-muted);
+  color: #9ca3af;
   font-style: italic;
   text-align: center;
   padding: 12px 0;
@@ -156,48 +167,22 @@
   gap: 4px;
 }
 
-.size-field:nth-child(1) {
-  flex: 2;
-}
-
-.size-field:nth-child(2) {
-  flex: 1;
-}
-
-.size-field:nth-child(3) {
-  flex: 1;
-}
+.size-field:nth-child(1) { flex: 2; }
+.size-field:nth-child(2) { flex: 1; }
+.size-field:nth-child(3) { flex: 1; }
 
 .size-field-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  color: #9ca3af;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .size-entry-fields .form-input {
-  height: 40px;
-  font-size: 14px;
-  background: var(--surface);
-}
-
-.size-entry-fields .form-input {
-  height: 40px;
-  font-size: 14px;
-  background: var(--surface);
-}
-
-.size-entry-fields .form-input:nth-child(1) {
-  flex: 2;
-}
-
-.size-entry-fields .form-input:nth-child(2) {
-  flex: 1;
-}
-
-.size-entry-fields .form-input:nth-child(3) {
-  flex: 1;
+  height: 38px;
+  font-size: 13px;
+  background: #fff;
 }
 
 .remove-size-btn {
@@ -207,16 +192,15 @@
   align-items: center;
   justify-content: center;
   background: none;
-  border: 1px solid transparent;
+  border: none;
   font-size: 16px;
   color: #ef4444;
   cursor: pointer;
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   transition: all 0.15s;
   flex-shrink: 0;
 }
 
 .remove-size-btn:hover {
   background: #fef2f2;
-  border-color: #fecaca;
 }

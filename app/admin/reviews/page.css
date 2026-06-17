@@ -108,14 +108,15 @@
 }
 
 .filter-chip:hover {
-  border-color: var(--text-primary);
-  color: var(--text-primary);
+  border-color: #fb923c;
+  color: #ea580c;
 }
 
 .filter-chip.active {
-  background: var(--text-primary);
-  color: var(--white);
-  border-color: var(--text-primary);
+  background: #f97316;
+  color: #ffffff;
+  border-color: #f97316;
+  box-shadow: 0 8px 20px rgba(249, 115, 22, 0.18);
 }
 
 .review-card {

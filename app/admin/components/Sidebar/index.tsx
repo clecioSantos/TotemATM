@@ -69,42 +69,57 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     ? [...baseMenuItems.slice(0, 8), { name: "Cupons", path: "/admin/coupons", icon: <Ticket size={20} /> }, ...baseMenuItems.slice(8)]
     : baseMenuItems;
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
   return (
-    <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : "sidebar-expanded"}`}>
-      <div className="sidebar-top">
+    <>
+      <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : "sidebar-expanded"}`}>
+        <div className="sidebar-top">
+          {!collapsed && (
+            <div className="sidebar-logo">
+              <h1 className="logo-title">Bora De Delivery</h1>
+              <p className="logo-subtitle">Admin Panel</p>
+            </div>
+          )}
+          <button className="collapse-button" onClick={onToggle}>
+            {collapsed ? <Menu size={24} /> : <ChevronLeft size={24} />}
+          </button>
+        </div>
+
+        <div className="sidebar-content overflow-y-auto">
+          <nav className="sidebar-menu">
+            {menuItems.map((item) => (
+              <Link 
+                key={item.path} 
+                href={item.path}
+                onClick={() => { if (window.innerWidth < 1024) onToggle(); }}
+                className={`menu-item ${pathname === item.path ? "menu-item-active" : ""} ${collapsed ? "collapsed-item" : ""}`}
+              >
+                <span className="menu-icon">{item.icon}</span>
+                {!collapsed && <span>{item.name}</span>}
+              </Link>
+            ))}
+          </nav>
+        </div>
+
         {!collapsed && (
-          <div className="sidebar-logo">
-            <h1 className="logo-title">Bora De Delivery</h1>
-            <p className="logo-subtitle">Admin Panel</p>
+          <div className="sidebar-status">
+            <span className="status-dot"></span>
+            <span className="status-label">Operação Online</span>
           </div>
         )}
-        <button className="collapse-button" onClick={onToggle}>
-          {collapsed ? <Menu size={24} /> : <ChevronLeft size={24} />}
+      </aside>
+
+      {/* Mobile menu button */}
+      {collapsed && (
+        <button
+          className="mobile-sidebar-open-button"
+          onClick={onToggle}
+          aria-label="Abrir menu"
+        >
+          <Menu size={22} />
         </button>
-      </div>
-
-      <div className="sidebar-content overflow-y-auto">
-        <nav className="sidebar-menu">
-          {menuItems.map((item) => (
-            <Link 
-              key={item.path} 
-              href={item.path}
-              onClick={() => { if (window.innerWidth < 1024) onToggle(); }}
-              className={`menu-item ${pathname === item.path ? "menu-item-active" : ""} ${collapsed ? "collapsed-item" : ""}`}
-            >
-              <span className="menu-icon">{item.icon}</span>
-              {!collapsed && <span>{item.name}</span>}
-            </Link>
-          ))}
-        </nav>
-      </div>
-
-      {!collapsed && (
-        <div className="sidebar-status">
-          <span className="status-dot"></span>
-          <span className="status-label">Operação Online</span>
-        </div>
       )}
-    </aside>
+    </>
   );
 }

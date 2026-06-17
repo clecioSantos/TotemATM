@@ -1,57 +1,60 @@
 .sidebar {
-  width: 196px;
+  width: 220px;
   height: 100vh;
-  background: #09090b;
-  color: white;
+  background: #ffffff;
+  color: #374151;
   display: flex;
   flex-direction: column;
   position: fixed;
   left: 0;
   top: 0;
-  padding: 22px 0;
-  box-shadow: 4px 0 20px rgba(0,0,0,0.04);
+  padding: 20px 0;
+  box-shadow: 1px 0 0 rgba(0,0,0,0.06), 4px 0 20px rgba(0,0,0,0.03);
   transition: width 0.3s ease;
   z-index: 100;
 }
 
 .sidebar-collapsed {
-  width: 56px;
+  width: 60px;
 }
 
 .sidebar-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 17px;
-  margin-bottom: 33px;
+  padding: 0 16px;
+  margin-bottom: 28px;
 }
 
 .sidebar-logo {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .logo-title {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 800;
-  letter-spacing: -1px;
+  letter-spacing: -0.5px;
   margin: 0;
+  color: #1f1f1f;
 }
 
 .logo-subtitle {
   font-size: 8px;
-  color: #a1a1aa;
+  color: #9ca3af;
   margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .collapse-button {
-  background: #18181b;
+  background: #f3f4f6;
   border: none;
-  color: white;
-  width: 22px;
-  height: 22px;
-  border-radius: 7px;
+  color: #6b7280;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -60,50 +63,73 @@
 }
 
 .collapse-button:hover {
-  background: #27272a;
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
 }
 
 .sidebar-menu {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 0 11px;
+  gap: 2px;
+  padding: 0 10px;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 11px;
+  gap: 10px;
+  padding: 10px 12px;
   text-decoration: none;
-  color: #a1a1aa;
-  border-radius: 12px;
-  transition: all 0.2s ease;
+  color: #6b7280;
+  border-radius: 10px;
+  transition: all 0.15s ease;
   font-weight: 500;
+  font-size: 14px;
   white-space: nowrap;
 }
 
 .menu-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: white;
+  background: #fff7ed;
+  color: #ea580c;
 }
 
 .menu-item-active {
-  background: white;
-  color: #09090b;
+  background: #fff7ed;
+  color: #ea580c;
+  font-weight: 700;
+}
+
+.menu-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.sidebar-bottom {
+  padding: 0 10px;
+  margin-top: auto;
+  border-top: 1px solid #f3f4f6;
+  padding-top: 12px;
 }
 
 .sidebar-status {
-  margin-top: auto;
-  padding: 0 17px;
   display: flex;
   align-items: center;
   gap: 7px;
+  padding: 12px 16px 0;
 }
 
 .status-label {
   font-size: 10px;
-  color: #a1a1aa;
+  color: #9ca3af;
   margin: 0;
 }
 
@@ -112,7 +138,6 @@
   height: 6px;
   background: #22c55e;
   border-radius: 50%;
-  box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
 }
 
 .mobile-sidebar-open-button {
@@ -120,18 +145,24 @@
   position: fixed;
   top: 12px;
   left: 12px;
-  z-index: 120;
-  width: 30px;
-  height: 30px;
+  z-index: 95;
+  width: 40px;
+  height: 40px;
   border: none;
-  border-radius: 8px;
-  background: #09090b;
+  border-radius: 12px;
+  background: #f97316;
   color: white;
-  font-size: 15px;
   cursor: pointer;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+
+@media (max-width: 768px) {
+  .sidebar.sidebar-collapsed + * .mobile-sidebar-open-button,
+  .sidebar-collapsed ~ .mobile-sidebar-open-button {
+    display: flex;
+  }
 }
 
 @media (max-width: 768px) {
@@ -139,17 +170,23 @@
     width: 240px;
     transform: translateX(0);
     transition: transform 0.3s ease;
+    z-index: 100;
   }
 
   .sidebar.sidebar-collapsed {
-    width: 60px;
-    transform: translateX(0);
+    width: 0;
+    overflow: hidden;
     background: transparent;
     box-shadow: none;
   }
 
+  .sidebar.sidebar-collapsed .sidebar-top {
+    display: none;
+  }
+
   .sidebar.sidebar-collapsed .sidebar-content,
-  .sidebar.sidebar-collapsed .sidebar-status {
+  .sidebar.sidebar-collapsed .sidebar-status,
+  .sidebar.sidebar-collapsed .sidebar-bottom {
     display: none;
   }
 

@@ -27,15 +27,15 @@
 }
 
 .filter-btn:hover {
-  background: var(--bg-light);
-  border-color: var(--text-muted);
+  background: #fff4eb;
+  border-color: #fb923c;
 }
 
 .filter-btn.active {
-  background: var(--text-primary);
-  color: var(--white);
-  border-color: var(--text-primary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background: #f97316;
+  color: #ffffff;
+  border-color: #f97316;
+  box-shadow: 0 8px 24px rgba(249, 115, 22, 0.18);
 }
 
 .filter-count {

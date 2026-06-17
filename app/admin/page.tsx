@@ -780,19 +780,37 @@ function AdminDashboardContent() {
 
   if (loading) {
     return (
-      <div className="dashboard-loading">
-        <Loader2 size={32} className="spin" />
-        <p>Carregando dashboard...</p>
+      <div className="dashboard-shell">
+        <div className="dashboard-loading">
+          <Loader2 size={32} className="spin" />
+          <p>Carregando dashboard...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <>
-    <div className="dashboard-view">
-      <AlertBanner alerts={alerts} />
-      {setupStatus && !setupStatus.canOpen && (
-        <div className="setup-status-card" onClick={() => window.location.href = "/admin/onboarding"}>
+    <div className="dashboard-shell">
+      <div className="dashboard-page-header">
+        <div>
+          <p className="dashboard-page-tag">Painel Administrativo</p>
+          <h1 className="dashboard-page-title">Visão geral da sua loja</h1>
+          <p className="dashboard-page-description">Acompanhe pedidos, vendas e a configuração da loja em um painel unificado.</p>
+        </div>
+        {setupStatus && !setupStatus.canOpen ? (
+          <button onClick={() => window.location.href = "/admin/onboarding"} className="dashboard-page-action">
+            Finalizar configuração
+          </button>
+        ) : (
+          <button onClick={handleToggleOpen} className="dashboard-page-action">
+            {company?.open === false ? "Abrir loja" : "Fechar loja"}
+          </button>
+        )}
+      </div>
+      <div className="dashboard-view">
+        <AlertBanner alerts={alerts} />
+        {setupStatus && !setupStatus.canOpen && (
+          <div className="setup-status-card" onClick={() => window.location.href = "/admin/onboarding"}>
           <div className="setup-status-left">
             <div className="setup-status-icon">
               <Package size={18} />
@@ -921,7 +939,7 @@ function AdminDashboardContent() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
 

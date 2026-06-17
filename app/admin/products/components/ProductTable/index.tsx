@@ -29,7 +29,7 @@ export default function ProductTable({ products, categories, onEdit, onDelete }:
           {products.map((product) => (
             <tr key={product.id}>
               <td>
-                <img src={product.imageUrl} className="product-img" alt={product.name} />
+                <img src={product.imageUrl || null} className="product-img" alt={product.name} />
               </td>
               <td>
                 <strong>{product.name}</strong>

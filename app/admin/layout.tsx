@@ -26,7 +26,11 @@ export default function AdminLayout({
 
           <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
           <main className={`admin-content ${collapsed ? "content-expanded" : ""}`}>
-            {children}
+            <div className="admin-page-shell">
+              <div className="admin-page-body">
+                {children}
+              </div>
+            </div>
           </main>
         </div>
       </ErrorBoundary>

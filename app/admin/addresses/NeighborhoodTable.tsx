@@ -70,19 +70,7 @@ export default function NeighborhoodTable({
                   <td className="actions-cell" style={{ textAlign: 'right' }}>
                     <button
                       onClick={() => onToggleNb(nb.id, nb.enabled === false)}
-                      className="btn-action-text"
-                      style={{
-                        backgroundColor: nb.enabled !== false ? '#dcfce7' : '#fee2e2',
-                        color: nb.enabled !== false ? '#166534' : '#991b1b',
-                        borderColor: nb.enabled !== false ? '#16653433' : '#991b1b33',
-                        padding: '4px 10px',
-                        borderRadius: '8px',
-                        fontSize: '10px',
-                        fontWeight: 'bold',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
+                      className={`btn-action-text ${nb.enabled !== false ? 'btn-active' : 'btn-inactive'}`}
                       title={nb.enabled !== false ? "Desativar Bairro" : "Ativar Bairro"}
                     >
                       {nb.enabled !== false ? <MapPin size={12} /> : <MapPinOff size={12} />}
