@@ -243,7 +243,7 @@ function AddressesManagementContent() {
         isOwner={isOwner}
         isAdmin={isAdmin}
         onAddCity={() => setModalConfig({ type: 'city' })}
-        onSetDefaultPrice={handleSetDefaultPrice}
+        onSetDefaultPrice={(cityId: string) => setModalConfig({ type: 'city_price', data: { cityId } })}
         citySettings={citySettings}
         onToggleDelivery={handleToggleDelivery}
       />
