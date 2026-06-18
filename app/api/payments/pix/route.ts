@@ -69,9 +69,24 @@ export async function POST(req: NextRequest) {
 
             mercadopagoAccessToken = token;
             mercadopagoUserId = companyData.mercadopago_user_id as string | undefined;
-            applicationFee = companyData.platform_commission_percent
+
+            // Comissão da plataforma
+            let baseFee = companyData.platform_commission_percent
               ? Math.round((amount * companyData.platform_commission_percent) / 100 * 100) / 100
               : 0;
+
+            // Soma a taxa de conveniência do pedido (vai para a plataforma, não para a loja)
+            let orderConvenienceFee = 0;
+            try {
+              const orderDoc = await db.collection("orders").doc(cleanOrderId).get();
+              if (orderDoc.exists) {
+                orderConvenienceFee = orderDoc.data()?.convenienceFee || 0;
+              }
+            } catch (orderErr) {
+              logger.warn("API_PIX", `[${requestId}] Erro ao ler conveniência do pedido`, orderErr);
+            }
+
+            applicationFee = Math.round((baseFee + orderConvenienceFee) * 100) / 100;
 
             if (!companyData.platform_commission_percent) {
               logger.error("API_PIX", `[${requestId}] Mercado Pago conectado mas sem comissão configurada`, undefined, {

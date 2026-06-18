@@ -413,6 +413,24 @@ export default function IdentificationScreen({
               </span>
             </div>
           )}
+
+          {/* Endereço não atendido */}
+          {deliveryMode === "delivery" && addressCity && addressNeighborhood && (!isCityDeliveryEnabled || !isNeighborhoodSupported) && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-[12px] flex items-start gap-3">
+              <MapPin className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-bold text-red-700">Desculpe, não entregamos neste endereço</p>
+                <p className="text-xs text-red-600 mt-1">
+                  {!isCityDeliveryEnabled
+                    ? "A loja não realiza entregas na cidade selecionada."
+                    : "O bairro informado não está na área de entrega da loja."}
+                </p>
+                <p className="text-xs text-red-500 mt-1">
+                  Tente selecionar outro endereço ou opte por retirar na loja.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Buttons */}

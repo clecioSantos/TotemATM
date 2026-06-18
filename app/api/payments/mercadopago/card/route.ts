@@ -90,9 +90,22 @@ export async function POST(req: NextRequest) {
             }
 
             mercadopagoAccessToken = tokenAccess;
-            applicationFee = companyData.platform_commission_percent
+
+            let baseFee = companyData.platform_commission_percent
               ? Math.round((amount * companyData.platform_commission_percent) / 100 * 100) / 100
               : 0;
+
+            let orderConvenienceFee = 0;
+            try {
+              const orderDoc = await db.collection("orders").doc(cleanOrderId).get();
+              if (orderDoc.exists) {
+                orderConvenienceFee = orderDoc.data()?.convenienceFee || 0;
+              }
+            } catch (orderErr) {
+              logger.warn("API_CARD", `[${requestId}] Erro ao ler conveniência do pedido`, orderErr);
+            }
+
+            applicationFee = Math.round((baseFee + orderConvenienceFee) * 100) / 100;
 
             if (!companyData.platform_commission_percent) {
               return NextResponse.json(
