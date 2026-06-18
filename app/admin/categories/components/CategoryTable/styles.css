@@ -1,4 +1,4 @@
-.table-card { background: white; border-radius: 18px; border: 1px solid #eee; overflow: hidden; }
-.c-table { width: 100%; border-collapse: collapse; }
+.table-card { background: white; border-radius: 18px; border: 1px solid #eee; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.c-table { min-width: 100%; width: 100%; border-collapse: collapse; }
 .c-table th { background: #fafafa; padding: 16px; text-align: left; color: #71717a; }
 .c-table td { padding: 16px; border-top: 1px solid #eee; }

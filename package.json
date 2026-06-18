@@ -5,7 +5,11 @@
   "dev": "next dev -H 0.0.0.0",
   "build": "next build",
   "start": "next start",
-  "start:prod": "next start"
+  "start:prod": "next start",
+  "firestore:export": "npx tsx scripts/firestore-export.ts",
+  "firestore:import": "npx tsx scripts/firestore-import.ts",
+  "firebase:backup": "npx tsx scripts/firebase-backup.ts",
+  "firebase:restore": "npx tsx scripts/firebase-restore.ts"
 },
   "devDependencies": {
     "@types/node": "^22.0.0",
