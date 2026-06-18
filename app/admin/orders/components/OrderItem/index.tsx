@@ -72,6 +72,9 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
           <span className={`status-badge ${statusMap[order.status]?.class || 'status-pending'}`}>
             {statusMap[order.status]?.label || 'Pendente'}
           </span>
+          <span className="payment-method-badge" style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '6px', background: order.paymentMethod === 'credit_card' ? '#eff6ff' : '#f0fdf4', color: order.paymentMethod === 'credit_card' ? '#1d4ed8' : '#166534', fontWeight: '600', whiteSpace: 'nowrap' }}>
+            {order.paymentMethod === 'credit_card' ? '💳 Cartão' : order.paymentMethod === 'PIX' ? '💠 PIX' : order.paymentMethod || '—'}
+          </span>
           <strong className="order-total">R$ {order.total.toFixed(2)}</strong>
           <span className="expand-icon">{isExpanded ? '▲' : '▼'}</span>
         </div>

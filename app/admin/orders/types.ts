@@ -12,6 +12,8 @@ export interface Order extends Omit<SharedOrder, 'address' | 'status'> {
     complement?: string;
   };
   deliveryMode?: string;
+  paymentMethod?: string;
+  paymentStatus?: string;
   isScheduled?: boolean;
   scheduledDate?: string;
   scheduledTime?: string;
