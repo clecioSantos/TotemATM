@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PaymentProviderFactory } from "@/src/services/payment/payment-provider.factory";
 import { logger } from "@/src/lib/logger";
 import { MercadoPagoService } from "@/app/services/mercadopago/mercadopago.service";
 import { getAdminDb } from "@/src/services/firebase-admin";
@@ -36,26 +35,7 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanOrderId = orderId.replace(/^ORDER-/, "");
-    const isSandbox = process.env.MERCADOPAGO_ENVIRONMENT?.toLowerCase() === "sandbox"
-      || process.env.MERCADOPAGO_ENVIRONMENT?.toLowerCase() === "test";
-
-    if (isSandbox) {
-      logger.info("API_PIX", `[${requestId}] Ambiente sandbox detectado — pagamento automático`, {
-        cleanOrderId,
-        amount,
-      });
-      const { markOrderAsPaid } = await import(
-        "@/src/services/payment/services/order-payment.service"
-      );
-      await markOrderAsPaid(cleanOrderId);
-      return NextResponse.json({
-        success: true,
-        sandbox: true,
-        provider: "sandbox",
-        paymentId: cleanOrderId,
-        status: "paid",
-      });
-    }
+    const isSandbox = false;
 
     let mercadopagoAccessToken: string | undefined;
     let applicationFee: number | undefined;
@@ -90,7 +70,7 @@ export async function POST(req: NextRequest) {
             mercadopagoAccessToken = token;
             mercadopagoUserId = companyData.mercadopago_user_id as string | undefined;
             applicationFee = companyData.platform_commission_percent
-              ? (amount * companyData.platform_commission_percent) / 100
+              ? Math.round((amount * companyData.platform_commission_percent) / 100 * 100) / 100
               : 0;
 
             if (!companyData.platform_commission_percent) {
@@ -116,9 +96,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    logger.info("API_PIX", `[${requestId}] Obtendo provider da factory`);
-    const provider = PaymentProviderFactory.create();
-    logger.info("API_PIX", `[${requestId}] Provider ativo: ${provider.name}`);
+    const { MercadoPagoProvider } = await import("@/app/services/mercadopago/mercadopago.provider");
+    const provider = new MercadoPagoProvider();
+    logger.info("API_PIX", `[${requestId}] Provider forçado: ${provider.name}`);
 
     logger.info("API_PIX", `[${requestId}] Chamando provider.createPayment`, {
       cleanOrderId,
@@ -174,7 +154,9 @@ export async function POST(req: NextRequest) {
       logger.warn("API_PIX", `[${requestId}] Erro ao salvar informações de pagamento no pedido`, saveError);
     }
 
-    if (provider.name === "mercadopago" && !isSandbox) {
+    // Fallback: agendar verificação de pagamento
+    logger.info("API_PIX", `[${requestId}] Agendando fallback check para pagamento ${payment.paymentId}`);
+    try {
       const { scheduleMercadoPagoFallbackChecks } = await import(
         "@/app/services/mercadopago/mercadopago-fallback.service"
       );
@@ -185,118 +167,8 @@ export async function POST(req: NextRequest) {
         companyId,
         payment.expiresAt
       );
-    }
-
-    if (provider.name === "pagbank") {
-      const envUrl = process.env.PAGBANK_API_URL;
-      if (envUrl?.includes("sandbox")) {
-        logger.info("API_PIX", `[${requestId}] Agendando simulação PagBank`);
-        const { PagBankService } = await import("../../../services/pagbank/pagbank.service");
-        const timeoutId = setTimeout(() => {
-          PagBankService.simulateSandboxPayment(payment.paymentId)
-            .then(() => logger.info("API_PIX", `[${requestId}] Simulação PagBank concluída para ${payment.paymentId}`))
-            .catch(err => logger.error("API_PIX", `[${requestId}] Falha na simulação PagBank`, err));
-        }, 10000);
-        if (typeof timeoutId === "object" && "unref" in timeoutId) {
-          (timeoutId as any).unref();
-        }
-      }
-    }
-
-    if (provider.name === "abacatepay") {
-      const apiKey = process.env.ABACATEPAY_API_KEY?.trim() || "";
-      const isDevKey = apiKey.toLowerCase().includes("dev") || apiKey.toLowerCase().includes("test") || apiKey.toLowerCase().includes("sandbox");
-      if (isDevKey) {
-        logger.info("ABACATEPAY_MOCK", `[${requestId}] Mock payment scheduled`, {
-          paymentId: payment.paymentId,
-          orderId: cleanOrderId,
-          delay: 5000,
-        });
-
-        const timeoutId = setTimeout(async () => {
-          try {
-            const { markOrderAsPaid } = await import(
-              "@/src/services/payment/services/order-payment.service"
-            );
-            const result = await markOrderAsPaid(cleanOrderId);
-
-            if (result) {
-              logger.info("ABACATEPAY_MOCK", `[${requestId}] Mock payment approved`, {
-                paymentId: payment.paymentId,
-                orderId: cleanOrderId,
-              });
-            } else {
-              logger.warn("ABACATEPAY_MOCK", `[${requestId}] Mock payment skipped (already paid or order not found)`, {
-                paymentId: payment.paymentId,
-                orderId: cleanOrderId,
-              });
-            }
-          } catch (err) {
-            logger.error("ABACATEPAY_MOCK", `[${requestId}] Mock payment failed`, err, {
-              paymentId: payment.paymentId,
-              orderId: cleanOrderId,
-            });
-          }
-        }, 5000);
-
-        if (typeof timeoutId === "object" && "unref" in timeoutId) {
-          (timeoutId as any).unref();
-        }
-      }
-    }
-
-    if (provider.name === "mercadopago") {
-      const isSandbox = process.env.MERCADOPAGO_ENVIRONMENT?.toLowerCase() === "sandbox" || process.env.MERCADOPAGO_ENVIRONMENT?.toLowerCase() === "test";
-      if (isSandbox) {
-        logger.info("MERCADOPAGO_MOCK", `[${requestId}] Mock payment scheduled — will call webhook in 5s`, {
-          paymentId: payment.paymentId,
-          orderId: cleanOrderId,
-          delay: 5000,
-        });
-
-        const mockPayload = {
-          action: "payment.created",
-          data: { id: payment.paymentId },
-          external_reference: cleanOrderId,
-        };
-
-        const timeoutId = setTimeout(async () => {
-          try {
-            const protocol = req.headers.get("x-forwarded-proto") || "http";
-            const host = req.headers.get("host") || "localhost:3000";
-            const webhookUrl = `${protocol}://${host}/api/webhooks/mercadopago`;
-
-            const response = await fetch(webhookUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(mockPayload),
-            });
-
-            if (response.ok) {
-              logger.info("MERCADOPAGO_MOCK", `[${requestId}] Mock payment approved — webhook responded OK`, {
-                paymentId: payment.paymentId,
-                orderId: cleanOrderId,
-                status: response.status,
-              });
-            } else {
-              logger.warn("MERCADOPAGO_MOCK", `[${requestId}] Mock webhook returned non-OK`, {
-                paymentId: payment.paymentId,
-                orderId: cleanOrderId,
-                status: response.status,
-              });
-            }
-          } catch (err) {
-            logger.error("MERCADOPAGO_MOCK", `[${requestId}] Mock payment failed`, err, {
-              paymentId: payment.paymentId,
-              orderId: cleanOrderId,
-            });
-          }
-        }, 5000);
-
-        if (typeof timeoutId === "object" && "unref" in timeoutId) {
-          (timeoutId as any).unref();
-        }
-      }
+    } catch (fallbackError) {
+      logger.warn("API_PIX", `[${requestId}] Erro ao agendar fallback check`, fallbackError);
     }
 
     return NextResponse.json({
@@ -313,11 +185,10 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     const httpStatus = error?.status;
     const responseData = error?.responseData;
-    const providerName = PaymentProviderFactory.getProviderName();
 
     logger.error("API_PIX", `[${requestId}] Erro ao criar pagamento PIX`, error, {
       endpoint: "/api/payments/pix",
-      provider: providerName,
+      provider: "mercadopago",
       httpStatus,
       responseData,
       errorMessage: error?.message || String(error),

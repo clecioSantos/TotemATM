@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
 
             mercadopagoAccessToken = tokenAccess;
             applicationFee = companyData.platform_commission_percent
-              ? (amount * companyData.platform_commission_percent) / 100
+              ? Math.round((amount * companyData.platform_commission_percent) / 100 * 100) / 100
               : 0;
 
             if (!companyData.platform_commission_percent) {
