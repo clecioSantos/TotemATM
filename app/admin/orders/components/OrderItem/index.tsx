@@ -76,6 +76,21 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
             {order.paymentMethod === 'credit_card' ? '💳 Cartão' : order.paymentMethod === 'PIX' ? '💠 PIX' : order.paymentMethod || '—'}
           </span>
           <strong className="order-total">R$ {order.total.toFixed(2)}</strong>
+          {order.status !== 'finished' && order.status !== 'cancelled' && (
+            <button
+              className="cancel-btn-inline"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (window.confirm("Deseja realmente cancelar este pedido?")) {
+                  onCancel(order.id);
+                }
+              }}
+              title="Cancelar pedido"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontSize: '12px', fontWeight: '600', color: '#dc2626', borderRadius: '6px' }}
+            >
+              Cancelar
+            </button>
+          )}
           <span className="expand-icon">{isExpanded ? '▲' : '▼'}</span>
         </div>
       </div>

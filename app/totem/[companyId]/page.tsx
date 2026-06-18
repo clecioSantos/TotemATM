@@ -119,7 +119,8 @@ function TotemContent({ params }: PageProps) {
     if (!user) return;
     const q = query(collection(firestore, "orders"), where("customerId", "==", user.uid));
     const unsub = onSnapshot(q, (snap) => {
-      setUserOrders(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const allOrders = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setUserOrders(allOrders.filter((o: any) => o.paymentStatus !== "WAITING_PAYMENT" && o.paymentStatus !== "PENDING"));
     }, (err) => {
       logger.error("TotemPage", "Erro ao carregar pedidos", err);
     });

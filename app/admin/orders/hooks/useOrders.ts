@@ -42,7 +42,10 @@ export const useOrders = () => {
             } as Omit<Order, 'createdAt'> & { createdAt: Date };
           });
 
-          setOrders(items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
+          const filtered = items.filter(
+            (o) => o.paymentStatus !== "WAITING_PAYMENT" && o.paymentStatus !== "PENDING"
+          );
+          setOrders(filtered.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
           setLoading(false);
         } catch (mapError) {
           logger.error("useOrders", "Erro ao mapear pedidos do snapshot", mapError);

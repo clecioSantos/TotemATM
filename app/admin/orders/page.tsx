@@ -20,7 +20,6 @@ function OrdersContent() {
 
   const statuses = [
     { id: "all", label: "Todos" },
-    { id: "pending", label: "Pendentes" },
     { id: "paid", label: "Pagos" },
     { id: "preparing", label: "Em preparo" },
     { id: "ready", label: "Prontos" },
