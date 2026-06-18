@@ -184,6 +184,14 @@ export async function POST(req: NextRequest) {
         statusDetail: payment.status_detail,
       });
 
+      await db.collection("orders").doc(cleanOrderId).update({
+        paymentStatus: "FAILED",
+        status: "cancelled",
+        cancelledAt: new Date(),
+        cancelReason: `Cartão rejeitado: ${payment.status_detail || ""}`,
+        updatedAt: new Date(),
+      });
+
       return NextResponse.json({
         success: false,
         status: "rejected",
@@ -207,6 +215,24 @@ export async function POST(req: NextRequest) {
       httpStatus,
       responseData,
     });
+
+    // Cancelar o pedido em caso de erro no pagamento
+    try {
+      const errBody = await req.json().catch(() => ({}));
+      const errOrderId = (errBody.orderId || "").replace(/^ORDER-/, "");
+      if (errOrderId) {
+        const db = getAdminDb();
+        await db.collection("orders").doc(errOrderId).update({
+          paymentStatus: "FAILED",
+          status: "cancelled",
+          cancelledAt: new Date(),
+          cancelReason: `Erro no processamento: ${error?.message || "desconhecido"}`,
+          updatedAt: new Date(),
+        });
+      }
+    } catch (cancelError) {
+      logger.warn("API_CARD", `[${requestId}] Erro ao cancelar pedido após falha`, cancelError);
+    }
 
     let userMessage: string;
 

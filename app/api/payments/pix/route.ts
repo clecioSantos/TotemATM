@@ -200,9 +200,10 @@ export async function POST(req: NextRequest) {
       paymentProvider: process.env.PAYMENT_PROVIDER,
     });
 
+    const errorCode = responseData?.cause?.[0]?.code || responseData?.cause?.[0]?.description || "";
     const userMessage = httpStatus === 401 || httpStatus === 403
       ? "Erro de autenticação com o gateway de pagamento."
-      : error?.message || "Erro ao gerar pagamento";
+      : "O PIX está temporariamente indisponível para esta loja. Tente novamente mais tarde ou utilize outra forma de pagamento.";
 
     return NextResponse.json(
       { success: false, error: userMessage },

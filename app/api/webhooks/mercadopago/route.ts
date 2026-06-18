@@ -179,8 +179,23 @@ export async function POST(req: NextRequest) {
         provider: "mercadopago",
       });
       logger.info("MERCADOPAGO_WEBHOOK", `Pagamento aprovado para pedido ${event.orderId}`);
+    } else if (["CANCELLED", "EXPIRED", "FAILED"].includes(event.status)) {
+      logger.info("MERCADOPAGO_WEBHOOK", `Pagamento ${event.status} — cancelando pedido ${event.orderId}`);
+      try {
+        const { getAdminDb } = await import("@/src/services/firebase-admin");
+        const db = getAdminDb();
+        await db.collection("orders").doc(event.orderId).update({
+          paymentStatus: event.status,
+          status: "cancelled",
+          cancelledAt: new Date(),
+          cancelReason: `Pagamento ${event.status} via webhook`,
+          updatedAt: new Date(),
+        });
+      } catch (cancelErr) {
+        logger.error("MERCADOPAGO_WEBHOOK", `Erro ao cancelar pedido ${event.orderId}`, cancelErr);
+      }
     } else {
-      logger.info("MERCADOPAGO_WEBHOOK", `Evento nao-PAID: ${event.event} para pedido ${event.orderId}`);
+      logger.info("MERCADOPAGO_WEBHOOK", `Evento ignorado: ${event.event} (status: ${event.status}) para pedido ${event.orderId}`);
     }
 
     logger.info("MERCADOPAGO_WEBHOOK", "=== WEBHOOK FINALIZADO COM SUCESSO ===");

@@ -206,6 +206,33 @@ const helpContent: HelpArticle[] = [
     ],
     keywords: ["totem", "autoatendimento", "self-service", "quiosque", "tablet"],
   },
+  {
+    id: "habilitar-pix",
+    title: "Habilitar PIX",
+    shortDescription: "Saiba como habilitar pagamentos via PIX na sua loja.",
+    content: `
+<p>Para habilitar o PIX na sua loja basta ter a conta <strong>Mercado Pago</strong> configurada no menu <strong>Financeiro</strong> e possuir uma <strong>chave PIX</strong> configurada na sua conta Mercado Pago.</p>
+
+<h3>Passo a passo</h3>
+<ol>
+  <li>Acesse o menu <strong>Financeiro</strong> no painel administrativo.</li>
+  <li>Clique em <strong>Conectar Mercado Pago</strong> e siga as instruções para autorizar a integração.</li>
+  <li>Após conectar, verifique se o status exibe <strong>"Conectado"</strong>.</li>
+  <li>Acesse sua conta no <a href="https://www.mercadopago.com.br" target="_blank" rel="noopener">Mercado Pago</a> e cadastre uma <strong>chave PIX</strong> (pode ser CPF, CNPJ, e-mail, celular ou chave aleatória).</li>
+  <li>Pronto! O PIX estará disponível para seus clientes no checkout.</li>
+</ol>
+
+<h3>Dica</h3>
+<p>Recomendamos utilizar uma chave PIX do tipo <strong>CNPJ</strong> ou <strong>e-mail</strong> para facilitar a identificação dos pagamentos recebidos.</p>
+    `.trim(),
+    topics: ["Mercado Pago", "PIX", "Financeiro", "Pagamentos"],
+    tips: [
+      "A chave PIX deve ser cadastrada diretamente no Mercado Pago, não no sistema.",
+      "Utilize o CNPJ da loja como chave PIX para facilitar a conciliação.",
+      "Após configurar, teste fazendo um pedido de R$ 1,00 para confirmar que o QR Code está sendo gerado.",
+    ],
+    keywords: ["pix", "pagamento", "mercado pago", "financeiro", "chave pix", "habilitar pix", "qr code"],
+  },
 ];
 
 export default helpContent;
