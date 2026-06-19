@@ -94,7 +94,7 @@ export default function EditStorePage() {
     fetchStore();
 
     const unsub = onSnapshot(collection(firestore, "cities"), (snap) => {
-      setCities(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setCities(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a: any, b: any) => a.name.localeCompare(b.name)));
     }, (error) => {
       console.error("🔥 Erro ao carregar cidades:", error);
     });

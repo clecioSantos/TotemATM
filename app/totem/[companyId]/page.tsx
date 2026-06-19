@@ -307,7 +307,8 @@ function TotemContent({ params }: PageProps) {
     const basePrice = item.tamanhoSelecionado ? item.tamanhoSelecionado.preco : item.price;
     const condimentsPrice = item.condiments?.reduce((sum, cond) => sum + cond.price, 0) || 0;
     const flavorsPrice = item.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0;
-    return acc + (basePrice + flavorsPrice + condimentsPrice) * item.quantity;
+    const requiredItemsPrice = item.selectedRequiredItems?.reduce((s, rg) => s + rg.items.reduce((ss, i) => ss + (Number(i.additionalPrice) || 0), 0), 0) || 0;
+    return acc + (basePrice + flavorsPrice + condimentsPrice + requiredItemsPrice) * item.quantity;
   }, 0);
 
   const hasRequiredScheduling = cart.some((item) => {
@@ -443,6 +444,13 @@ function TotemContent({ params }: PageProps) {
 
   const handlePaymentConfirmed = useCallback(() => {
     try {
+      if (currentOrderId) {
+        updateDoc(doc(firestore, "orders", currentOrderId), {
+          paymentStatus: "PAID",
+          status: "paid",
+          paidAt: serverTimestamp(),
+        }).catch(err => logger.error("TotemPage", "Erro ao marcar pedido como pago", err));
+      }
       setStep('FINISHED');
       clearCart();
       setDeliveryStreet("");
@@ -456,7 +464,7 @@ function TotemContent({ params }: PageProps) {
     } catch (error) {
       logger.error("TotemPage", "Erro ao confirmar pagamento", error);
     }
-  }, [clearCart, router]);
+  }, [currentOrderId, clearCart, router]);
 
   const closeAllModals = () => {
     setIsProfileOpen(false);

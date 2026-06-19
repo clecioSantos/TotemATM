@@ -42,25 +42,27 @@
 }
 
 .form-submit {
-  height: 48px;
+  width: 100%;
+  padding: 14px 24px;
   background: #f97316;
   color: #fff;
   border: none;
   border-radius: 12px;
-  font-weight: 700;
   font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   margin-top: 8px;
-  transition: all 0.2s;
 }
 
 .form-submit:hover {
   background: #ea580c;
+  transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(249,115,22,0.3);
-}
-
-.form-submit:active {
-  transform: scale(0.98);
 }
 
 .checkbox-group {

@@ -20,7 +20,7 @@ export default function AddressesManagementPage() {
   useEffect(() => {
     const q = query(collection(firestore, "cities"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setCities(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      setCities(snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => a.name.localeCompare(b.name)));
     });
     return () => unsubscribe();
   }, []);
@@ -29,7 +29,7 @@ export default function AddressesManagementPage() {
     if (selectedCityId) {
       const q = query(collection(firestore, "neighborhoods"), where("cityId", "==", selectedCityId));
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        setNeighborhoods(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        setNeighborhoods(snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => a.name.localeCompare(b.name)));
       });
       return () => unsubscribe();
     } else {

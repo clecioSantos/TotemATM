@@ -97,7 +97,7 @@ export default function StoreListingPage() {
 
   useEffect(() => {
     const unsubCities = onSnapshot(collection(firestore, "cities"), (snap) => {
-      const citiesData = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const citiesData = snap.docs.map((d: any) => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => a.name.localeCompare(b.name));
       setCities(citiesData);
       setAvailableCities(citiesData);
     });

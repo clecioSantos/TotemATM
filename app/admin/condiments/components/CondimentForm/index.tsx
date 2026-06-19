@@ -25,8 +25,6 @@ export default function CondimentForm({ initialData, categories = [], onSubmit }
   const [description, setDescription] = useState(initialData?.description || "");
   const [enabled, setEnabled] = useState(initialData?.enabled ?? true);
   const [categoryIds, setCategoryIds] = useState<string[]>(initialData?.categoryIds || []);
-  const [imageFile, setImageFile] = useState<File | undefined>();
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,19 +36,10 @@ export default function CondimentForm({ initialData, categories = [], onSubmit }
       description,
       enabled,
       categoryIds,
-      imageUrl: initialData?.imageUrl,
     };
     if (initialData?.id) data.id = initialData.id;
-    await onSubmit(data, imageFile);
+    await onSubmit(data);
     setSubmitting(false);
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
   };
 
   const toggleCategory = (id: string) => {
@@ -92,33 +81,6 @@ export default function CondimentForm({ initialData, categories = [], onSubmit }
           ) : (
             <p className="upload-hint">Nenhuma categoria encontrada no sistema.</p>
           )}
-        </div>
-      </div>
-
-      <div className="input-group">
-        <label>Foto do Condimento</label>
-        <div className="image-upload-container">
-          <div className="image-upload-preview">
-            {imagePreview ? (
-              <img src={imagePreview} alt="Preview" />
-            ) : initialData?.imageUrl ? (
-              <img src={initialData.imageUrl} alt="Atual" />
-            ) : (
-              <div className="image-placeholder">📸</div>
-            )}
-          </div>
-          <div className="image-upload-controls">
-            <label className="image-upload-button">
-              {imageFile || initialData?.imageUrl ? "Alterar Foto" : "Selecionar Foto"}
-              <input 
-                type="file" 
-                accept="image/*" 
-                onChange={handleImageChange} 
-                className="hidden-file-input"
-              />
-            </label>
-            <p className="upload-hint">Formatos aceitos: JPG, PNG.</p>
-          </div>
         </div>
       </div>
 

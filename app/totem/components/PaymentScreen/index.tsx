@@ -31,6 +31,7 @@ interface PaymentScreenProps {
 export default function PaymentScreen({ orderId, total, companyId: pageCompanyId, customerName, customerEmail, onPaymentConfirmed, onCancel }: PaymentScreenProps) {
   const companyId = getPaymentCompanyId(pageCompanyId);
   const [method, setMethod] = useState<"pix" | "credit_card" | null>(null);
+  const isSandbox = typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_MERCADOPAGO_ENVIRONMENT?.toLowerCase() === 'sandbox';
 
   return (
     <div className="min-h-screen w-screen bg-gradient-to-b from-brand-light to-gray-100 flex items-center justify-center p-4 lg:p-8">
@@ -73,6 +74,15 @@ export default function PaymentScreen({ orderId, total, companyId: pageCompanyId
 
         {method === "credit_card" && (
           <CardPaymentForm orderId={orderId} total={total} companyId={companyId} customerName={customerName} customerEmail={customerEmail} onPaymentConfirmed={onPaymentConfirmed} />
+        )}
+
+        {isSandbox && (
+          <button
+            onClick={onPaymentConfirmed}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-[12px] font-bold text-sm border-2 border-dashed border-amber-400 text-amber-700 bg-amber-50 hover:bg-amber-100 transition-all mb-2"
+          >
+            🪙 Mock Pagamento (Sandbox)
+          </button>
         )}
 
         <button

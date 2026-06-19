@@ -105,6 +105,7 @@ export const useProducts = () => {
         const productRef = doc(firestore, 'products', data.id);
         await updateDoc(productRef, { ...data, imageUrl });
         logger.info("useProducts", `Produto ${data.id} atualizado`);
+        return data.id;
       } else {
         const docRef = await addDoc(collection(firestore, 'products'), {
           ...data,
@@ -115,6 +116,7 @@ export const useProducts = () => {
           createdAt: Timestamp.now(),
         });
         logger.info("useProducts", `Produto criado: ${docRef.id}`);
+        return docRef.id;
       }
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
@@ -146,5 +148,9 @@ export const useProducts = () => {
     }
   };
 
-  return { products, loading, error, saveProduct, removeProduct };
+  return { products, loading, error, saveProduct, removeProduct } as {
+    products: any[]; loading: boolean; error: any;
+    saveProduct: (data: any, file?: File) => Promise<string>;
+    removeProduct: (id: string) => Promise<void>;
+  };
 };

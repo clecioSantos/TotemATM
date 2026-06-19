@@ -8,20 +8,17 @@ import {
   LayoutDashboard, 
   ClipboardList, 
   Package, 
-  Folder, 
-  ChefHat, 
-  Ticket, 
   BarChart3, 
   Settings,
   MapPin, 
   ChevronLeft, 
   Menu,
-  Palette,
   Star,
   Users,
   Tag,
   Wallet,
-  HelpCircle
+  HelpCircle,
+  Ticket
 } from "lucide-react";
 import { useAuth } from "@/app/admin/orders/AuthContext";
 import "./page.css";
@@ -52,9 +49,6 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     { name: "Dashboard", path: "/admin", icon: <LayoutDashboard size={20} /> },
     { name: "Pedidos", path: "/admin/orders", icon: <ClipboardList size={20} /> },
     { name: "Produtos", path: "/admin/products", icon: <Package size={20} /> },
-    { name: "Categorias", path: "/admin/categories", icon: <Folder size={20} /> },
-    { name: "Sabores", path: "/admin/flavors", icon: <Palette size={20} /> },
-    { name: "Condimentos", path: "/admin/condiments", icon: <ChefHat size={20} /> },
     { name: "Avaliações", path: "/admin/reviews", icon: <Star size={20} /> },
     { name: "Promoções", path: "/admin/promotions", icon: <Tag size={20} /> },
     { name: "Financeiro", path: "/admin/financeiro", icon: <Wallet size={20} /> },

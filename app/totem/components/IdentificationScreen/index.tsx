@@ -145,7 +145,7 @@ export default function IdentificationScreen({
   // Carregar Cidades do sistema
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(firestore, "cities"), (snapshot) => {
-      setAvailableCities(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      setAvailableCities(snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => a.name.localeCompare(b.name)));
     }, (error) => {
       console.error("🔥 Erro ao carregar cidades:", error);
     });
@@ -181,7 +181,7 @@ export default function IdentificationScreen({
     if (addressCity) {
       const q = query(collection(firestore, "neighborhoods"), where("cityId", "==", addressCity));
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        setAvailableNeighborhoods(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        setAvailableNeighborhoods(snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => a.name.localeCompare(b.name)));
       }, (error) => {
         console.error("🔥 Erro ao carregar bairros:", error);
       });

@@ -90,9 +90,6 @@ service cloud.firestore {
 
     // =============================================
     // EMPRESAS / LOJAS
-    // - Leitura: pública (totem)
-    // - Criação: qualquer autenticado
-    // - Update/Delete: ownerId OU adminIds (array de UIDs)
     // =============================================
 
     match /companies/{companyId} {
@@ -107,8 +104,6 @@ service cloud.firestore {
 
     // =============================================
     // USUÁRIOS
-    // - Leitura: apenas o próprio perfil
-    // - Escrita: próprio usuário OU admin da loja vinculada
     // =============================================
 
     match /users/{userId} {
@@ -172,8 +167,6 @@ service cloud.firestore {
 
     // =============================================
     // CUPONS DE DESCONTO
-    // - Leitura: autenticados (para validação no checkout)
-    // - Escrita: owner/admin da loja
     // =============================================
 
     match /coupons/{couponId} {
@@ -195,9 +188,6 @@ service cloud.firestore {
 
     // =============================================
     // CONTATOS / MENSAGENS
-    // - Leitura: autenticados
-    // - Criação: qualquer um (inclusive não autenticados para o formulário público)
-    // - Update/Delete: owner/admin
     // =============================================
 
     match /contacts/{contactId} {
@@ -214,6 +204,22 @@ service cloud.firestore {
     match /settings/{settingId} {
       allow read: if isAuth();
       allow write: if isAuth() && (request.auth.token.role == "owner" || request.auth.token.role == "admin");
+    }
+
+    // =============================================
+    // GRUPOS OBRIGATÓRIOS DO PRODUTO
+    // - Leitura: pública (totem)
+    // - Escrita: autenticado
+    // =============================================
+
+    match /requiredGroups/{groupId} {
+      allow read: if true;
+      allow write: if isAuth();
+    }
+
+    match /requiredItems/{itemId} {
+      allow read: if true;
+      allow write: if isAuth();
     }
 
     // =============================================

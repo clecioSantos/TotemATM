@@ -157,13 +157,23 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
                         ))}
                       </div>
                     )}
+                    {item.selectedRequiredItems?.map((rg: any) => (
+                      <div key={rg.groupName} style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                        <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#6b7280', marginRight: '4px' }}>{rg.groupName}:</span>
+                        {rg.items.map((i: any, ii: number) => (
+                          <span key={ii} style={{ fontSize: '10px', background: '#fef3c7', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', color: '#92400e' }}>
+                            {i.name}{i.additionalPrice > 0 ? ` (+R$${Number(i.additionalPrice).toFixed(2)})` : ''}
+                          </span>
+                        ))}
+                      </div>
+                    ))}
                   </td>
                   <td style={{ textAlign: 'center' }}>{item.quantity}x</td>
                   <td style={{ textAlign: 'right' }}>
-                    R$ {(item.price + (item.saboresSelecionados?.reduce((s: number, f: any) => s + f.preco, 0) || 0) + (item.condiments?.reduce((s: number, c: any) => s + c.price, 0) || 0)).toFixed(2)}
+                    R$ {((item.price || 0) + (item.saboresSelecionados?.reduce((s: number, f: any) => s + f.preco, 0) || 0) + (item.condiments?.reduce((s: number, c: any) => s + c.price, 0) || 0) + (item.selectedRequiredItems?.reduce((s: number, rg: any) => s + rg.items.reduce((ss: number, i: any) => ss + (Number(i.additionalPrice) || 0), 0), 0) || 0)).toFixed(2)}
                   </td>
                   <td style={{ textAlign: 'right' }}>
-                    R$ {(item.quantity * (item.price + (item.saboresSelecionados?.reduce((s: number, f: any) => s + f.preco, 0) || 0) + (item.condiments?.reduce((s: number, c: any) => s + c.price, 0) || 0))).toFixed(2)}
+                    R$ {(item.quantity * ((item.price || 0) + (item.saboresSelecionados?.reduce((s: number, f: any) => s + f.preco, 0) || 0) + (item.condiments?.reduce((s: number, c: any) => s + c.price, 0) || 0) + (item.selectedRequiredItems?.reduce((s: number, rg: any) => s + rg.items.reduce((ss: number, i: any) => ss + (Number(i.additionalPrice) || 0), 0), 0) || 0))).toFixed(2)}
                   </td>
                 </tr>
               ))}

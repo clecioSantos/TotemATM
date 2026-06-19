@@ -136,7 +136,8 @@ export default function OrderSummaryScreen({
                 const basePrice = item.tamanhoSelecionado ? item.tamanhoSelecionado.preco : item.price;
                 const condPrice = item.condiments?.reduce((s, c) => s + c.price, 0) || 0;
                 const flavPrice = item.saboresSelecionados?.reduce((s, f) => s + (f.preco || 0), 0) || 0;
-                const unitTotal = (basePrice + condPrice + flavPrice) * item.quantity;
+                const reqPrice = item.selectedRequiredItems?.reduce((s, rg) => s + rg.items.reduce((ss, i) => ss + (Number(i.additionalPrice) || 0), 0), 0) || 0;
+                const unitTotal = (basePrice + condPrice + flavPrice + reqPrice) * item.quantity;
                 return (
                   <div key={item.id} className="flex justify-between items-start gap-2">
                     <div className="flex-1 min-w-0">
@@ -152,6 +153,11 @@ export default function OrderSummaryScreen({
                           +{item.condiments.map(c => c.name).join(", ")}
                         </p>
                       )}
+                      {item.selectedRequiredItems?.map((rg: any) => (
+                        <p key={rg.groupName} className="text-[11px] text-brand-muted ml-5">
+                          {rg.items.map((i: any) => i.name).join(", ")}
+                        </p>
+                      ))}
                     </div>
                     <span className="text-sm font-bold text-brand-dark shrink-0">R$ {unitTotal.toFixed(2)}</span>
                   </div>

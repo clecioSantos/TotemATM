@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Product, Category, CartItem, Condiment, CategoryFlavor, SelectedSize, SelectedFlavor, ProductSize, Promotion } from "@totem/shared/types";
 import { ShoppingBag, Trash2, Plus, Minus, X, ArrowLeft, Store, Star, Bell, User, Tag } from "lucide-react";
 import { firestore } from "@/src/services/firebase";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, getDocs } from "firebase/firestore";
 import StoreReviewsModal from "../StoreReviewsModal";
 
 interface OrderingScreenProps {
@@ -21,7 +21,7 @@ interface OrderingScreenProps {
   flavors: CategoryFlavor[];
   cart: CartItem[];
   actions: {
-    addToCart: (product: Product, selectedCondiments?: Condiment[], tamanhoSelecionado?: SelectedSize, saboresSelecionados?: SelectedFlavor[], quantity?: number) => { message?: string; usedRegularPrice?: boolean } | undefined;
+    addToCart: (product: Product, selectedCondiments?: Condiment[], tamanhoSelecionado?: SelectedSize, saboresSelecionados?: SelectedFlavor[], quantity?: number, selectedRequiredItems?: { groupName: string; items: { name: string; additionalPrice: number }[] }[]) => { message?: string; usedRegularPrice?: boolean } | undefined;
     removeFromCart: (id: string) => void;
     updateQuantity: (id: string, delta: number) => void;
     updateItemObservation: (id: string, obs: string) => void;
@@ -74,10 +74,31 @@ export default function OrderingScreen({
   const [selectedCondiments, setSelectedCondiments] = useState<Condiment[]>([]);
   const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null);
   const [selectedFlavors, setSelectedFlavors] = useState<CategoryFlavor[]>([]);
+  const [requiredSelections, setRequiredSelections] = useState<Record<string, Set<string>>>({});
   const [quantity, setQuantity] = useState(1);
   const [isStoreReviewsOpen, setIsStoreReviewsOpen] = useState(false);
   const [deliveryCosts, setDeliveryCosts] = useState<any[]>([]);
+  const [requiredGroups, setRequiredGroups] = useState<any[]>([]);
   const [toast, setToast] = useState<{ message: string; type?: "error" | "info" } | null>(null);
+
+  useEffect(() => {
+    if (!selectedProduct?.id) { setRequiredGroups([]); return; }
+    const unsub = onSnapshot(
+      query(collection(firestore, "requiredGroups"), where("productId", "==", selectedProduct.id)),
+      async (snap) => {
+        const groups = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const withItems = await Promise.all(groups.map(async (g: any) => {
+          const itemsSnap = await getDocs(
+            query(collection(firestore, "requiredItems"), where("groupId", "==", g.id), ...([] as any[]))
+          );
+          return { ...g, items: itemsSnap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => a.order - b.order) };
+        }));
+        setRequiredGroups(withItems.sort((a: any, b: any) => a.order - b.order));
+      },
+      () => setRequiredGroups([])
+    );
+    return () => unsub();
+  }, [selectedProduct?.id]);
 
   useEffect(() => {
     if (toast) {
@@ -85,6 +106,10 @@ export default function OrderingScreen({
       return () => clearTimeout(timer);
     }
   }, [toast]);
+
+  useEffect(() => {
+    setRequiredSelections({});
+  }, [selectedProduct?.id, selectedSize?.nome]);
 
   useEffect(() => {
     if (!companyId) return;
@@ -117,7 +142,7 @@ export default function OrderingScreen({
     ? categories.find(c => c.id === selectedProduct.categoryId) 
     : null;
 
-  const productSizes: ProductSize[] = selectedProduct && productCategory?.possuiTamanhos
+  const productSizes: ProductSize[] = selectedProduct
     ? selectedProduct.sizes || []
     : [];
 
@@ -148,27 +173,28 @@ export default function OrderingScreen({
     });
   };
 
-  const effectivePrice = selectedProduct
-    ? selectedSize
-      ? getPromotionalPrice
-        ? getPromotionalPrice(selectedProduct.id, selectedSize.preco)
-        : selectedSize.preco
-      : getPromotionalPrice
-        ? getPromotionalPrice(selectedProduct.id, selectedProduct.price)
-        : selectedProduct.price
-    : 0;
+  const today = new Date().getDay();
 
-  const productTotal = selectedProduct 
-    ? (effectivePrice + selectedFlavors.reduce((sum, f) => sum + (f.preco || 0), 0) + selectedCondiments.reduce((sum, c) => sum + c.price, 0)) * quantity
-    : 0;
-
-  const getPrice = (product: Product) => {
-    if (getPromotionalPrice) return getPromotionalPrice(product.id, product.price);
-    return product.price;
+  const getDayDiscount = (product: Product): number | null => {
+    if (!product.dayPromotions || product.dayPromotions.length === 0) return null;
+    const match = product.dayPromotions.find(p => p.dayOfWeek === today);
+    return match ? match.discountPercent : null;
   };
 
-  const hasPromotion = (productId: string) => {
-    if (getProductPromotion) return getProductPromotion(productId) != null;
+  const getPrice = (product: Product, sizePrice?: number) => {
+    const base = sizePrice ?? product.price;
+    if (getProductPromotion) {
+      const promo = getProductPromotion(product.id);
+      if (promo && getPromotionalPrice) return getPromotionalPrice(product.id, base);
+    }
+    const dayDisc = getDayDiscount(product);
+    if (dayDisc) return base - (base * dayDisc / 100);
+    return base;
+  };
+
+  const hasPromotion = (productId: string, product?: Product) => {
+    if (getProductPromotion && getProductPromotion(productId) != null) return true;
+    if (product && getDayDiscount(product)) return true;
     return false;
   };
 
@@ -178,17 +204,60 @@ export default function OrderingScreen({
     return { sold: promo.soldUnits || 0, limit: promo.stockLimit };
   };
 
+  const weekDays = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+
+  const hasDayPromotionToday = products.some(p => getDayDiscount(p) !== null);
+  const dayPromoLabel = weekDays[today];
+
+  const effectivePrice = selectedProduct
+    ? selectedSize
+      ? getPrice(selectedProduct, selectedSize.preco)
+      : getPrice(selectedProduct)
+    : 0;
+
+  const requiredGroupsTotal = (selectedProduct ? requiredGroups.filter((g: any) => g.active !== false).reduce((sum, group: any) => {
+    const groupKey = group.id || group.name;
+    const selections = requiredSelections[groupKey] || new Set<string>();
+    const items = (group.items || []).filter((i: any) => i.available !== false);
+    const selectedItems = items.filter((i: any) => selections.has(i.id));
+    return sum + selectedItems.reduce((s: number, i: any) => s + (Number(i.additionalPrice) || 0), 0);
+  }, 0) : 0);
+
+  const requiredGroupsValid = !selectedProduct || requiredGroups.filter((g: any) => g.active !== false).every((group: any) => {
+    const items = (group.items || []).filter((i: any) => i.available !== false);
+    if (items.length === 0) return true;
+    const sizeOverride = selectedSize && group.sizeOverrides
+      ? group.sizeOverrides.find((o: any) => o.sizeName === selectedSize.nome)
+      : null;
+    const minQty = sizeOverride?.minQuantity ?? group.minQuantity ?? 0;
+    const maxQty = sizeOverride?.maxQuantity ?? group.maxQuantity ?? items.length;
+    const groupKey = group.id || group.name;
+    const count = (requiredSelections[groupKey] || new Set<string>()).size;
+    if (group.rule === 'EXACTLY') return count === maxQty;
+    if (group.rule === 'MIN') return count >= minQty;
+    if (group.rule === 'MAX') return count <= maxQty;
+    if (group.rule === 'BETWEEN') return count >= minQty && count <= maxQty;
+    return true;
+  });
+
+  const productTotal = selectedProduct 
+    ? (effectivePrice + selectedFlavors.reduce((sum, f) => sum + (f.preco || 0), 0) + selectedCondiments.reduce((sum, c) => sum + c.price, 0) + requiredGroupsTotal) * quantity
+    : 0;
+
   const filteredProducts = activeCategory === "all" 
     ? products 
     : activeCategory === "featured"
-    ? products.filter(p => p.featured || hasPromotion(p.id))
+    ? products.filter(p => p.featured || hasPromotion(p.id, p))
     : products.filter(p => p.categoryId === activeCategory);
+
+  const requiredItemsPrice = (item: any) =>
+    item.selectedRequiredItems?.reduce((s: number, rg: any) => s + rg.items.reduce((ss: number, i: any) => ss + (Number(i.additionalPrice) || 0), 0), 0) || 0;
 
   const cartTotal = cart.reduce((acc, i) => {
     const basePrice = i.tamanhoSelecionado ? i.tamanhoSelecionado.preco : i.price;
     const condimentsPrice = i.condiments?.reduce((sum, c) => sum + c.price, 0) || 0;
     const flavorsPrice = i.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0;
-    return acc + ((basePrice + flavorsPrice + condimentsPrice) * i.quantity);
+    return acc + ((basePrice + flavorsPrice + condimentsPrice + requiredItemsPrice(i)) * i.quantity);
   }, 0);
   const cartItemsCount = cart.reduce((acc, i) => acc + i.quantity, 0);
   const hasRegularItems = cart.some(item => item.id.includes('-regular-'));
@@ -303,6 +372,25 @@ export default function OrderingScreen({
             </div>
           </div>
 
+          {/* Day Promotion Event Card */}
+          {hasDayPromotionToday && (
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-4 mx-4 mt-4 rounded-2xl shadow-lg flex items-center gap-3">
+              <div className="bg-white/20 rounded-full p-2">
+                <Tag size={20} className="text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="text-white font-black text-lg leading-tight">{dayPromoLabel}</p>
+                <p className="text-orange-100 text-xs font-medium">Descontos especiais hoje!</p>
+              </div>
+              <button
+                onClick={() => setActiveCategory("featured")}
+                className="bg-white text-orange-600 text-xs font-bold px-4 py-2 rounded-full shadow-sm hover:bg-orange-50 transition-colors"
+              >
+                Ver ofertas
+              </button>
+            </div>
+          )}
+
           {/* Categories - sticky, follows banner */}
           <div className="sticky top-0 z-20 bg-white border-b border-gray-200/60 p-4 flex gap-2 overflow-x-auto no-scrollbar">
             <button
@@ -344,6 +432,8 @@ export default function OrderingScreen({
           <div className="p-4 space-y-4 lg:max-w-4xl lg:mx-auto lg:p-6 lg:space-y-5">
             {filteredProducts.map(product => {
               const promo = getProductPromotion?.(product.id);
+              const dayDiscount = getDayDiscount(product);
+              const hasAnyPromo = promo !== undefined || dayDiscount !== null;
               const displayPrice = getPrice(product);
               const promoStock = getPromoStock(product.id);
 
@@ -359,7 +449,7 @@ export default function OrderingScreen({
                       alt={product.name}
                       className="h-full w-full object-cover"
                     />
-                    {promo && (
+                    {hasAnyPromo && (
                       <div className="absolute top-1 left-1 bg-[#FF6B00] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow">
                         PROMOÇÃO
                       </div>
@@ -375,7 +465,7 @@ export default function OrderingScreen({
                       )}
                     </div>
                     <p className="text-[13px] text-gray-500 mb-1 line-clamp-2">{product.description}</p>
-                    {promo ? (
+                    {hasAnyPromo ? (
                       <div className="flex items-center gap-2">
                         <span className="text-[16px] font-bold text-brand-primary">
                           R$ {displayPrice.toFixed(2)}
@@ -383,9 +473,14 @@ export default function OrderingScreen({
                         <span className="text-[12px] text-gray-400 line-through">
                           R$ {product.price.toFixed(2)}
                         </span>
-                        {promo.promotionType === "percentage_discount" && (
+                        {promo?.promotionType === "percentage_discount" && (
                           <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
                             {promo.percentageOff}% OFF
+                          </span>
+                        )}
+                        {dayDiscount && !promo && (
+                          <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
+                            {dayDiscount}% OFF
                           </span>
                         )}
                       </div>
@@ -448,6 +543,16 @@ export default function OrderingScreen({
                           {item.saboresSelecionados.map(f => f.nome).join(', ')}
                         </p>
                       )}
+                      {item.condiments && item.condiments.length > 0 && (
+                        <p className="text-xs text-brand-muted">
+                          +{item.condiments.map(c => c.name).join(', ')}
+                        </p>
+                      )}
+                      {item.selectedRequiredItems?.map((rg: any) => (
+                        <p key={rg.groupName} className="text-xs text-brand-muted">
+                          {rg.items.map((i: any) => i.name).join(', ')}
+                        </p>
+                      ))}
                     </div>
                     <button
                       className="text-brand-muted hover:text-brand-primary transition-colors p-1"
@@ -479,12 +584,13 @@ export default function OrderingScreen({
                         <Plus className="h-3 w-3" />
                       </button>
                     </div>
-                    <span className="font-bold text-brand-primary text-xs">
-                      R$ {((
-                        (item.tamanhoSelecionado ? item.tamanhoSelecionado.preco : item.price) +
-                        (item.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0) +
-                        (item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0)
-                      ) * item.quantity).toFixed(2)}
+                      <span className="font-bold text-brand-primary text-xs">
+                        R$ {((
+                          (item.tamanhoSelecionado ? item.tamanhoSelecionado.preco : item.price) +
+                          (item.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0) +
+                          (item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0) +
+                          requiredItemsPrice(item)
+                        ) * item.quantity).toFixed(2)}
                     </span>
                   </div>
                   <input
@@ -562,6 +668,16 @@ export default function OrderingScreen({
                           {item.saboresSelecionados.map(f => f.nome).join(', ')}
                         </p>
                       )}
+                      {item.condiments && item.condiments.length > 0 && (
+                        <p className="text-xs text-brand-muted">
+                          +{item.condiments.map(c => c.name).join(', ')}
+                        </p>
+                      )}
+                      {item.selectedRequiredItems?.map((rg: any) => (
+                        <p key={rg.groupName} className="text-xs text-brand-muted">
+                          {rg.items.map((i: any) => i.name).join(', ')}
+                        </p>
+                      ))}
                     </div>
                     <button
                       className="text-brand-muted hover:text-brand-primary transition-colors p-1"
@@ -597,7 +713,8 @@ export default function OrderingScreen({
                       R$ {((
                         (item.tamanhoSelecionado ? item.tamanhoSelecionado.preco : item.price) +
                         (item.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0) +
-                        (item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0)
+                        (item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0) +
+                        requiredItemsPrice(item)
                       ) * item.quantity).toFixed(2)}
                     </span>
                   </div>
@@ -679,16 +796,15 @@ export default function OrderingScreen({
                 </h2>
                 <div className="flex items-center gap-2 mt-0.5">
                   {(() => {
-                    const promo = getProductPromotion?.(selectedProduct.id);
-                    const promoPrice = getPromotionalPrice?.(selectedProduct.id, selectedProduct.price);
-                    const showPrice = promo && promoPrice != null && promoPrice !== selectedProduct.price;
+                    const finalPrice = getPrice(selectedProduct);
+                    const basePrice = selectedProduct.price;
                     return (
                       <>
                         <span className="font-bold text-[0.9rem] md:text-xl">
-                          R$ {(showPrice ? promoPrice : selectedProduct.price).toFixed(2)}
+                          R$ {finalPrice.toFixed(2)}
                         </span>
-                        {showPrice && (
-                          <span className="text-xs text-white/70 line-through">R$ {selectedProduct.price.toFixed(2)}</span>
+                        {finalPrice !== basePrice && (
+                          <span className="text-xs text-white/70 line-through">R$ {basePrice.toFixed(2)}</span>
                         )}
                       </>
                     );
@@ -736,16 +852,8 @@ export default function OrderingScreen({
                             <span className="font-medium text-brand-dark min-w-0 truncate">{size.nome}</span>
                             <span className="font-bold text-brand-muted ml-4 flex-shrink-0 text-right">
                               {(() => {
-                                if (!getPromotionalPrice || !selectedProduct) {
-                                  return size.preco > 0 ? `R$ ${size.preco.toFixed(2)}` : "Grátis";
-                                }
-                                const promoPrice = getPromotionalPrice(selectedProduct.id, size.preco);
-                                if (promoPrice !== size.preco) {
-                                  return (
-                                    <span>R$ {promoPrice.toFixed(2)}</span>
-                                  );
-                                }
-                                return size.preco > 0 ? `R$ ${size.preco.toFixed(2)}` : "Grátis";
+                                const p = getPrice(selectedProduct!, size.preco);
+                                return p > 0 ? `R$ ${p.toFixed(2)}` : "Grátis";
                               })()}
                             </span>
                           </button>
@@ -755,45 +863,74 @@ export default function OrderingScreen({
                   </div>
                 )}
 
-                {/* Sabores */}
-                {productFlavors.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="font-bold text-lg text-brand-dark">Sabores</h4>
-                    {maxFlavors > 0 ? (
+                {/* Obrigatórios do Produto */}
+                {requiredGroups.filter((g: any) => g.active !== false).map((group: any) => {
+                  const items = (group.items || []).filter((i: any) => i.available !== false);
+                  if (items.length === 0) return null;
+
+                  const sizeOverride = selectedSize && group.sizeOverrides
+                    ? group.sizeOverrides.find((o: any) => o.sizeName === selectedSize.nome)
+                    : null;
+                  const minQty = sizeOverride?.minQuantity ?? group.minQuantity ?? 0;
+                  const maxQty = sizeOverride?.maxQuantity ?? group.maxQuantity ?? items.length;
+                  const groupKey = group.id || group.name;
+                  const selections = requiredSelections[groupKey] || new Set<string>();
+
+                  const toggleItem = (itemId: string) => {
+                    setRequiredSelections(prev => {
+                      const current = prev[groupKey] || new Set<string>();
+                      const next = new Set(current);
+                      if (next.has(itemId)) {
+                        next.delete(itemId);
+                      } else if (next.size < maxQty) {
+                        next.add(itemId);
+                      }
+                      return { ...prev, [groupKey]: next };
+                    });
+                  };
+
+                  return (
+                    <div key={groupKey} className="space-y-3">
+                      <h4 className="font-bold text-lg text-brand-dark">{group.name}</h4>
                       <p className="text-sm text-brand-muted">
-                        {selectedFlavors.length} de {maxFlavors} selecionados
+                        {selections.size} de{" "}
+                        {group.rule === "BETWEEN"
+                          ? `${minQty} - ${maxQty}`
+                          : group.rule === "MIN"
+                          ? `mín. ${minQty}`
+                          : group.rule === "MAX"
+                          ? `máx. ${maxQty}`
+                          : `exatas ${maxQty}`}
                       </p>
-                    ) : productSizes.length > 0 ? (
-                      <p className="text-sm text-brand-muted">Selecione um tamanho para escolher os sabores</p>
-                    ) : null}
-                    <div className="grid grid-cols-1 gap-3">
-                      {productFlavors.map(flavor => {
-                        const isSelected = selectedFlavors.find(f => f.id === flavor.id);
-                        const isMaxed = maxFlavors > 0 && selectedFlavors.length >= maxFlavors && !isSelected;
-                        return (
-                          <button
-                            key={flavor.id}
-                            onClick={() => toggleFlavor(flavor)}
-                            disabled={isMaxed}
-                            className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all min-w-0 ${
-                              isSelected
-                                ? "border-brand-primary bg-brand-light"
-                                : isMaxed
-                                ? "border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed"
-                                : "border-gray-200/60 bg-gray-50"
-                            }`}
-                          >
-                            <span className="font-medium text-brand-dark min-w-0 truncate">{flavor.nome}</span>
-                            <span className="font-bold text-brand-muted ml-4 flex-shrink-0 text-right">
-                              {flavor.preco > 0 ? `+ R$ ${flavor.preco.toFixed(2)}` : ""}
-                              {isSelected && <span className="ml-2 text-brand-primary">✓</span>}
-                            </span>
-                          </button>
-                        );
-                      })}
+                      <div className="grid grid-cols-1 gap-3">
+                        {items.map((item: any) => {
+                          const isSelected = selections.has(item.id);
+                          const disabled = !isSelected && selections.size >= maxQty;
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => toggleItem(item.id)}
+                              disabled={disabled}
+                              className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all min-w-0 ${
+                                isSelected
+                                  ? "border-brand-primary bg-brand-light"
+                                  : disabled
+                                  ? "border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed"
+                                  : "border-gray-200/60 bg-gray-50"
+                              }`}
+                            >
+                              <span className="font-medium text-brand-dark min-w-0 truncate">{item.name}</span>
+                              <span className="font-bold text-brand-muted ml-4 flex-shrink-0 text-right">
+                                {item.additionalPrice > 0 ? `+ R$ ${Number(item.additionalPrice).toFixed(2)}` : ""}
+                                {isSelected && <span className="ml-2 text-brand-primary">✓</span>}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })}
 
                 {/* Condimentos */}
                 {productCondiments.length > 0 && (
@@ -849,7 +986,7 @@ export default function OrderingScreen({
               <div className="shrink-0">
                 <button
                   className="w-full h-[64px] flex items-center justify-between gap-4 px-6 bg-brand-primary hover:bg-brand-primaryHover text-white rounded-[16px] font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={productSizes.length > 0 && !selectedSize}
+                  disabled={(productSizes.length > 0 && !selectedSize) || !requiredGroupsValid}
                   onClick={() => {
                     const selectedSizeData: SelectedSize | undefined = selectedSize
                       ? { id: `size-${selectedProduct.id}-${selectedSize.nome}`, nome: selectedSize.nome, preco: selectedSize.preco }
@@ -857,7 +994,13 @@ export default function OrderingScreen({
                     const selectedFlavorsData: SelectedFlavor[] | undefined = selectedFlavors.length > 0
                       ? selectedFlavors.map(f => ({ id: f.id, nome: f.nome, preco: f.preco }))
                       : undefined;
-                    const result: any = actions.addToCart(selectedProduct, selectedCondiments, selectedSizeData, selectedFlavorsData, quantity);
+                    const selectedRequiredItemsData = requiredGroups.filter((g: any) => g.active !== false).map((group: any) => {
+                      const groupKey = group.id || group.name;
+                      const selections = requiredSelections[groupKey] || new Set<string>();
+                      const selected = (group.items || []).filter((i: any) => selections.has(i.id));
+                      return { groupName: group.name, items: selected.map((i: any) => ({ name: i.name, additionalPrice: Number(i.additionalPrice) || 0 })) };
+                    }).filter((g: any) => g.items.length > 0);
+                    const result: any = actions.addToCart(selectedProduct, selectedCondiments, selectedSizeData, selectedFlavorsData, quantity, selectedRequiredItemsData);
                     if (result?.message) setToast({ message: result.message, type: "info" });
                     setSelectedProduct(null);
                     setQuantity(1);

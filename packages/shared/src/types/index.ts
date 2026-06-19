@@ -11,13 +11,19 @@ export interface Product {
   active: boolean;
   featured: boolean;
   sizes?: ProductSize[];
+  dayPromotions?: DayPromotion[];
   createdAt: Date | { seconds: number; nanoseconds: number };
 }
 
 export interface ProductSize {
   nome: string;
   preco: number;
-  quantidadeSabores: number;
+  quantidadeSabores?: number;
+}
+
+export interface DayPromotion {
+  dayOfWeek: number;
+  discountPercent: number;
 }
 
 export interface Condiment {
@@ -73,6 +79,7 @@ export interface CartItem extends Product {
   condiments?: Condiment[];
   tamanhoSelecionado?: SelectedSize;
   saboresSelecionados?: SelectedFlavor[];
+  selectedRequiredItems?: { groupName: string; items: { name: string; additionalPrice: number }[] }[];
 }
 
 export interface OrderLineItem {
@@ -84,6 +91,7 @@ export interface OrderLineItem {
   condiments?: Condiment[];
   tamanhoSelecionado?: SelectedSize;
   saboresSelecionados?: SelectedFlavor[];
+  selectedRequiredItems?: { groupName: string; items: { name: string; additionalPrice: number }[] }[];
 }
 
 export interface Address {
@@ -119,6 +127,7 @@ export type { Company } from './company';
 export type { StorePermissions, StoreUser } from './auth';
 export type { PromotionEvent, PromotionEventStatus, Promotion, PromotionType, PromotionStatus } from './promotions';
 export type { Coupon, CouponType, CouponUsage, CouponValidationResult } from './coupons';
+export type { RequiredGroup, RequiredGroupRule, RequiredItem } from './required-groups';
 
 export interface OrderFormPayload {
   customerName: string;

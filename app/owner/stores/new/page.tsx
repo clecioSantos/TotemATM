@@ -89,7 +89,7 @@ export default function NewStorePage() {
 
   useEffect(() => {
     const unsub = onSnapshot(collection(firestore, "cities"), (snap) => {
-      const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a: any, b: any) => a.name.localeCompare(b.name));
       setCities(data);
     }, (error) => {
       console.error("🔥 Erro ao carregar cidades:", error);

@@ -109,7 +109,7 @@ function ConfigurationsContent() {
   useEffect(() => {
     const unsub = onSnapshot(collection(firestore, "cities"), (snap) => {
       try {
-        setCities(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        setCities(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a: any, b: any) => a.name.localeCompare(b.name)));
       } catch (error) {
         logger.error("SETTINGS_PAGE", "Erro ao processar cidades", error);
       }

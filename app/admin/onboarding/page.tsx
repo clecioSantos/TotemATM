@@ -36,7 +36,7 @@ function OnboardingContent() {
   useEffect(() => {
     if (!user?.companyId) return;
     getDoc(doc(firestore, "companies", user.companyId)).then((snap) => { if (snap.exists()) setCompanyData(snap.data()); });
-    getDocs(query(collection(firestore, "cities"), ...([] as any[]))).then((s) => setCities(s.docs.map((d: any) => ({ id: d.id, ...d.data() })))).catch(() => {});
+    getDocs(query(collection(firestore, "cities"), ...([] as any[]))).then((s) => setCities(s.docs.map((d: any) => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => a.name.localeCompare(b.name)))).catch(() => {});
   }, [user?.companyId]);
 
   useEffect(() => {
@@ -239,7 +239,7 @@ function DeliveryStep({ companyId, done, refetch }: { companyId?: string; done: 
   useEffect(() => {
     if (!companyId) return;
     getDoc(doc(firestore, "companies", companyId)).then((s) => { if (s.exists()) setPickupEnabled(s.data().pickupEnabled === true); });
-    const u1 = onSnapshot(collection(firestore, "cities"), (snap) => setCities(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
+    const u1 = onSnapshot(collection(firestore, "cities"), (snap) => setCities(snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => a.name.localeCompare(b.name))));
     const u2 = onSnapshot(query(collection(firestore, "deliveryCosts"), where("companyId", "==", companyId)), (snap) => setCosts(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
     const u3 = onSnapshot(query(collection(firestore, "storeCitySettings"), where("companyId", "==", companyId)), (snap) => setCitySettings(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
     return () => { u1(); u2(); u3(); };
@@ -247,7 +247,7 @@ function DeliveryStep({ companyId, done, refetch }: { companyId?: string; done: 
 
   useEffect(() => {
     if (!selectedCityId) { setNeighborhoods([]); return; }
-    const u = onSnapshot(query(collection(firestore, "neighborhoods"), where("cityId", "==", selectedCityId)), (snap) => setNeighborhoods(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
+    const u = onSnapshot(query(collection(firestore, "neighborhoods"), where("cityId", "==", selectedCityId)), (snap) => setNeighborhoods(snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => a.name.localeCompare(b.name))));
     return () => u();
   }, [selectedCityId]);
 

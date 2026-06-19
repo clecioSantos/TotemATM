@@ -47,7 +47,7 @@ function AddressesManagementContent() {
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(firestore, "cities"), (snapshot) => {
       try {
-        setCities(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        setCities(snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => a.name.localeCompare(b.name)));
       } catch (error) {
         logger.error("ADDRESSES_PAGE", "Erro ao processar cidades", error);
       }
@@ -64,7 +64,7 @@ function AddressesManagementContent() {
         query(collection(firestore, "neighborhoods"), where("cityId", "==", selectedCityId)),
         (snapshot) => {
           try {
-            setNeighborhoods(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+            setNeighborhoods(snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => a.name.localeCompare(b.name)));
           } catch (error) {
             logger.error("ADDRESSES_PAGE", "Erro ao processar bairros", error);
           }

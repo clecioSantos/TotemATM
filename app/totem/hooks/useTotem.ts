@@ -213,7 +213,8 @@ export const useTotem = (companyId: string) => {
     selectedCondiments: Condiment[] = [],
     tamanhoSelecionado?: SelectedSize,
     saboresSelecionados?: SelectedFlavor[],
-    requestedQty: number = 1
+    requestedQty: number = 1,
+    selectedRequiredItems?: { groupName: string; items: { name: string; additionalPrice: number }[] }[]
   ): { message?: string; usedRegularPrice?: boolean; clearedFromOtherStore?: boolean } => {
     try {
       const stored = getPersistedStoreInfo();
@@ -272,12 +273,18 @@ export const useTotem = (companyId: string) => {
       const flavorsKey = (saboresSelecionados || []).map(f => f.id).sort().join(',');
       const sizeKey = tamanhoSelecionado?.id || '';
 
+      const today = new Date().getDay();
+      const dayDiscountPct = product.dayPromotions?.find(p => p.dayOfWeek === today)?.discountPercent ?? null;
+      const applyDayDisc = (price: number) => dayDiscountPct ? price - (price * dayDiscountPct / 100) : price;
+
       const promoItemId = `${product.id}-${sizeKey}-${flavorsKey}-${condimentsKey}`;
-      const promoPrice = promo ? getPromotionalPrice(product.id, product.price) : product.price;
+      const promoPrice = promo ? getPromotionalPrice(product.id, product.price) : applyDayDisc(product.price);
 
       let adjustedSize: SelectedSize | undefined;
       if (tamanhoSelecionado && promo && promoQty > 0) {
         adjustedSize = { ...tamanhoSelecionado, preco: getPromotionalPrice(product.id, tamanhoSelecionado.preco) };
+      } else if (tamanhoSelecionado && dayDiscountPct) {
+        adjustedSize = { ...tamanhoSelecionado, preco: applyDayDisc(tamanhoSelecionado.preco) };
       } else {
         adjustedSize = tamanhoSelecionado;
       }
@@ -305,6 +312,7 @@ export const useTotem = (companyId: string) => {
               condiments: selectedCondiments,
               tamanhoSelecionado: adjustedSize,
               saboresSelecionados,
+              selectedRequiredItems,
             } as CartItem);
           }
         }
@@ -315,11 +323,12 @@ export const useTotem = (companyId: string) => {
             ...product,
             id: regularItemId,
             productId: product.id,
-            price: product.price,
+            price: applyDayDisc(product.price),
             quantity: regularQty,
             condiments: selectedCondiments,
-            tamanhoSelecionado,
+            tamanhoSelecionado: adjustedSize,
             saboresSelecionados,
+            selectedRequiredItems,
           } as CartItem);
         }
 
@@ -397,7 +406,8 @@ export const useTotem = (companyId: string) => {
         const basePrice = item.tamanhoSelecionado ? item.tamanhoSelecionado.preco : item.price;
         const condimentsTotal = item.condiments?.reduce((sum, c) => sum + c.price, 0) || 0;
         const flavorsTotal = item.saboresSelecionados?.reduce((sum, f) => sum + f.preco, 0) || 0;
-        const unitTotal = basePrice + flavorsTotal + condimentsTotal;
+        const requiredTotal = item.selectedRequiredItems?.reduce((s, rg) => s + rg.items.reduce((ss, i) => ss + (Number(i.additionalPrice) || 0), 0), 0) || 0;
+        const unitTotal = basePrice + flavorsTotal + condimentsTotal + requiredTotal;
 
         const promo = getProductPromotion(item.productId || item.id);
 
@@ -418,6 +428,7 @@ export const useTotem = (companyId: string) => {
               condiments: item.condiments || [],
               tamanhoSelecionado: item.tamanhoSelecionado || null,
               saboresSelecionados: item.saboresSelecionados || null,
+              selectedRequiredItems: item.selectedRequiredItems || null,
             });
             itemsTotal += promoUnitTotal * promoQty;
           }
@@ -432,6 +443,7 @@ export const useTotem = (companyId: string) => {
               condiments: item.condiments || [],
               tamanhoSelecionado: item.tamanhoSelecionado || null,
               saboresSelecionados: item.saboresSelecionados || null,
+              selectedRequiredItems: item.selectedRequiredItems || null,
             });
             itemsTotal += unitTotal * regularQty;
           }
@@ -445,6 +457,7 @@ export const useTotem = (companyId: string) => {
             condiments: item.condiments || [],
             tamanhoSelecionado: item.tamanhoSelecionado || null,
             saboresSelecionados: item.saboresSelecionados || null,
+            selectedRequiredItems: item.selectedRequiredItems || null,
           });
           itemsTotal += unitTotal * item.quantity;
         }
