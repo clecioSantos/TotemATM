@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { firestore, auth } from "@/src/services/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { Wallet, Plug, PlugZap, Loader, ExternalLink } from "lucide-react";
+import { Wallet, Plug, PlugZap, Loader, ExternalLink, RefreshCw } from "lucide-react";
 import HelpTooltip from "../components/HelpTooltip";
 import HelpModal from "../components/HelpModal";
 import "./page.css";
@@ -15,6 +15,7 @@ export default function FinanceiroPage() {
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [helpModal, setHelpModal] = useState<string | null>(null);
 
   useEffect(() => {
@@ -86,6 +87,7 @@ export default function FinanceiroPage() {
           mercadopago_refresh_token: null,
           mercadopago_token_expires_at: null,
           mercadopago_connected_at: null,
+          mercadopago_account: null,
         }));
       } else {
         alert("Erro ao desconectar.");
@@ -97,6 +99,34 @@ export default function FinanceiroPage() {
       setDisconnecting(false);
     }
   };
+
+  const handleRefresh = async () => {
+    if (!companyId) return;
+    setRefreshing(true);
+    try {
+      const res = await fetch("/api/mercadopago/oauth/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companyId }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || "Não foi possível atualizar os dados da conta Mercado Pago.");
+      }
+    } catch (err) {
+      console.error("Erro ao atualizar:", err);
+      alert("Não foi possível atualizar os dados da conta Mercado Pago.");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const account = company?.mercadopago_account;
+  const displayName =
+    [account?.mpFirstName, account?.mpLastName].filter(Boolean).join(" ").trim()
+    || account?.mpNickname
+    || account?.mpEmail
+    || "";
 
   if (loading) {
     return (
@@ -134,12 +164,52 @@ export default function FinanceiroPage() {
             {isConnected ? <PlugZap size={16} /> : <Plug size={16} />}
           </div>
           <span>
-            {isConnected ? "Conectado ao Mercado Pago" : "Não conectado ao Mercado Pago"}
+            {isConnected ? "Conta Mercado Pago conectada" : "Nenhuma conta Mercado Pago conectada"}
           </span>
         </div>
 
-        {isConnected && (
-          <div className="connection-info">
+        {isConnected && account && (
+          <div className="connection-info" style={{ marginTop: 16 }}>
+            <div className="info-item" style={{ gridColumn: "1 / -1" }}>
+              <div className="info-label">Nome</div>
+              <div className="info-value" style={{ fontSize: 15, fontWeight: 600 }}>{displayName}</div>
+            </div>
+            <div className="info-item">
+              <div className="info-label">E-mail</div>
+              <div className="info-value">{account.mpEmail || "-"}</div>
+            </div>
+            <div className="info-item">
+              <div className="info-label">Nickname</div>
+              <div className="info-value">{account.mpNickname || "-"}</div>
+            </div>
+            <div className="info-item">
+              <div className="info-label">ID da Conta</div>
+              <div className="info-value">{account.mpUserId || "-"}</div>
+            </div>
+            <div className="info-item">
+              <div className="info-label">Conectada em</div>
+              <div className="info-value">
+                {account.mpConnectedAt
+                  ? new Date(
+                      account.mpConnectedAt.seconds
+                        ? account.mpConnectedAt.seconds * 1000
+                        : account.mpConnectedAt
+                    ).toLocaleString("pt-BR")
+                  : company.mercadopago_connected_at
+                  ? new Date(
+                      company.mercadopago_connected_at.seconds * 1000
+                    ).toLocaleString("pt-BR")
+                  : "-"}
+              </div>
+            </div>
+            <p style={{ fontSize: 12, color: "#94a3b8", gridColumn: "1 / -1", marginTop: 4 }}>
+              Esta é a conta que receberá os pagamentos PIX, débito e crédito da loja.
+            </p>
+          </div>
+        )}
+
+        {isConnected && !account && (
+          <div className="connection-info" style={{ marginTop: 16 }}>
             <div className="info-item">
               <div className="info-label">Conta</div>
               <div className="info-value">{company.mercadopago_user_id || "-"}</div>
@@ -148,10 +218,15 @@ export default function FinanceiroPage() {
               <div className="info-label">Conectado em</div>
               <div className="info-value">
                 {company.mercadopago_connected_at
-                  ? new Date(company.mercadopago_connected_at.seconds * 1000).toLocaleDateString()
+                  ? new Date(company.mercadopago_connected_at.seconds * 1000).toLocaleString("pt-BR")
                   : "-"}
               </div>
             </div>
+          </div>
+        )}
+
+        {isConnected && (
+          <div className="connection-info" style={{ marginTop: 16 }}>
             <div className="info-item">
               <div className="info-label">
                 Comissão da Plataforma
@@ -181,10 +256,16 @@ export default function FinanceiroPage() {
               {connecting ? "Conectando..." : "Conectar Mercado Pago"}
             </button>
           ) : (
-            <button className="btn-disconnect" onClick={handleDisconnect} disabled={disconnecting}>
-              {disconnecting ? <Loader size={16} className="loading-spinner" /> : <Plug size={16} />}
-              {disconnecting ? "Desconectando..." : "Desconectar"}
-            </button>
+            <>
+              <button className="btn-connect" onClick={handleRefresh} disabled={refreshing}>
+                {refreshing ? <Loader size={16} className="loading-spinner" /> : <RefreshCw size={16} />}
+                {refreshing ? "Atualizando..." : "Atualizar dados da conta"}
+              </button>
+              <button className="btn-disconnect" onClick={handleDisconnect} disabled={disconnecting}>
+                {disconnecting ? <Loader size={16} className="loading-spinner" /> : <Plug size={16} />}
+                {disconnecting ? "Desconectando..." : "Desconectar"}
+              </button>
+            </>
           )}
         </div>
       </div>

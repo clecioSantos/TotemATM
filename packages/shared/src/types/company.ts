@@ -40,6 +40,14 @@ export interface Company {
   mercadopago_refresh_token?: string;
   mercadopago_token_expires_at?: Date;
   mercadopago_connected_at?: Date;
+  mercadopago_account?: {
+    mpUserId: string;
+    mpNickname: string;
+    mpFirstName: string;
+    mpLastName: string;
+    mpEmail: string;
+    mpConnectedAt: Date;
+  };
   platform_commission_percent?: number;
   enabled?: boolean;
   schedulingEnabled?: boolean;

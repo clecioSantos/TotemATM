@@ -55,15 +55,45 @@ export async function GET(req: NextRequest) {
     }
 
     const expiresAt = MercadoPagoService.calculateExpiresAt(tokenData.expires_in as number);
+    const accessToken = tokenData.access_token as string;
+
+    logger.info("MP_ACCOUNT", "Obtendo dados da conta");
+
+    let accountData: Record<string, any> = {};
+    try {
+      const mpRes = await fetch("https://api.mercadopago.com/users/me", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (mpRes.ok) {
+        const mpUser = await mpRes.json();
+        accountData = {
+          mercadopago_account: {
+            mpUserId: String(mpUser.id),
+            mpNickname: mpUser.nickname || "",
+            mpFirstName: mpUser.first_name || "",
+            mpLastName: mpUser.last_name || "",
+            mpEmail: mpUser.email || "",
+            mpConnectedAt: new Date(),
+          },
+        };
+        logger.info("MP_ACCOUNT", "Dados atualizados com sucesso", { mpUserId: mpUser.id });
+      } else {
+        logger.warn("MP_ACCOUNT", "Erro ao consultar /users/me", { status: mpRes.status });
+      }
+    } catch (fetchError) {
+      logger.error("MP_ACCOUNT", "Erro ao consultar /users/me", fetchError);
+    }
 
     const companyRef = db.collection("companies").doc(companyId);
     await companyRef.update({
       mercadopago_connected: true,
       mercadopago_user_id: String(tokenData.user_id),
-      mercadopago_access_token: tokenData.access_token,
+      mercadopago_access_token: accessToken,
       mercadopago_refresh_token: tokenData.refresh_token,
       mercadopago_token_expires_at: expiresAt,
       mercadopago_connected_at: new Date(),
+      ...accountData,
     });
 
     logger.info("MERCADOPAGO", "OAUTH_CALLBACK", {
