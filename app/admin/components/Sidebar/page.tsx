@@ -44,13 +44,6 @@ export default function AddressesManagementPage() {
         </div>
       </header>
 
-      {!isOwner && (
-        <div className="info-banner" style={{ display: 'flex', gap: '10px', alignItems: 'center', background: '#f0f7ff', padding: '12px 20px', borderRadius: '12px', marginBottom: '20px', color: '#0052cc', fontSize: '13px', fontWeight: 'bold' }}>
-          <ShieldAlert size={18} />
-          Apenas proprietários podem alterar os dados desta página.
-        </div>
-      )}
-
       <div className="settings-container">
         <div className="settings-card">
           <div className="location-management-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '24px' }}>
