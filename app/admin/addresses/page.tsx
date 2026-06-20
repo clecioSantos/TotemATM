@@ -146,6 +146,17 @@ function AddressesManagementContent() {
     }
   }
 
+  const enableCityIfNeeded = async (cityId: string) => {
+    if (!user?.companyId) return;
+    const existing = citySettings.find(s => s.cityId === cityId && s.companyId === user.companyId);
+    if (existing && existing.enabled) return;
+    if (existing) {
+      await updateDoc(doc(firestore, "storeCitySettings", existing.id), { enabled: true });
+    } else {
+      await addDoc(collection(firestore, "storeCitySettings"), { cityId, enabled: true, companyId: user.companyId });
+    }
+  };
+
   const handleSetDefaultPrice = async (cityId: string, price: number) => {
     if (!user?.companyId) return;
     try {
@@ -176,6 +187,7 @@ function AddressesManagementContent() {
         }
       });
       await batch.commit();
+      if (price > 0) await enableCityIfNeeded(cityId);
       logger.info("ADDRESSES_PAGE", `Preços padronizados para cidade ${cityId}: R$${price}`);
       alert("Preços atualizados com sucesso em todos os bairros!");
     } catch (error) {
@@ -200,6 +212,10 @@ function AddressesManagementContent() {
           enabled,
           deliveryPrice: 0
         });
+      }
+      if (enabled) {
+        const nb = neighborhoods.find((n: any) => n.id === nbId);
+        if (nb?.cityId) await enableCityIfNeeded(nb.cityId);
       }
       logger.info("ADDRESSES_PAGE", `Toggle bairro ${nbId}: ${enabled}`);
     } catch (error) {
@@ -334,6 +350,7 @@ function AddressesManagementContent() {
               } else {
                 await addDoc(collection(firestore, "deliveryCosts"), costData);
               }
+              if (enabled) await enableCityIfNeeded(cityId);
             }}
           />
         )}
@@ -352,6 +369,10 @@ function AddressesManagementContent() {
                 await updateDoc(doc(firestore, "deliveryCosts", costSetting.id), updates);
               } else {
                 await addDoc(collection(firestore, "deliveryCosts"), { ...updates, neighborhoodId: nbId, companyId: user.companyId });
+              }
+              if (price > 0) {
+                const nb = neighborhoods.find((n: any) => n.id === nbId);
+                if (nb?.cityId) await enableCityIfNeeded(nb.cityId);
               }
             }}
           />

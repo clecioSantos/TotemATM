@@ -262,6 +262,14 @@ function DeliveryStep({ companyId, done, refetch }: { companyId?: string; done: 
         const ref = await addDoc(collection(firestore, "deliveryCosts"), { companyId, neighborhoodId: nb.id, neighborhood: nb.name, deliveryPrice: price, enabled: true, createdAt: serverTimestamp() });
         setCosts((p) => [...p, { id: ref.id, companyId, neighborhoodId: nb.id, neighborhood: nb.name, deliveryPrice: price, enabled: true }]);
       }
+      if (price !== null && nb.cityId) {
+        const existingSetting = citySettings.find((s) => s.cityId === nb.cityId);
+        if (existingSetting) {
+          if (!existingSetting.enabled) await updateDoc(doc(firestore, "storeCitySettings", existingSetting.id), { enabled: true });
+        } else {
+          await addDoc(collection(firestore, "storeCitySettings"), { companyId, cityId: nb.cityId, enabled: true });
+        }
+      }
       setTimeout(() => refetch(), 300);
     } catch (e) { console.error(e); }
   };
