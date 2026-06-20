@@ -474,6 +474,8 @@ export const useTotem = (companyId: string) => {
         customerName: user?.name || "Cliente",
         userName: user?.name || "Cliente",
         customerId: user?.uid || null,
+        customerEmail: user?.email || null,
+        customerPhone: (user as any)?.phone || null,
         tableNumber: "",
         address: identification.address || null,
         deliveryFee,

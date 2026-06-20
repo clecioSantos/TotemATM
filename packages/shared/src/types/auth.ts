@@ -56,6 +56,7 @@ export interface UserProfile {
   uid: string;
   email: string;
   name: string;
+  phone?: string;
   role: UserRole;
   createdAt: Date | Timestamp;
   companyId?: string;

@@ -10,7 +10,7 @@ import { logger } from "@/src/lib/logger";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import {
   Eye, EyeOff, Loader2, CheckCircle, XCircle, ArrowRight,
-  ArrowLeft, User, Mail, Lock, ChevronRight
+  ArrowLeft, User, Mail, Lock, Phone, ChevronRight
 } from "lucide-react";
 
 const benefits = [
@@ -27,6 +27,7 @@ function RegisterForm() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -82,6 +83,7 @@ function RegisterForm() {
         uid: userCredential.user.uid,
         email: email.trim(),
         name: nameClean,
+        phone: phone.trim() || undefined,
         role: "client",
         companyId: "default",
       });
@@ -302,6 +304,24 @@ function RegisterForm() {
                 {emailError && <XCircle size={18} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#FF4D4F]" />}
               </div>
               {emailError && <p className="text-xs text-[#FF4D4F] mt-1">Digite um e-mail válido (ex: nome@dominio.com)</p>}
+            </div>
+
+            {/* Phone */}
+            <div>
+              <label htmlFor="reg-phone" className="block text-sm font-semibold text-[#1F1F1F] mb-1.5">Telefone</label>
+              <div className="relative rounded-xl transition-all border border-[#EAEAEA] bg-white focus-within:border-[#FF6B00] focus-within:ring-1 focus-within:ring-[#FF6B00]/20">
+                <Phone size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#999] pointer-events-none" />
+                <input
+                  id="reg-phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="(11) 99999-9999"
+                  autoComplete="tel"
+                  aria-label="Telefone"
+                  className="w-full h-12 pl-10 pr-4 text-sm bg-transparent outline-none placeholder:text-[#999]"
+                />
+              </div>
             </div>
 
             {/* Password */}

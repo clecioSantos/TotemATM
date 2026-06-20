@@ -5,7 +5,7 @@ import { firestore } from "@/src/services/firebase";
 import { collection, onSnapshot, query, where, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, orderBy } from "firebase/firestore";
 import Link from "next/link";
 import { useAuth } from "@totem/shared/types/AuthProvider";
-import { Search, MapPin, User, ShoppingBag, Store, X, LogOut, ChevronRight, Plus, Trash2, Home, Bell, ChevronLeft, ChevronRight as ChevronRightIcon, Tag } from "lucide-react";
+import { Search, MapPin, User, ShoppingBag, Store, X, LogOut, ChevronRight, Plus, Trash2, Home, Bell, ChevronLeft, ChevronRight as ChevronRightIcon, Tag, Loader2 } from "lucide-react";
 import { logger } from "@/src/lib/logger";
 import NotificationsPanel from "./components/NotificationsPanel";
 import { useNotifications } from "./hooks/useNotifications";
@@ -26,7 +26,7 @@ const categories = [
 ];
 
 export default function StoreListingPage() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, refreshProfile } = useAuth();
   const [stores, setStores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -48,6 +48,10 @@ export default function StoreListingPage() {
   const [availableCities, setAvailableCities] = useState<any[]>([]);
   const [availableNeighborhoods, setAvailableNeighborhoods] = useState<any[]>([]);
   const [isEditing, setIsEditing] = useState<string | null>(null);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [editProfileName, setEditProfileName] = useState("");
+  const [editProfilePhone, setEditProfilePhone] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const [storeCitySettings, setStoreCitySettings] = useState<any[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -169,6 +173,21 @@ export default function StoreListingPage() {
     setAddressNeighborhood("");
     setAddressComplement("");
     setAddressCity("");
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setSavingProfile(true);
+    try {
+      await updateDoc(doc(firestore, "users", user.uid), { name: editProfileName.trim(), phone: editProfilePhone.trim() || "" });
+      setEditingProfile(false);
+      refreshProfile();
+    } catch (error) {
+      console.error("Erro ao atualizar perfil:", error);
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const handleAddAddress = async (e: React.FormEvent) => {
@@ -378,7 +397,34 @@ export default function StoreListingPage() {
             <div className="flex-1 overflow-y-auto max-h-[70vh] p-1">
               {isProfileOpen ? (
                 <div className="space-y-4">
-                  <p className="text-sm">Olá, {user?.name || "Usuário"}</p>
+                  {editingProfile ? (
+                    <form onSubmit={handleSaveProfile} className="space-y-3">
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-500 uppercase">Nome</label>
+                        <input type="text" value={editProfileName} onChange={e => setEditProfileName(e.target.value)}
+                          className="w-full p-3 bg-[#FAFAFA] rounded-lg border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]" required />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-500 uppercase">Telefone</label>
+                        <input type="tel" value={editProfilePhone} onChange={e => setEditProfilePhone(e.target.value)}
+                          className="w-full p-3 bg-[#FAFAFA] rounded-lg border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]" placeholder="(11) 99999-9999" />
+                      </div>
+                      <div className="flex gap-2">
+                        <button type="submit" className="flex-1 p-3 bg-[#FF6B00] text-white font-bold rounded-lg text-sm hover:bg-[#E65C00] transition-all">
+                          {savingProfile ? <Loader2 size={16} className="animate-spin mx-auto" /> : "Salvar"}
+                        </button>
+                        <button type="button" onClick={() => setEditingProfile(false)} className="p-3 bg-[#FAFAFA] font-bold rounded-lg text-sm">Cancelar</button>
+                      </div>
+                    </form>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-bold">Olá, {user?.name || "Usuário"}</p>
+                        <button onClick={() => { setEditProfileName(user?.name || ""); setEditProfilePhone((user as any)?.phone || ""); setEditingProfile(true); }} className="text-[10px] font-bold text-[#FF6B00] uppercase">Editar</button>
+                      </div>
+                      {(user as any)?.phone && <p className="text-xs text-gray-500 -mt-2">{((phone: string) => { const d = phone.replace(/\D/g, ''); if (d.length === 13) return `+${d.slice(0,2)} (${d.slice(2,4)}) ${d.slice(4,9)}-${d.slice(9)}`; if (d.length === 12) return `+${d.slice(0,2)} (${d.slice(2,4)}) ${d.slice(4,8)}-${d.slice(8)}`; if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`; if (d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`; return phone; })((user as any)?.phone)}</p>}
+                    </>
+                  )}
                   <button
                     onClick={() => { setIsProfileOpen(false); setIsAddressesOpen(true); }}
                     className="w-full flex items-center gap-3 p-3 bg-[#FAFAFA] rounded-lg font-bold text-sm"

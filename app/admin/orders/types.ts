@@ -18,4 +18,6 @@ export interface Order extends Omit<SharedOrder, 'address' | 'status'> {
   scheduledDate?: string;
   scheduledTime?: string;
   requiresCustomerContact?: boolean;
+  customerPhone?: string;
+  customerEmail?: string;
 }

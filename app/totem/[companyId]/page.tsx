@@ -38,7 +38,7 @@ export default function TotemPage() {
 
 function TotemContent({ params }: PageProps) {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user, signOut, refreshProfile } = useAuth();
   const { companyId } = params;
 
   useEffect(() => {
@@ -82,6 +82,10 @@ function TotemContent({ params }: PageProps) {
   const [editComplement, setEditComplement] = useState("");
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
   const [savingAddress, setSavingAddress] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [editProfileName, setEditProfileName] = useState("");
+  const [editProfilePhone, setEditProfilePhone] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const [deliveryStreet, setDeliveryStreet] = useState("");
   const [deliveryCity, setDeliveryCity] = useState("");
@@ -163,6 +167,22 @@ function TotemContent({ params }: PageProps) {
     setEditNeighborhood("");
     setEditComplement("");
     setEditCity("");
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setSavingProfile(true);
+    try {
+      await updateDoc(doc(firestore, "users", user.uid), { name: editProfileName.trim(), phone: editProfilePhone.trim() || "" });
+      logger.info("TOTEM_PROFILE", "Perfil atualizado");
+      setEditingProfile(false);
+      refreshProfile();
+    } catch (error) {
+      logger.error("TOTEM_PROFILE", "Erro ao atualizar perfil", error);
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const handleDeleteAddress = async (addressId: string) => {
@@ -674,7 +694,34 @@ function TotemContent({ params }: PageProps) {
             <div className="flex-1 overflow-y-auto max-h-[70vh] p-1">
               {isProfileOpen ? (
                 <div className="space-y-4">
-                  <p className="text-sm">Olá, {user?.name || "Usuário"}</p>
+                  {editingProfile ? (
+                    <form onSubmit={handleSaveProfile} className="space-y-3">
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-500 uppercase">Nome</label>
+                        <input type="text" value={editProfileName} onChange={e => setEditProfileName(e.target.value)}
+                          className="w-full p-3 bg-[#FAFAFA] rounded-lg border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]" required />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-500 uppercase">Telefone</label>
+                        <input type="tel" value={editProfilePhone} onChange={e => setEditProfilePhone(e.target.value)}
+                          className="w-full p-3 bg-[#FAFAFA] rounded-lg border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]" placeholder="(11) 99999-9999" />
+                      </div>
+                      <div className="flex gap-2">
+                        <button type="submit" className="flex-1 p-3 bg-[#FF6B00] text-white font-bold rounded-lg text-sm hover:bg-[#E65C00] transition-all">
+                          {savingProfile ? <Loader2 size={16} className="animate-spin mx-auto" /> : "Salvar"}
+                        </button>
+                        <button type="button" onClick={() => setEditingProfile(false)} className="p-3 bg-[#FAFAFA] font-bold rounded-lg text-sm">Cancelar</button>
+                      </div>
+                    </form>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-bold">Olá, {user?.name || "Usuário"}</p>
+                        <button onClick={() => { setEditProfileName(user?.name || ""); setEditProfilePhone((user as any)?.phone || ""); setEditingProfile(true); }} className="text-[10px] font-bold text-[#FF6B00] uppercase">Editar</button>
+                      </div>
+                      {(user as any)?.phone && <p className="text-xs text-gray-500 -mt-2">{((phone: string) => { const d = phone.replace(/\D/g, ''); if (d.length === 13) return `+${d.slice(0,2)} (${d.slice(2,4)}) ${d.slice(4,9)}-${d.slice(9)}`; if (d.length === 12) return `+${d.slice(0,2)} (${d.slice(2,4)}) ${d.slice(4,8)}-${d.slice(8)}`; if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`; if (d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`; return phone; })((user as any)?.phone)}</p>}
+                    </>
+                  )}
                   <button
                     onClick={() => { setIsProfileOpen(false); setIsAddressesOpen(true); }}
                     className="w-full flex items-center gap-3 p-3 bg-[#FAFAFA] rounded-lg font-bold text-sm"

@@ -105,9 +105,13 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
               <p style={{ fontSize: '14px', color: '#78350f', fontWeight: '600' }}>
                 {order.scheduledDate} - {order.scheduledTime}
               </p>
-              {order.requiresCustomerContact && (
-                <p style={{ fontSize: '12px', color: '#92400e', marginTop: '4px' }}>⚠ Requer alinhamento com o cliente</p>
-              )}
+              <ContactInfo order={order} />
+            </div>
+          )}
+
+          {!order.isScheduled && (order.requiresCustomerContact || order.customerPhone || order.customerEmail) && (
+            <div className="order-address-delivery-info" style={{ marginBottom: '1.5rem', padding: '1rem', background: '#fef3c7', borderRadius: '12px', border: '1px solid #fcd34d' }}>
+              <ContactInfo order={order} />
             </div>
           )}
 
@@ -212,6 +216,44 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function ContactInfo({ order }: { order: Order }) {
+  const whatsappNumber = order.customerPhone
+    ? `55${order.customerPhone.replace(/\D/g, '')}`
+    : null;
+  return (
+    <div style={{ marginTop: '4px' }}>
+      {order.requiresCustomerContact && <p style={{ fontSize: '12px', color: '#92400e' }}>⚠ Requer alinhamento com o cliente</p>}
+      {order.customerPhone && (
+        <p style={{ fontSize: '12px', color: '#92400e', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          📞 {order.customerPhone}
+          {whatsappNumber && (
+            <a
+              href={`https://wa.me/${whatsappNumber}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                padding: '2px 8px',
+                borderRadius: '6px',
+                background: '#25D366',
+                color: '#fff',
+                textDecoration: 'none',
+              }}
+            >
+              WhatsApp
+            </a>
+          )}
+        </p>
+      )}
+      {order.customerEmail && <p style={{ fontSize: '12px', color: '#92400e', marginTop: '2px' }}>✉ {order.customerEmail}</p>}
     </div>
   );
 }
