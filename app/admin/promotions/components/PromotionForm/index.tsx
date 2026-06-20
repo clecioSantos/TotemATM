@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Promotion, PromotionEvent, Product } from "@totem/shared/types";
 import { Timestamp } from "firebase/firestore";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 import "./styles.css";
 
 interface Props {
@@ -27,6 +28,7 @@ const nowISO = () => {
 };
 
 export default function PromotionForm({ initialData, products, events, onSubmit }: Props) {
+  const { showAlert } = useConfirm();
   const [productId, setProductId] = useState(initialData?.productId || "");
   const [eventId, setEventId] = useState(initialData?.eventId || "");
   const [promotionType, setPromotionType] = useState<"fixed_price" | "percentage_discount" | "amount_discount">(
@@ -76,7 +78,7 @@ export default function PromotionForm({ initialData, products, events, onSubmit 
     const endDate = new Date(endAt);
 
     if (selectedEvent && !selectedEvent.permanent && endDate > new Date((selectedEvent.endAt as any).seconds * 1000)) {
-      alert("A promoção não pode terminar depois do evento.");
+      showAlert("A promoção não pode terminar depois do evento.");
       setSubmitting(false);
       return;
     }

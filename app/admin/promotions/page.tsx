@@ -12,9 +12,11 @@ import { ensurePermanentEvent } from "@/src/services/promotions.service";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { logger } from "@/src/lib/logger";
 import { Tag, TrendingUp, CheckCircle2, XCircle, Percent } from "lucide-react";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 import "./page.css";
 
 function PromotionsContent() {
+  const { showAlert, showConfirm } = useConfirm();
   const { promotions, loading, createPromotion, updatePromotion, deletePromotion } = usePromotions();
   const { events } = usePromotionEvents();
 
@@ -57,7 +59,7 @@ function PromotionsContent() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Deseja excluir esta promoção?")) return;
+    if (!await showConfirm("Deseja excluir esta promoção?")) return;
     try {
       await deletePromotion(id);
     } catch (err) {
@@ -152,10 +154,10 @@ function PromotionsContent() {
               handleClose();
             } catch (err: any) {
               if (err?.message === "PRODUCT_ALREADY_IN_PROMOTION") {
-                alert("Este produto já possui uma promoção ativa.");
+                await showAlert("Este produto já possui uma promoção ativa.");
               } else {
                 logger.error("PromotionsPage.save", err);
-                alert("Erro ao salvar promoção.");
+                await showAlert("Erro ao salvar promoção.");
               }
             }
           }}

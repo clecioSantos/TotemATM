@@ -1,5 +1,8 @@
+"use client";
+
 import React from "react";
 import { Trash2, Edit2, Plus, DollarSign, MapPinOff, MapPin } from "lucide-react";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 
 interface NeighborhoodTableProps {
   neighborhoods: any[];
@@ -24,6 +27,7 @@ export default function NeighborhoodTable({
   onEditPrice,
   onToggleNb,
 }: NeighborhoodTableProps) {
+  const { showConfirm } = useConfirm();
   return (
     <div className="table-card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px 16px 4px' }}>
@@ -79,7 +83,7 @@ export default function NeighborhoodTable({
                     {isOwner && (
                       <>
                         <button onClick={() => onEditNb(nb)} className="btn-action btn-edit"><Edit2 size={14} /></button>
-                        <button onClick={() => { if (confirm('Excluir bairro?')) onDeleteNb(nb.id); }} className="btn-action btn-delete"><Trash2 size={14} /></button>
+                        <button onClick={async () => { if (await showConfirm('Excluir bairro?')) onDeleteNb(nb.id); }} className="btn-action btn-delete"><Trash2 size={14} /></button>
                       </>
                     )}
                   </td>

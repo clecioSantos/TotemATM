@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/app/admin/orders/AuthContext";
 import { useStorePermissions } from "@/src/hooks/useStorePermissions";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 import { ShieldAlert } from "lucide-react";
 import { collection, onSnapshot, query, where, deleteDoc, doc, addDoc, updateDoc, getDocs, writeBatch, FirestoreError } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
@@ -21,6 +22,7 @@ import "./page.css";
 function AddressesManagementContent() {
   const { user } = useAuth();
   const { can: canManage } = useStorePermissions();
+  const { showAlert } = useConfirm();
   const isAdmin = user?.role === 'admin' || user?.role === 'owner' || canManage('manageAddresses');
   const isOwner = user?.role === 'owner' || canManage('manageAddresses');
 
@@ -118,13 +120,13 @@ function AddressesManagementContent() {
       logger.info("ADDRESSES_PAGE", `Cidade ${id} removida`);
     } catch (error) {
       logger.error("ADDRESSES_PAGE", `Erro ao remover cidade ${id}`, error);
-      alert("Erro ao remover cidade.");
+      await showAlert("Erro ao remover cidade.");
     }
   }
 
   const handleToggleDelivery = async (cityId: string, enabled: boolean) => {
     if (!user?.companyId) {
-      alert("Erro: ID da empresa não encontrado no seu perfil.");
+      await showAlert("Erro: ID da empresa não encontrado no seu perfil.");
       return;
     }
 
@@ -142,7 +144,7 @@ function AddressesManagementContent() {
         ? `Firestore (${error.code}): ${error.message}`
         : error instanceof Error ? error.message : String(error);
       logger.error("ADDRESSES_PAGE", `Erro ao alternar entrega: ${errMsg}`, error);
-      alert("Falha ao atualizar configuração de entrega. Verifique suas permissões.");
+      await showAlert("Falha ao atualizar configuração de entrega. Verifique suas permissões.");
     }
   }
 
@@ -164,7 +166,7 @@ function AddressesManagementContent() {
       const snapshot = await getDocs(q);
 
       if (snapshot.empty) {
-        alert("Nenhum bairro encontrado para esta cidade.");
+        await showAlert("Nenhum bairro encontrado para esta cidade.");
         return;
       }
 
@@ -189,13 +191,13 @@ function AddressesManagementContent() {
       await batch.commit();
       if (price > 0) await enableCityIfNeeded(cityId);
       logger.info("ADDRESSES_PAGE", `Preços padronizados para cidade ${cityId}: R$${price}`);
-      alert("Preços atualizados com sucesso em todos os bairros!");
+      await showAlert("Preços atualizados com sucesso em todos os bairros!");
     } catch (error) {
       const errMsg = error instanceof FirestoreError
         ? `Firestore (${error.code}): ${error.message}`
         : error instanceof Error ? error.message : String(error);
       logger.error("ADDRESSES_PAGE", `Erro ao definir preço padrão: ${errMsg}`, error);
-      alert("Falha ao atualizar preços. Apenas proprietários podem realizar esta ação.");
+      await showAlert("Falha ao atualizar preços. Apenas proprietários podem realizar esta ação.");
     }
   };
 

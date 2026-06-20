@@ -1,7 +1,11 @@
 import { AuthProvider } from "@totem/shared/types/AuthProvider";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { CapacitorInit } from "@/src/capacitor/capacitor-init";
+import dynamic from "next/dynamic";
 import "./globals.css";
+
+import ConfirmProvider from "@/app/components/ConfirmProvider";
+const LogTerminal = dynamic(() => import("@/app/components/LogTerminal"), { ssr: false });
 
 export const metadata = {
   title: 'Bora De Delivery',
@@ -31,8 +35,11 @@ export default function RootLayout({
       <body>
         <ErrorBoundary context="RootLayout">
           <AuthProvider>
-            <CapacitorInit>{children}</CapacitorInit>
+            <CapacitorInit>
+              <ConfirmProvider>{children}</ConfirmProvider>
+            </CapacitorInit>
           </AuthProvider>
+          <LogTerminal />
         </ErrorBoundary>
       </body>
     </html>

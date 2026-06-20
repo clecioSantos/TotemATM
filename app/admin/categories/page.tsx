@@ -1,6 +1,7 @@
 "use client";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { logger } from "@/src/lib/logger";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 
 import { useState } from "react";
 import { useCategoriesStore } from "./hooks/useCategories";
@@ -11,6 +12,7 @@ import CategoryForm from "./components/CategoryForm";
 import "./page.css";
 
 function CategoriesContent() {
+  const { showAlert } = useConfirm();
   const { categories, loading, saveCategory, removeCategory } = useCategoriesStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -64,7 +66,7 @@ function CategoriesContent() {
               setIsModalOpen(false);
             } catch (err) {
               logger.error("CategoriesPage", "Falha ao executar saveCategory", err);
-              alert("Erro ao salvar categoria. Verifique o console.");
+              showAlert("Erro ao salvar categoria. Verifique o console.");
             }
           }}
         />

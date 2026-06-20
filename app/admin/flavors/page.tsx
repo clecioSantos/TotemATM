@@ -9,9 +9,11 @@ import FlavorForm from "./components/FlavorForm";
 import Modal from "../components/Modal";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { logger } from "@/src/lib/logger";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 import "./page.css";
 
 function FlavorsContent() {
+  const { showConfirm } = useConfirm();
   const { flavors, loading: flavLoading, saveFlavor, removeFlavor } = useFlavors();
   const { categories, loading: catLoading } = useCategoriesStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -73,7 +75,7 @@ function FlavorsContent() {
           <FlavorTable
             flavors={filteredFlavors}
             categories={categories}
-            onDelete={(id) => { if (window.confirm("Deseja excluir este sabor?")) removeFlavor(id); }}
+            onDelete={async (id) => { if (await showConfirm("Deseja excluir este sabor?")) removeFlavor(id); }}
             onEdit={handleEdit}
           />
         )}

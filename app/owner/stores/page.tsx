@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { collection, onSnapshot, deleteDoc, doc } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 
 export default function StoresPage() {
+  const { showConfirm } = useConfirm();
   const [stores, setStores] = useState<any[]>([]);
 
   useEffect(() => {
@@ -20,7 +22,7 @@ export default function StoresPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      if (confirm("Tem certeza que deseja excluir esta loja?")) {
+      if (await showConfirm("Tem certeza que deseja excluir esta loja?")) {
         await deleteDoc(doc(firestore, "companies", id));
       }
     } catch (error) {

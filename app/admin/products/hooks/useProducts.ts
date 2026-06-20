@@ -9,6 +9,7 @@ import { Product } from '@totem/shared/types';
 import { firestore } from '../../../../src/services/firebase';
 import { useAuth } from '@totem/shared/types/AuthProvider';
 import { logger } from '@/src/lib/logger';
+import { useConfirm } from "@/app/components/ConfirmProvider";
 
 const API_BASE_URL = '';
 
@@ -17,6 +18,7 @@ export const useProducts = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const { showAlert } = useConfirm();
 
   useEffect(() => {
     if (!user?.companyId) {
@@ -96,7 +98,7 @@ export const useProducts = () => {
         imageUrl = result.imageUrl;
       } catch (uploadError: any) {
         logger.warn("useProducts", `Upload de imagem falhou: ${uploadError?.message || uploadError}`, uploadError);
-        alert(`Aviso: A imagem não pôde ser enviada. Os dados do produto serão salvos sem imagem.`);
+        showAlert(`Aviso: A imagem não pôde ser enviada. Os dados do produto serão salvos sem imagem.`);
       }
     }
 

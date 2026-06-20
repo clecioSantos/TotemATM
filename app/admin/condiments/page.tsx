@@ -8,9 +8,11 @@ import CondimentForm from "./components/CondimentForm";
 import Modal from "../components/Modal";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { logger } from "@/src/lib/logger";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 import "./page.css";
 
 function CondimentsContent() {
+  const { showConfirm } = useConfirm();
   const { condiments, loading: condLoading, saveCondiment, removeCondiment } = useCondiments();
   const { categories, loading: catLoading } = useCategoriesStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,8 +60,8 @@ function CondimentsContent() {
           <CondimentTable 
             condiments={condiments} 
             categories={categories}
-            onDelete={(id) => {
-              if (window.confirm("Deseja excluir este condimento?")) removeCondiment(id);
+            onDelete={async (id) => {
+              if (await showConfirm("Deseja excluir este condimento?")) removeCondiment(id);
             }}
             onEdit={handleEdit} 
           />

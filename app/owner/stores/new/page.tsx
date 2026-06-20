@@ -7,8 +7,10 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { StoreUser, adminStorePermissions, computeStoreIds } from "@totem/shared/types/auth";
 import { StoreUsersSection } from "@/src/components/StoreUsersSection";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 
 export default function NewStorePage() {
+  const { showAlert } = useConfirm();
   const router = useRouter();
   const [cities, setCities] = useState<any[]>([]);
   const [isAddingCity, setIsAddingCity] = useState(false);
@@ -43,7 +45,7 @@ export default function NewStorePage() {
       setIsAddingCity(false);
     } catch (error) {
       console.error("🔥 Erro ao adicionar cidade:", error);
-      alert("Erro ao adicionar cidade.");
+      await showAlert("Erro ao adicionar cidade.");
     }
   };
   const [formData, setFormData] = useState({
@@ -148,7 +150,7 @@ export default function NewStorePage() {
       setFormData((prev) => ({ ...prev, [field]: result.imageUrl }));
     } catch (error) {
       console.error("Erro ao fazer upload da imagem:", error);
-      alert("Erro ao fazer upload da imagem. Verifique o servidor.");
+      await showAlert("Erro ao fazer upload da imagem. Verifique o servidor.");
     }
   };
 
@@ -207,11 +209,11 @@ export default function NewStorePage() {
         }
       }
 
-      alert("Loja criada com sucesso!");
+      await showAlert("Loja criada com sucesso!");
       router.push("/owner/stores");
     } catch (error) {
       console.error("Erro ao salvar loja:", error);
-      alert("Erro ao salvar loja.");
+      await showAlert("Erro ao salvar loja.");
     }
   };
 

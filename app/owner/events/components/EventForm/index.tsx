@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PromotionEvent } from "@totem/shared/types";
 import { Timestamp } from "firebase/firestore";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 import "./styles.css";
 
 interface Props {
@@ -17,6 +18,7 @@ const nowISO = () => {
 };
 
 export default function EventForm({ initialData, onSubmit }: Props) {
+  const { showAlert } = useConfirm();
   const [name, setName] = useState(initialData?.name || "");
   const [slug, setSlug] = useState(initialData?.slug || "");
   const [description, setDescription] = useState(initialData?.description || "");
@@ -74,7 +76,7 @@ export default function EventForm({ initialData, onSubmit }: Props) {
       setBannerUrl(result.imageUrl);
     } catch (error) {
       console.error("Erro ao fazer upload do banner:", error);
-      alert("Erro ao fazer upload da imagem. Verifique o servidor.");
+      await showAlert("Erro ao fazer upload da imagem. Verifique o servidor.");
     } finally {
       setUploading(false);
     }

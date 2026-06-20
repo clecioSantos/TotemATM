@@ -6,6 +6,7 @@ import { doc, updateDoc, getDoc, collection, query, where, getDocs, addDoc, dele
 import { firestore } from "@/src/services/firebase";
 import { useAuth } from "@/app/admin/orders/AuthContext";
 import { useStoreSetupStatus } from "@/src/hooks/useStoreSetupStatus";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import {
   CheckCircle, Circle, ChevronRight, ChevronLeft, Rocket, Image,
@@ -330,6 +331,7 @@ function DeliveryStep({ companyId, done, refetch }: { companyId?: string; done: 
 }
 
 function CatalogStep({ companyId, done, refetch }: { companyId?: string; done: boolean; refetch: () => void }) {
+  const { showConfirm } = useConfirm();
   const [categories, setCategories] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [addingCat, setAddingCat] = useState(false);
@@ -383,7 +385,7 @@ function CatalogStep({ companyId, done, refetch }: { companyId?: string; done: b
   };
 
   const deleteCategory = async (id: string) => {
-    if (!confirm("Excluir esta categoria?")) return;
+    if (!await showConfirm("Excluir esta categoria?")) return;
     try { await deleteDoc(doc(firestore, "categories", id)); setTimeout(() => refetch(), 300); } catch (e) { console.error(e); }
   };
 
@@ -420,7 +422,7 @@ function CatalogStep({ companyId, done, refetch }: { companyId?: string; done: b
   };
 
   const deleteProduct = async (id: string) => {
-    if (!confirm("Excluir este produto?")) return;
+    if (!await showConfirm("Excluir este produto?")) return;
     try { await deleteDoc(doc(firestore, "products", id)); setTimeout(() => refetch(), 300); } catch (e) { console.error(e); }
   };
 

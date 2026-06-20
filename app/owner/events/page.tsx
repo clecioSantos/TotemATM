@@ -10,9 +10,11 @@ import { ensurePermanentEvent } from "@/src/services/promotions.service";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { logger } from "@/src/lib/logger";
 import { Calendar, CalendarCheck, CalendarX, Clock } from "lucide-react";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 import "./page.css";
 
 function EventsContent() {
+  const { showAlert, showConfirm } = useConfirm();
   const { events, loading, createEvent, updateEvent, deleteEvent } = useEvents();
 
   useEffect(() => {
@@ -47,10 +49,10 @@ function EventsContent() {
   const handleDelete = async (id: string) => {
     const ev = events.find((e) => e.id === id);
     if (ev?.permanent) {
-      alert("O evento Promoções é permanente e não pode ser excluído.");
+      await showAlert("O evento Promoções é permanente e não pode ser excluído.");
       return;
     }
-    if (!confirm("Deseja excluir este evento?")) return;
+    if (!await showConfirm("Deseja excluir este evento?")) return;
     try {
       await deleteEvent(id);
     } catch (err) {
@@ -126,7 +128,7 @@ function EventsContent() {
               handleClose();
             } catch (err) {
               logger.error("EventsPage.save", err);
-              alert("Erro ao salvar evento.");
+              await showAlert("Erro ao salvar evento.");
             }
           }}
         />

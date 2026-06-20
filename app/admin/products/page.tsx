@@ -10,6 +10,7 @@ import CondimentForm from "../condiments/components/CondimentForm";
 import { Product } from "@totem/shared/types";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { logger } from "@/src/lib/logger";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 import { Plus, Settings, ShoppingBag, Package, Layers, Edit3, Trash2, Save, X, Check } from "lucide-react";
 import { doc, updateDoc } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
@@ -18,6 +19,7 @@ import "./page.css";
 type ActiveTab = "products" | "groups" | "category";
 
 function ProductsContent() {
+  const { showConfirm } = useConfirm();
   const { products, loading: productsLoading, saveProduct, removeProduct } = useProducts();
   const { categories, loading: catLoading, saveCategory, removeCategory } = useCategoriesStore();
   const { condiments, loading: condLoading, saveCondiment, removeCondiment } = useCondiments();
@@ -154,7 +156,7 @@ function ProductsContent() {
                           ) : (
                             <button onClick={() => { setNewProductOpen(false); setEditingProductId(p.id); }} className="p-1.5 hover:bg-orange-50 rounded-lg"><Edit3 size={14} className="text-orange-500" /></button>
                           )}
-                          <button onClick={() => { if (confirm("Excluir produto?")) removeProduct(p.id); }} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 size={14} className="text-red-400" /></button>
+                          <button onClick={async () => { if (await showConfirm("Excluir produto?")) removeProduct(p.id); }} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 size={14} className="text-red-400" /></button>
                         </div>
                       </div>
                       {/* Inline edit form */}
@@ -224,7 +226,7 @@ function ProductsContent() {
                           ) : (
                             <button onClick={() => { setNewCondimentOpen(false); setEditingCondimentId(c.id); }} className="p-1.5 hover:bg-orange-50 rounded-lg"><Edit3 size={14} className="text-orange-500" /></button>
                           )}
-                          <button onClick={() => { if (confirm("Excluir grupo adicional?")) removeCondiment(c.id); }} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 size={14} className="text-red-400" /></button>
+                          <button onClick={async () => { if (await showConfirm("Excluir grupo adicional?")) removeCondiment(c.id); }} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 size={14} className="text-red-400" /></button>
                         </div>
                       </div>
                       {editingCondimentId === c.id && (

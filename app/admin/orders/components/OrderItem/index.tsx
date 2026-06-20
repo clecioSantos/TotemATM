@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Order } from '../../types';
 import OrderTimer from './OrderTimer';
 import { PermissionGate } from '@/src/components/PermissionGate';
+import { useConfirm } from "@/app/components/ConfirmProvider";
 import "./styles.css";
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
+  const { showConfirm } = useConfirm();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const isPickup = order.deliveryMode === "pickup";
@@ -79,9 +81,9 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
           {order.status !== 'finished' && order.status !== 'cancelled' && (
             <button
               className="cancel-btn-inline"
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.stopPropagation();
-                if (window.confirm("Deseja realmente cancelar este pedido?")) {
+                if (await showConfirm("Deseja realmente cancelar este pedido?")) {
                   onCancel(order.id);
                 }
               }}
@@ -196,9 +198,9 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
               <div className="order-actions-footer">
                 <button 
                   className="action-btn-danger"
-                  onClick={(e) => { 
+                  onClick={async (e) => { 
                     e.stopPropagation(); 
-                    if (window.confirm("Deseja realmente cancelar este pedido?")) {
+                    if (await showConfirm("Deseja realmente cancelar este pedido?")) {
                       onCancel(order.id);
                     }
                   }}

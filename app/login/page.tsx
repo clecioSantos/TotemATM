@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, Suspense, useEffect, useRef } from "react";
-import { signInWithEmailAndPassword, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithCredential, linkWithCredential } from "firebase/auth";
+import { signInWithEmailAndPassword, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithCredential, signInWithCustomToken, linkWithCredential } from "firebase/auth";
 import { auth, firestore } from "../../src/services/firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import Link from "next/link";
@@ -48,59 +48,122 @@ function LoginForm() {
   const passwordError = touched.password && password && password.length < 6;
   const canSubmit = email && password && !emailError && !passwordError && !loading;
 
+  const processGoogleUser = async (googleUser: any, idToken: string) => {
+    const userDoc = await getDoc(doc(firestore, "users", googleUser.uid));
+    if (!userDoc.exists()) {
+      await setDoc(doc(firestore, "users", googleUser.uid), {
+        uid: googleUser.uid,
+        email: googleUser.email || "",
+        name: googleUser.displayName || googleUser.name || "",
+        photoURL: googleUser.photoURL || googleUser.picture || "",
+        provider: "google",
+        role: "client",
+        companyId: "default",
+        createdAt: serverTimestamp(),
+      });
+    } else {
+      const existing = userDoc.data();
+      const updates: Record<string, any> = {};
+      if (googleUser.displayName && !existing.name) updates.name = googleUser.displayName;
+      if (googleUser.photoURL) updates.photoURL = googleUser.photoURL;
+      if (Object.keys(updates).length > 0) {
+        const { updateDoc } = await import("firebase/firestore");
+        await updateDoc(doc(firestore, "users", googleUser.uid), updates);
+      }
+    }
+
+    let userRole = "client";
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        userRole = data.role || "client";
+      }
+    } catch { /* fallback */ }
+
+    if (userRole === "client") {
+      try {
+        const ud = await getDoc(doc(firestore, "users", googleUser.uid));
+        if (ud.exists()) userRole = (ud.data() as any).role || "client";
+      } catch { /* fallback */ }
+    }
+
+    if (redirectPath) {
+      window.location.href = redirectPath;
+    } else if (userRole === "admin" || userRole === "owner") {
+      window.location.href = "/admin";
+    } else {
+      window.location.href = "/totem";
+    }
+  };
+
+  // Handle Google OAuth redirect callback (auth code in URL)
+  useEffect(() => {
+    const code = searchParams.get("code");
+    if (!code) return;
+    setGoogleLoading(true);
+    setError("");
+    const baseUrl = window.location.origin + window.location.pathname;
+    fetch("/api/auth/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, redirectUri: baseUrl }),
+    }).then(async (res) => {
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Erro na autenticação Google"); setGoogleLoading(false); return; }
+      const { customToken, user: gUser } = data;
+      const userCred = await signInWithCustomToken(auth, customToken);
+      const idToken = await userCred.user.getIdToken();
+      await processGoogleUser({ uid: userCred.user.uid, ...gUser }, idToken);
+    }).catch((err) => {
+      logger.error("LOGIN_PAGE", "Erro no callback Google", err);
+      setError("Erro ao processar login Google.");
+      setGoogleLoading(false);
+    });
+  }, [searchParams]);
+
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     setError("");
     try {
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
+      const googleClientId = typeof process !== "undefined" ? process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID : null;
+      const isWebView = typeof navigator !== "undefined" && (
+        /(Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|wv)/i.test(navigator.userAgent)
+        || (typeof window !== "undefined" && (window as any).capacitor !== undefined)
+      );
+
+      // In WebView, use OAuth redirect (same window) instead of popup
+      if (isWebView && googleClientId) {
+        const baseUrl = window.location.origin + window.location.pathname;
+        const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${googleClientId}&redirect_uri=${encodeURIComponent(baseUrl)}&response_type=code&scope=openid%20email%20profile&access_type=offline`;
+        window.location.href = oauthUrl;
+        return;
+      }
+
+      if (isWebView && !googleClientId) {
+        setError("Login com Google não disponível. Configure NEXT_PUBLIC_GOOGLE_CLIENT_ID no .env");
+        setGoogleLoading(false);
+        return;
+      }
+
+      const result = await signInWithPopup(auth, provider).catch(async (popupErr: any) => {
+        if (popupErr?.code === "auth/popup-blocked" && googleClientId) {
+          const baseUrl = window.location.origin + window.location.pathname;
+          const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${googleClientId}&redirect_uri=${encodeURIComponent(baseUrl)}&response_type=code&scope=openid%20email%20profile&access_type=offline`;
+          window.location.href = oauthUrl;
+          return;
+        }
+        throw popupErr;
+      });
+      if (!result) return;
+
       const user = result.user;
       const idToken = await user.getIdToken();
-
-      const userDoc = await getDoc(doc(firestore, "users", user.uid));
-      if (!userDoc.exists()) {
-        await setDoc(doc(firestore, "users", user.uid), {
-          uid: user.uid,
-          email: user.email || "",
-          name: user.displayName || "",
-          photoURL: user.photoURL || "",
-          provider: "google",
-          role: "client",
-          companyId: "default",
-          createdAt: serverTimestamp(),
-        });
-      } else {
-        const existing = userDoc.data();
-        const updates: Record<string, any> = {};
-        if (user.displayName && !existing.name) updates.name = user.displayName;
-        if (user.photoURL) updates.photoURL = user.photoURL;
-        if (Object.keys(updates).length > 0) {
-          await import("firebase/firestore").then(({ updateDoc }) => updateDoc(doc(firestore, "users", user.uid), updates));
-        }
-      }
-
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const userRole = data.role || "client";
-        await user.getIdToken(true);
-        await user.reload();
-
-        if (redirectPath) {
-          window.location.href = redirectPath;
-        } else if (userRole === "admin" || userRole === "owner") {
-          window.location.href = "/admin";
-        } else {
-          window.location.href = "/totem";
-        }
-      } else {
-        setError("Erro ao criar sessão. Tente novamente.");
-      }
+      await processGoogleUser(user, idToken);
     } catch (error: any) {
       if (error?.code === "auth/account-exists-with-different-credential") {
         const email = error?.customData?.email || "";
@@ -112,10 +175,8 @@ function LoginForm() {
           setError("Esta conta já existe com outro método de login.");
         }
       } else if (error?.code === "auth/popup-blocked") {
-        setError("Popup bloqueado pelo navegador. Permita popups para este site.");
-      } else if (error?.code === "auth/popup-closed-by-user") {
-        setError("");
-      } else if (error?.code === "auth/cancelled-popup-request") {
+        setError("Popup bloqueado pelo navegador.");
+      } else if (error?.code === "auth/popup-closed-by-user" || error?.code === "auth/cancelled-popup-request") {
         setError("");
       } else {
         setError("Erro ao fazer login com Google. Tente novamente.");
@@ -147,36 +208,54 @@ function LoginForm() {
 
       const idToken = await userCredential.user.getIdToken();
 
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const userRole = data.role || "client";
-
-        await userCredential.user.getIdToken(true);
-        await userCredential.user.reload();
-
-        if (!userCredential.user.emailVerified && userRole !== "admin" && userRole !== "owner") {
-          await fetch("/api/auth/logout", { method: "POST" });
-          router.replace("/verify-email");
-          return;
-        }
-
-        if (redirectPath) {
-          window.location.href = redirectPath;
-        } else if (userRole === "admin" || userRole === "owner") {
-          window.location.href = "/admin";
+      let userRole = "client";
+      let sessionCreated = false;
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          userRole = data.role || "client";
+          sessionCreated = true;
         } else {
-          window.location.href = "/totem";
+          logger.warn("LOGIN_PAGE", "API de sessão indisponível, usando auth local");
         }
+      } catch {
+        logger.warn("LOGIN_PAGE", "API de sessão indisponível, usando auth local");
+      }
+
+      if (!sessionCreated) {
+        try {
+          const userDoc = await getDoc(doc(firestore, "users", userCredential.user.uid));
+          if (userDoc.exists()) {
+            userRole = (userDoc.data() as any).role || "client";
+          }
+        } catch { /* fallback */ }
+      }
+
+      await userCredential.user.getIdToken(true);
+      await userCredential.user.reload();
+
+      if (!sessionCreated && !userCredential.user.emailVerified && userRole !== "admin" && userRole !== "owner") {
+        router.replace("/verify-email");
+        return;
+      }
+
+      if (!userCredential.user.emailVerified && userRole !== "admin" && userRole !== "owner") {
+        try { await fetch("/api/auth/logout", { method: "POST" }); } catch {}
+        router.replace("/verify-email");
+        return;
+      }
+
+      if (redirectPath) {
+        window.location.href = redirectPath;
+      } else if (userRole === "admin" || userRole === "owner") {
+        window.location.href = "/admin";
       } else {
-        const errorData = await res.json().catch(() => ({}));
-        setError(errorData.message || "Erro ao criar sessão segura no servidor.");
-        logger.error("LOGIN_PAGE", "Erro na API de Sessão", undefined, errorData);
+        window.location.href = "/totem";
       }
     } catch (error: any) {
       const errorMessages: Record<string, string> = {

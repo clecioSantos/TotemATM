@@ -5,6 +5,7 @@ import { firestore } from "@/src/services/firebase";
 import { collection, onSnapshot, query, where, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, orderBy } from "firebase/firestore";
 import Link from "next/link";
 import { useAuth } from "@totem/shared/types/AuthProvider";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 import { Search, MapPin, User, ShoppingBag, Store, X, LogOut, ChevronRight, Plus, Trash2, Home, Bell, ChevronLeft, ChevronRight as ChevronRightIcon, Tag, Loader2 } from "lucide-react";
 import { logger } from "@/src/lib/logger";
 import NotificationsPanel from "./components/NotificationsPanel";
@@ -27,6 +28,7 @@ const categories = [
 
 export default function StoreListingPage() {
   const { user, signOut, refreshProfile } = useAuth();
+  const { showAlert, showConfirm } = useConfirm();
   const [stores, setStores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -157,7 +159,7 @@ export default function StoreListingPage() {
   }, [user, isOrdersOpen]);
 
   const handleDeleteAddress = async (addressId: string) => {
-    if (!confirm("Deseja realmente excluir este endereço?")) return;
+    if (!await showConfirm("Deseja realmente excluir este endereço?")) return;
     try {
       await deleteDoc(doc(firestore, "addresses", addressId));
       if (isEditing === addressId) resetAddressForm();
@@ -207,7 +209,7 @@ export default function StoreListingPage() {
           complement: addressComplement,
         });
         setIsEditing(null);
-        alert("Endereço atualizado!");
+        await showAlert("Endereço atualizado!");
       } else {
         await addDoc(collection(firestore, "addresses"), {
           userId: user.uid,
@@ -220,7 +222,7 @@ export default function StoreListingPage() {
           enabled: true,
           createdAt: serverTimestamp(),
         });
-        alert("Endereço adicionado!");
+        await showAlert("Endereço adicionado!");
       }
       resetAddressForm();
     } finally {

@@ -8,11 +8,13 @@ import { StoreUser, adminStorePermissions, computeStoreIds } from "@totem/shared
 import { StoreUsersSection } from "@/src/components/StoreUsersSection";
 import { onAuthStateChanged, getIdTokenResult } from "firebase/auth";
 import { auth } from "@/src/services/firebase";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 
 export default function EditStorePage() {
   const router = useRouter();
   const params = useParams();
   const storeId = params.id as string;
+  const { showAlert } = useConfirm();
 
   const [cities, setCities] = useState<any[]>([]);
   const [isAddingCity, setIsAddingCity] = useState(false);
@@ -145,7 +147,7 @@ export default function EditStorePage() {
       setFormData((prev: any) => ({ ...prev, [field]: result.imageUrl }));
     } catch (error) {
       console.error("Erro ao fazer upload da imagem:", error);
-      alert("Erro ao fazer upload da imagem. Verifique o servidor.");
+      await showAlert("Erro ao fazer upload da imagem. Verifique o servidor.");
     }
   };
 
@@ -231,13 +233,13 @@ export default function EditStorePage() {
         }
       }
 
-      alert("Loja atualizada!");
+      await showAlert("Loja atualizada!");
       router.push("/owner/stores");
     } catch (error) {
       console.error("[DEBUG] Erro ao atualizar loja:", error);
       console.error("[DEBUG] Error code:", (error as any)?.code);
       console.error("[DEBUG] Error message:", (error as any)?.message);
-      alert("Erro ao atualizar loja.");
+      await showAlert("Erro ao atualizar loja.");
     }
   };
 

@@ -9,11 +9,13 @@ import { Order } from '../types';
 import { firestore } from '../../../../src/services/firebase';
 import { useAuth } from '@totem/shared/types/AuthProvider';
 import { logger } from '@/src/lib/logger';
+import { useConfirm } from "@/app/components/ConfirmProvider";
 
 export const useOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { showAlert } = useConfirm();
 
   useEffect(() => {
     if (!user?.companyId) {
@@ -76,7 +78,7 @@ export const useOrders = () => {
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       logger.error("useOrders", `Erro ao criar pedido: ${errMsg}`, error);
-      alert("Erro ao criar pedido. Verifique as permissões do Firestore.");
+      showAlert("Erro ao criar pedido. Verifique as permissões do Firestore.");
       throw error;
     }
   };

@@ -1,5 +1,8 @@
+"use client";
+
 import React from "react";
 import { Trash2, Edit2, Plus, DollarSign, Truck } from "lucide-react";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 
 interface CityTableProps {
   cities: any[];
@@ -28,6 +31,7 @@ export default function CityTable({
   citySettings,
   onToggleDelivery,
 }: CityTableProps) {
+  const { showConfirm } = useConfirm();
   return (
     <div className="table-card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px 16px 4px' }}>
@@ -82,7 +86,7 @@ export default function CityTable({
                       {isOwner && (
                         <>
                           <button onClick={(e) => { e.stopPropagation(); onEditCity(city); }} className="btn-action btn-edit"><Edit2 size={14} /></button>
-                          <button onClick={(e) => { e.stopPropagation(); if (confirm('Excluir cidade?')) onDeleteCity(city.id); }} className="btn-action btn-delete"><Trash2 size={14} /></button>
+                          <button onClick={async (e) => { e.stopPropagation(); if (await showConfirm('Excluir cidade?')) onDeleteCity(city.id); }} className="btn-action btn-delete"><Trash2 size={14} /></button>
                         </>
                       )}
                     </td>

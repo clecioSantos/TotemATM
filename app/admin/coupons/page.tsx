@@ -8,6 +8,7 @@ import { useAuth } from "@/app/admin/orders/AuthContext";
 import { Tag, Plus, Loader2, CheckCircle, XCircle, Trash2, Search } from "lucide-react";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { logger } from "@/src/lib/logger";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 import "../page.css";
 
 interface CouponData {
@@ -31,6 +32,7 @@ interface CouponData {
 
 function CouponsContent() {
   const { user } = useAuth();
+  const { showConfirm } = useConfirm();
   const router = useRouter();
   const [coupons, setCoupons] = useState<CouponData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -209,7 +211,7 @@ function CouponsContent() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Excluir este cupom?")) return;
+    if (!await showConfirm("Excluir este cupom?")) return;
     try {
       const res = await fetch(`/api/coupons/${id}`, { method: "DELETE" });
       const data = await res.json();

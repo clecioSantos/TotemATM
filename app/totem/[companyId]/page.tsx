@@ -13,6 +13,7 @@ import FinishedScreen from "../components/FinishedScreen";
 import PaymentScreen from "../components/PaymentScreen";
 import NotificationsPanel from "../components/NotificationsPanel";
 import { useNotifications } from "../hooks/useNotifications";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { logger } from "@/src/lib/logger";
 import { X, MapPin, LogOut, ChevronRight, Plus, Trash2, Mail, Send, MessageSquare, Loader2 } from "lucide-react";
@@ -39,6 +40,7 @@ export default function TotemPage() {
 function TotemContent({ params }: PageProps) {
   const router = useRouter();
   const { user, signOut, refreshProfile } = useAuth();
+  const { showConfirm } = useConfirm();
   const { companyId } = params;
 
   useEffect(() => {
@@ -186,7 +188,7 @@ function TotemContent({ params }: PageProps) {
   };
 
   const handleDeleteAddress = async (addressId: string) => {
-    if (!confirm("Deseja realmente excluir este endereço?")) return;
+    if (!await showConfirm("Deseja realmente excluir este endereço?")) return;
     try {
       await deleteDoc(doc(firestore, "addresses", addressId));
       if (editingAddressId === addressId) resetAddressForm();

@@ -11,6 +11,7 @@ import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { PermissionGate } from "@/src/components/PermissionGate";
 import HelpTooltip from "../components/HelpTooltip";
 import HelpModal from "../components/HelpModal";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 import "../page.css";
 import "./page.css";
 
@@ -64,6 +65,7 @@ const maskTelefone = (value: string) => {
 
 function ConfigurationsContent() {
   const { signOut, user } = useAuth();
+  const { showAlert } = useConfirm();
   const [copied, setCopied] = useState(false);
   const [totemUrl, setTotemUrl] = useState("");
 
@@ -179,7 +181,7 @@ function ConfigurationsContent() {
       setCompanyData((prev: any) => ({ ...prev, [field]: result.imageUrl }));
     } catch (error) {
       console.error("Erro ao fazer upload da imagem:", error);
-      alert("Erro ao fazer upload da imagem. Verifique o servidor.");
+      await showAlert("Erro ao fazer upload da imagem. Verifique o servidor.");
     }
   };
 
@@ -189,10 +191,10 @@ function ConfigurationsContent() {
     setSaving(true);
     try {
       await updateDoc(doc(firestore, "companies", user.companyId), companyData);
-      alert("Dados da empresa atualizados!");
+      await showAlert("Dados da empresa atualizados!");
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      alert("Erro ao salvar os dados.");
+      await showAlert("Erro ao salvar os dados.");
     } finally {
       setSaving(false);
     }

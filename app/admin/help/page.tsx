@@ -5,12 +5,14 @@ import { doc, getDoc } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
 import { Search, BookOpen, Mail, Send, X, Loader2 } from "lucide-react";
 import { useAuth } from "@/app/admin/orders/AuthContext";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 import helpContent from "@/src/lib/help-content";
 import HelpModal from "../components/HelpModal";
 import "../page.css";
 
 export default function HelpCenterPage() {
   const { user } = useAuth();
+  const { showAlert } = useConfirm();
   const [query, setQuery] = useState("");
   const [selectedHelpId, setSelectedHelpId] = useState<string | null>(null);
   const [isContactOpen, setIsContactOpen] = useState(false);
@@ -49,7 +51,7 @@ export default function HelpCenterPage() {
       setSent(true);
       setTimeout(() => { setIsContactOpen(false); setSent(false); setContactSubject(""); setContactMessage(""); setContactPhone(""); }, 2000);
     } catch {
-      alert("Erro ao enviar mensagem. Tente novamente.");
+      showAlert("Erro ao enviar mensagem. Tente novamente.");
     } finally {
       setSending(false);
     }

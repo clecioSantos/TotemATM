@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Product, OrderLineItem, OrderFormPayload, Condiment } from "@totem/shared/types";
 import styles from "./OrderForm.module.css";
 import { Plus, Trash2, Check } from "lucide-react";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 
 interface Props {
   products: Product[];
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function OrderForm({ products, condiments, onSubmit, onClose }: Props) {
+  const { showAlert } = useConfirm();
   const [customerName, setCustomerName] = useState("");
   const [tableNumber, setTableNumber] = useState("");
   const [selectedItems, setSelectedItems] = useState<OrderLineItem[]>([]);
@@ -75,7 +77,7 @@ export default function OrderForm({ products, condiments, onSubmit, onClose }: P
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedItems.length === 0) {
-      alert("Adicione pelo menos um item ao pedido");
+      showAlert("Adicione pelo menos um item ao pedido");
       return;
     }
 

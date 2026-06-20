@@ -5,11 +5,13 @@ import { firestore, auth } from "@/src/services/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { Wallet, Plug, PlugZap, Loader, ExternalLink, RefreshCw } from "lucide-react";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 import HelpTooltip from "../components/HelpTooltip";
 import HelpModal from "../components/HelpModal";
 import "./page.css";
 
 export default function FinanceiroPage() {
+  const { showAlert, showConfirm } = useConfirm();
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [company, setCompany] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -58,11 +60,11 @@ export default function FinanceiroPage() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert("Erro ao conectar com Mercado Pago.");
+        await showAlert("Erro ao conectar com Mercado Pago.");
       }
     } catch (err) {
       console.error("Erro ao conectar:", err);
-      alert("Erro ao conectar com Mercado Pago.");
+      await showAlert("Erro ao conectar com Mercado Pago.");
     } finally {
       setConnecting(false);
     }
@@ -70,7 +72,7 @@ export default function FinanceiroPage() {
 
   const handleDisconnect = async () => {
     if (!companyId) return;
-    if (!confirm("Tem certeza que deseja desconectar o Mercado Pago?")) return;
+    if (!await showConfirm("Tem certeza que deseja desconectar o Mercado Pago?")) return;
     setDisconnecting(true);
     try {
       const res = await fetch("/api/mercadopago/oauth/disconnect", {
@@ -90,11 +92,11 @@ export default function FinanceiroPage() {
           mercadopago_account: null,
         }));
       } else {
-        alert("Erro ao desconectar.");
+        await showAlert("Erro ao desconectar.");
       }
     } catch (err) {
       console.error("Erro ao desconectar:", err);
-      alert("Erro ao desconectar.");
+      await showAlert("Erro ao desconectar.");
     } finally {
       setDisconnecting(false);
     }
@@ -111,11 +113,11 @@ export default function FinanceiroPage() {
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        alert(errData.error || "Não foi possível atualizar os dados da conta Mercado Pago.");
+        await showAlert(errData.error || "Não foi possível atualizar os dados da conta Mercado Pago.");
       }
     } catch (err) {
       console.error("Erro ao atualizar:", err);
-      alert("Não foi possível atualizar os dados da conta Mercado Pago.");
+      await showAlert("Não foi possível atualizar os dados da conta Mercado Pago.");
     } finally {
       setRefreshing(false);
     }

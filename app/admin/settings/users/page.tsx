@@ -7,11 +7,13 @@ import { useAuth } from "@/app/admin/orders/AuthContext";
 import { StoreUser, defaultStorePermissions, adminStorePermissions, computeStoreIds } from "@totem/shared/types/auth";
 import { Save, Loader2, Shield, ShieldOff, Trash2, UserPlus, Search, ArrowLeft } from "lucide-react";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 import { useRouter } from "next/navigation";
 import "./page.css";
 
 function UsersSettingsContent() {
   const { user } = useAuth();
+  const { showAlert } = useConfirm();
   const router = useRouter();
   const [storeUsers, setStoreUsers] = useState<StoreUser[]>([]);
   const [storeOwnerId, setStoreOwnerId] = useState<string | null>(null);
@@ -177,10 +179,10 @@ function UsersSettingsContent() {
         userIds: ids.userIds,
         adminIds: ids.adminIds,
       });
-      alert("Permissões salvas com sucesso!");
+      await showAlert("Permissões salvas com sucesso!");
     } catch (err) {
       console.error("Erro ao salvar permissões:", err);
-      alert("Erro ao salvar permissões.");
+      await showAlert("Erro ao salvar permissões.");
     } finally {
       setSaving(false);
     }
