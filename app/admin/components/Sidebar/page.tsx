@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/admin/orders/AuthContext";
-import { MapPin, Plus, Trash2, ShieldAlert } from "lucide-react";
-import { collection, addDoc, onSnapshot, query, where, deleteDoc, doc } from "firebase/firestore";
+import { MapPin, ShieldAlert } from "lucide-react";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
 import "./page.css";
 
@@ -13,8 +13,6 @@ export default function AddressesManagementPage() {
 
   const [cities, setCities] = useState<any[]>([]);
   const [neighborhoods, setNeighborhoods] = useState<any[]>([]);
-  const [newCityName, setNewCityName] = useState("");
-  const [newNeighborhoodName, setNewNeighborhoodName] = useState("");
   const [selectedCityId, setSelectedCityId] = useState("");
 
   useEffect(() => {
@@ -37,23 +35,6 @@ export default function AddressesManagementPage() {
     }
   }, [selectedCityId]);
 
-  const handleAddCity = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isOwner || !newCityName) return;
-    await addDoc(collection(firestore, "cities"), { name: newCityName });
-    setNewCityName("");
-  };
-
-  const handleAddNeighborhood = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isOwner || !newNeighborhoodName || !selectedCityId) return;
-    await addDoc(collection(firestore, "neighborhoods"), { 
-      name: newNeighborhoodName, 
-      cityId: selectedCityId
-    });
-    setNewNeighborhoodName("");
-  };
-
   return (
     <div className="addresses-view">
       <header className="header">
@@ -75,17 +56,11 @@ export default function AddressesManagementPage() {
           <div className="location-management-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '24px' }}>
             <div className="location-column">
               <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#666', marginBottom: '12px', letterSpacing: '0.05em' }}>CIDADES</h4>
-              {isOwner && (
-                <form onSubmit={handleAddCity} style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                  <input type="text" placeholder="Nova cidade..." value={newCityName} onChange={e => setNewCityName(e.target.value)} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ddd' }} />
-                  <button type="submit" style={{ padding: '10px', background: '#ffbc0d', borderRadius: '10px', border: 'none', cursor: 'pointer' }}><Plus size={18} /></button>
-                </form>
-              )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {cities.map(city => (
                   <div key={city.id} onClick={() => setSelectedCityId(city.id)} style={{ padding: '12px', borderRadius: '10px', background: selectedCityId === city.id ? '#fff9c4' : '#f5f5f5', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all 0.2s' }}>
                     <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{city.name}</span>
-                    {isOwner && <button onClick={async (e) => { e.stopPropagation(); if(confirm('Excluir cidade?')) await deleteDoc(doc(firestore, "cities", city.id)); }} style={{ border: 'none', background: 'transparent', color: '#ff4d4f', cursor: 'pointer' }}><Trash2 size={14} /></button>}
+
                   </div>
                 ))}
               </div>
@@ -95,17 +70,11 @@ export default function AddressesManagementPage() {
               <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#666', marginBottom: '12px', letterSpacing: '0.05em' }}>BAIRROS</h4>
               {selectedCityId ? (
                 <>
-                  {isOwner && (
-                    <form onSubmit={handleAddNeighborhood} style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                      <input type="text" placeholder="Novo bairro..." value={newNeighborhoodName} onChange={e => setNewNeighborhoodName(e.target.value)} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ddd' }} />
-                      <button type="submit" style={{ padding: '10px', background: '#ffbc0d', borderRadius: '10px', border: 'none', cursor: 'pointer' }}><Plus size={18} /></button>
-                    </form>
-                  )}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {neighborhoods.map(nb => (
                       <div key={nb.id} style={{ padding: '12px', borderRadius: '10px', background: '#f5f5f5', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '14px' }}>{nb.name}</span>
-                        {isOwner && <button onClick={async () => { if(confirm('Excluir bairro?')) await deleteDoc(doc(firestore, "neighborhoods", nb.id)); }} style={{ border: 'none', background: 'transparent', color: '#ff4d4f', cursor: 'pointer' }}><Trash2 size={14} /></button>}
+
                       </div>
                     ))}
                   </div>
