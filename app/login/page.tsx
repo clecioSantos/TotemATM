@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, Suspense, useEffect, useRef } from "react";
-import { signInWithEmailAndPassword, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithCredential, signInWithCustomToken, linkWithCredential } from "firebase/auth";
+import { signInWithEmailAndPassword, sendEmailVerification, GoogleAuthProvider, signInWithPopup, linkWithCredential } from "firebase/auth";
 import { auth, firestore } from "../../src/services/firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import Link from "next/link";
@@ -100,91 +100,24 @@ function LoginForm() {
     }
   };
 
-  const exchangeGoogleCode = async (code: string) => {
-    setGoogleLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/auth/google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, redirectUri: "postmessage" }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error || "Erro na autenticação Google"); return; }
-      const userCred = await signInWithCustomToken(auth, data.customToken);
-      const idToken = await userCred.user.getIdToken();
-      await processGoogleUser({ uid: userCred.user.uid, ...data.user }, idToken);
-    } catch (err: any) {
-      logger.error("LOGIN_PAGE", "Erro no exchange Google", err);
-      setError("Erro ao processar login Google.");
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
-
-  const loadGisAndGetCode = (): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      if (typeof window === "undefined") return reject("no window");
-      const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-      if (!googleClientId) return reject("no client id");
-
-      const script = document.createElement("script");
-      script.src = "https://accounts.google.com/gsi/client";
-      script.async = true;
-      script.onload = () => {
-        try {
-          const client = (window as any).google.accounts.oauth2.initCodeClient({
-            client_id: googleClientId,
-            scope: "openid email profile",
-            callback: (response: any) => {
-              if (response.code) resolve(response.code);
-              else reject(new Error("No code in response"));
-            },
-            error_callback: (err: any) => reject(err),
-          });
-          client.requestCode();
-        } catch (e) { reject(e); }
-      };
-      script.onerror = () => reject(new Error("Falha ao carregar Google Identity Services"));
-      document.head.appendChild(script);
-    });
-  };
-
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     setError("");
     try {
       const provider = new GoogleAuthProvider();
-      const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-      const isWebView = typeof navigator !== "undefined" && (
-        /(Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|wv)/i.test(navigator.userAgent)
-        || (typeof window !== "undefined" && (window as any).capacitor !== undefined)
-      );
+      const isCapacitor = typeof window !== "undefined" && typeof (window as any).Capacitor !== "undefined";
+      const isAndroidWebView = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent) && !/Chrome\/[.0-9]* Mobile/i.test(navigator.userAgent);
 
-      // In WebView or when popup fails, use GIS in-page OAuth
-      if (isWebView || !googleClientId) {
-        if (!googleClientId) {
-          setError("Login com Google não disponível. Configure NEXT_PUBLIC_GOOGLE_CLIENT_ID no .env");
-          return;
-        }
-        const code = await loadGisAndGetCode();
-        await exchangeGoogleCode(code);
+      if (isCapacitor || isAndroidWebView) {
+        setError("Login com Google não está disponível neste ambiente. Utilize seu e-mail e senha para entrar.");
+        setGoogleLoading(false);
         return;
       }
 
-      try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        const idToken = await user.getIdToken();
-        await processGoogleUser(user, idToken);
-      } catch (popupErr: any) {
-        if ((popupErr?.code === "auth/popup-blocked" || popupErr?.code === "auth/popup-closed-by-user") && googleClientId) {
-          const code = await loadGisAndGetCode();
-          await exchangeGoogleCode(code);
-          return;
-        }
-        throw popupErr;
-      }
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      const idToken = await user.getIdToken();
+      await processGoogleUser(user, idToken);
     } catch (error: any) {
       if (error?.code === "auth/account-exists-with-different-credential") {
         const email = error?.customData?.email || "";
