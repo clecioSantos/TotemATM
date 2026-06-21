@@ -204,7 +204,9 @@ export default function ProductForm({ initialData, categories, selectedCategoryI
       imageUrl: initialData?.imageUrl,
       sizes: sizes.filter(s => s.nome.trim()),
       dayPromotions: dayPromotions.filter(p => p.discountPercent > 0),
+      hasDayPromotion: dayPromotions.some(p => p.discountPercent > 0),
     };
+    console.log("[PRODUCT_SAVE]", JSON.stringify({ dayPromotions: productData.dayPromotions, hasDayPromotion: productData.hasDayPromotion }));
     if (initialData?.id) productData.id = initialData.id;
 
     // Save product first, then groups

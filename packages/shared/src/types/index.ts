@@ -12,6 +12,7 @@ export interface Product {
   featured: boolean;
   sizes?: ProductSize[];
   dayPromotions?: DayPromotion[];
+  hasDayPromotion?: boolean;
   createdAt: Date | { seconds: number; nanoseconds: number };
 }
 

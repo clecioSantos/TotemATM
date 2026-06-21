@@ -59,7 +59,19 @@ export default function StoreListingPage() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const { unreadCount } = useNotifications(user?.uid);
   const { events, promotions, getStoresForEvent, loading: promosLoading } = usePromotionsForListing();
+  const [dayPromoProducts, setDayPromoProducts] = useState<any[]>([]);
+  const [dayPromoLoading, setDayPromoLoading] = useState(true);
   const [carouselScrolls, setCarouselScrolls] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const q = query(collection(firestore, "products"), where("hasDayPromotion", "==", true));
+    const unsub = onSnapshot(q, (snap) => {
+      const all = snap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
+      setDayPromoProducts(all.filter((p: any) => p.active !== false));
+      setDayPromoLoading(false);
+    }, (err) => { logger.error("TOTEM_PAGE", "Erro ao carregar promoções diárias", err); setDayPromoLoading(false); });
+    return () => unsub();
+  }, []);
 
   const isSandbox = process.env.NEXT_PUBLIC_MERCADOPAGO_ENVIRONMENT?.toLowerCase() === "sandbox"
     || process.env.NEXT_PUBLIC_MERCADOPAGO_ENVIRONMENT?.toLowerCase() === "test";
@@ -638,6 +650,52 @@ export default function StoreListingPage() {
             </div>
           );
         })}
+
+        {!dayPromoLoading && dayPromoProducts.length > 0 && (() => {
+          const today = new Date().getDay();
+          const weekDays = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+          const todayName = weekDays[today];
+          const affectedStoreIds = new Set(dayPromoProducts.map((p: any) => p.companyId));
+          const affectedStores = stores.filter((s) => affectedStoreIds.has(s.id));
+          const matchesEnabled = (s: any) => isSandbox ? true : s.enabled !== false && s.enabled !== "false";
+          const visibleStores = affectedStores.filter(matchesEnabled);
+          if (visibleStores.length === 0) return null;
+
+          return (
+            <div className="mb-6 lg:w-1/2 lg:inline-block lg:align-top lg:px-2 w-full" style={{ padding: "0 2% 2% 2%" }}>
+              <div className="w-full rounded-[16px] overflow-hidden shadow-sm bg-white">
+                <div className="px-4 pt-4 pb-2">
+                  <h2 className="text-xl font-bold text-[#1F1F1F]" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>🔥 {todayName}</h2>
+                  <p className="text-sm text-[#666] mt-0.5">Descontos especiais hoje!</p>
+                </div>
+                <div className="px-4 pb-2">
+                  <div className="w-full rounded-[12px] overflow-hidden" style={{ aspectRatio: "3/1", background: "linear-gradient(135deg, #FF6B00, #E65C00)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span className="text-4xl">🏷️</span>
+                  </div>
+                </div>
+                <div className="p-3">
+                  <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                    {visibleStores.map((store) => {
+                      const closed = store.open === false;
+                      return (
+                        <Link key={store.id} href={`/totem/${store.id}`}
+                          className={`flex-shrink-0 w-[120px] bg-white rounded-[12px] p-2 shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-[#EAEAEA] transition-transform active:scale-[0.97] ${closed ? "opacity-70" : ""}`}>
+                          <div className="w-9 h-9 rounded-[10px] bg-[#eee] flex items-center justify-center overflow-hidden mx-auto mb-1.5">
+                            {store.logo ? <img src={store.logo} alt={store.name} className="w-full h-full object-cover" /> : <span className="text-sm font-bold text-[#999]">{store.name.charAt(0)}</span>}
+                          </div>
+                          <h4 className="text-[11px] font-bold text-[#1F1F1F] text-center truncate">{store.name}</h4>
+                          <div className="flex items-center justify-center gap-1 mt-0.5">
+                            <span className="text-[9px] font-semibold text-[#FFB800]">⭐ {store.averageRating > 0 ? Number(store.averageRating).toFixed(1) : '--'}</span>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
         </div>
 
         {/* Categories */}

@@ -474,4 +474,19 @@ select.form-input {
   .prep-time-grid {
     grid-template-columns: 1fr;
   }
+
+  .totem-url-input {
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .link-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .link-actions > * {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
 }

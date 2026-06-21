@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
 import { AuthProvider } from "@/app/admin/orders/AuthContext";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
@@ -11,7 +11,9 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 768 : true
+  );
 
   return (
     <AuthProvider>

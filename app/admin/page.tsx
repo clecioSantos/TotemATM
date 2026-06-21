@@ -875,7 +875,7 @@ function AdminDashboardContent() {
       {promotionsData.length > 0 && (
         <div className="status-panel">
           <h3 className="section-title-sm"><Tag size={16} /> Promoções</h3>
-          <div className="client-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+          <div className="client-grid promo-grid">
             <div className="client-stat">
               <span className="client-stat-value">{promoStats.active}</span>
               <span className="client-stat-label">Ativas</span>

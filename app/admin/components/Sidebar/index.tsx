@@ -63,8 +63,6 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     ? [...baseMenuItems.slice(0, 8), { name: "Cupons", path: "/admin/coupons", icon: <Ticket size={20} /> }, ...baseMenuItems.slice(8)]
     : baseMenuItems;
 
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-
   return (
     <>
       <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : "sidebar-expanded"}`}>

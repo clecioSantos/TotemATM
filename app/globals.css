@@ -51,7 +51,24 @@ body {
   border-radius: 32px;
   box-shadow: 0 40px 80px rgba(15, 23, 42, 0.08);
   padding: 32px;
-  overflow: hidden;
+  overflow: visible;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.table-wrapper,
+.product-table-wrapper,
+.promotions-table-wrapper,
+.condiment-table-wrapper,
+.details-table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-page-shell,
+.admin-page-body {
+  min-width: 0;
 }
 
 .admin-page-body .primary-button,
@@ -73,14 +90,24 @@ body {
   .admin-content,
   .admin-content.content-expanded {
     margin-left: 0;
-    padding: 16px;
+    padding: 14px;
     padding-top: 56px;
+  }
+
+  .admin-page-shell {
+    max-width: 100%;
+    padding: 0;
   }
 
   .admin-page-body {
     min-height: auto;
-    border-radius: 24px;
-    padding: 20px;
+    border-radius: 20px;
+    padding: 18px;
+    overflow: visible;
+  }
+
+  .admin-page-body > * {
+    min-width: 0;
   }
 }
 
@@ -98,6 +125,35 @@ body {
     z-index: 90;
     cursor: pointer;
     animation: fadeIn 0.2s ease-out;
+  }
+
+  .table-wrapper,
+  .product-table-wrapper,
+  .promotions-table-wrapper,
+  .condiment-table-wrapper,
+  .details-table-wrapper,
+  .table-card {
+    overflow-x: auto;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-wrapper table,
+  .product-table-wrapper table,
+  .promotions-table-wrapper table,
+  .condiment-table-wrapper table,
+  .table-card table,
+  .p-table,
+  .c-table,
+  .promo-table,
+  .details-table {
+    min-width: 100%;
+  }
+
+  .details-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
   }
 
   @keyframes fadeIn {
