@@ -11,6 +11,8 @@ const config: CapacitorConfig = {
     allowNavigation: [
       "www.boradedelivery.com",
       "boradedelivery.com",
+      "boradedelivery-6aec0.firebaseapp.com",
+      "firebase.googleapis.com",
       "firestore.googleapis.com",
       "firebasestorage.googleapis.com",
       "identitytoolkit.googleapis.com",
@@ -40,6 +42,9 @@ const config: CapacitorConfig = {
     },
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"],
+    },
+    FirebaseAuthentication: {
+      providers: ["google.com"],
     },
   },
 };

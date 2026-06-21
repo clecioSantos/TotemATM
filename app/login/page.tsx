@@ -153,8 +153,10 @@ function LoginForm() {
       } else if (error?.code === "auth/popup-closed-by-user" || error?.code === "auth/cancelled-popup-request") {
         setError("");
       } else {
-        setError("Erro ao fazer login com Google. Tente novamente.");
-        logger.error("LOGIN_PAGE", "Erro no login Google", error);
+        const errMsg = error?.message || error?.code || "Erro desconhecido";
+        logger.error("LOGIN_PAGE", "Erro no login Google", errMsg);
+        const isSandbox = typeof process !== "undefined" && process.env?.NEXT_PUBLIC_MERCADOPAGO_ENVIRONMENT?.toLowerCase() === "sandbox";
+        setError(isSandbox ? `Erro: ${errMsg}` : "Erro ao fazer login com Google. Tente novamente.");
       }
     } finally {
       setGoogleLoading(false);

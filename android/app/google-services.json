@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "385376701713",
+    "project_id": "boradedelivery-6aec0",
+    "storage_bucket": "boradedelivery-6aec0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:385376701713:android:bb5bfef657b1f7ac0a10b0",
+        "android_client_info": {
+          "package_name": "com.boradelivery.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "385376701713-k7jl17mdmtfbg3n1ppo485acshv03s2t.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD8sQfUVCmeIM5VEXUeDmulPzW12X7A924"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "385376701713-k7jl17mdmtfbg3n1ppo485acshv03s2t.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
