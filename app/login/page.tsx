@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, Suspense, useEffect, useRef } from "react";
-import { signInWithEmailAndPassword, sendEmailVerification, GoogleAuthProvider, signInWithPopup, linkWithCredential } from "firebase/auth";
+import { signInWithEmailAndPassword, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithCredential, linkWithCredential } from "firebase/auth";
 import { auth, firestore } from "../../src/services/firebase";
+import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -39,9 +40,18 @@ function LoginForm() {
   const [contactToast, setContactToast] = useState<{ message: string; type?: "error" | "info" } | null>(null);
 
   const emailRef = useRef<HTMLInputElement>(null);
+  const [isRestrictedEnv, setIsRestrictedEnv] = useState(false);
 
   useEffect(() => {
     emailRef.current?.focus();
+    const check = () => {
+      const isAndroidWebView = /Android/i.test(navigator.userAgent) && !/Chrome\/[.0-9]* Mobile/i.test(navigator.userAgent) && typeof (window as any)?.Capacitor === "undefined";
+      setIsRestrictedEnv(isAndroidWebView);
+    };
+    // Check immediately and after a delay for Capacitor bridge init
+    check();
+    const t = setTimeout(check, 1000);
+    return () => clearTimeout(t);
   }, []);
 
   const emailError = touched.email && email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -104,20 +114,30 @@ function LoginForm() {
     setGoogleLoading(true);
     setError("");
     try {
-      const provider = new GoogleAuthProvider();
-      const isCapacitor = typeof window !== "undefined" && typeof (window as any).Capacitor !== "undefined";
-      const isAndroidWebView = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent) && !/Chrome\/[.0-9]* Mobile/i.test(navigator.userAgent);
-
-      if (isCapacitor || isAndroidWebView) {
+      if (isRestrictedEnv) {
         setError("Login com Google não está disponível neste ambiente. Utilize seu e-mail e senha para entrar.");
         setGoogleLoading(false);
         return;
       }
 
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      const idToken = await user.getIdToken();
-      await processGoogleUser(user, idToken);
+      const isCapacitor = typeof (window as any)?.Capacitor !== "undefined";
+
+      if (isCapacitor) {
+        const result = await FirebaseAuthentication.signInWithGoogle();
+        if (!result?.credential?.idToken) {
+          throw new Error("Google Sign-In failed: no ID token");
+        }
+        const credential = GoogleAuthProvider.credential(result.credential.idToken);
+        const userCred = await signInWithCredential(auth, credential);
+        const idToken = await userCred.user.getIdToken();
+        await processGoogleUser(userCred.user, idToken);
+      } else {
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        const idToken = await user.getIdToken();
+        await processGoogleUser(user, idToken);
+      }
     } catch (error: any) {
       if (error?.code === "auth/account-exists-with-different-credential") {
         const email = error?.customData?.email || "";
@@ -378,8 +398,9 @@ function LoginForm() {
 
           <button
             onClick={handleGoogleLogin}
-            disabled={googleLoading}
+            disabled={googleLoading || isRestrictedEnv}
             className="w-full h-12 flex items-center justify-center gap-3 bg-white border border-[#EAEAEA] rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-semibold text-[#1F1F1F]"
+            title={isRestrictedEnv ? "Indisponível neste ambiente. Use e-mail e senha." : ""}
           >
             {googleLoading ? (
               <Loader2 size={18} className="animate-spin" />
