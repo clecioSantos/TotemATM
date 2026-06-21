@@ -76,6 +76,16 @@ export function getAdminDb() {
   }
 }
 
+export function getAdminMessaging() {
+  try {
+    initializeFirebaseAdmin();
+    return admin.messaging();
+  } catch (error) {
+    logger.error("FIREBASE_ADMIN", "Erro ao obter Admin Messaging", error);
+    throw error;
+  }
+}
+
 export async function setUserClaims(
   uid: string,
   role: string

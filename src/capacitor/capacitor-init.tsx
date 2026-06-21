@@ -5,6 +5,8 @@ import { platform } from "./platform";
 import { initBackButton } from "./back-button";
 import { initNetworkMonitor } from "./network-monitor";
 import { initDeepLinks } from "./deep-links";
+import { notificationService } from "./notification.service";
+import { logger } from "@/src/lib/logger";
 
 export function CapacitorInit({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -16,9 +18,24 @@ export function CapacitorInit({ children }: { children: React.ReactNode }) {
         initDeepLinks();
         initNetworkMonitor();
       });
+
+      notificationService.requestPermission().then((granted) => {
+        if (!granted) {
+          logger.info("CAPACITOR", "Permissão de notificação negada");
+          return;
+        }
+        notificationService.register().then((token) => {
+          if (token) {
+            logger.info("CAPACITOR", "Push token obtido", { token: token.slice(0, 12) + "..." });
+          }
+        });
+      });
+
+      notificationService.onNotification((data) => {
+        logger.info("CAPACITOR", "Notificação recebida", data);
+      });
     }
 
-    // Web network monitor (always)
     initNetworkMonitor();
   }, []);
 

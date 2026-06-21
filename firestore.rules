@@ -126,6 +126,13 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /push_tokens/{tokenId} {
+      allow read: if isAuth() && request.auth.uid == resource.data.uid;
+      allow create: if isAuth();
+      allow update: if isAuth() && request.auth.uid == resource.data.uid;
+      allow delete: if isAuth() && request.auth.uid == resource.data.uid;
+    }
+
     // =============================================
     // AVALIAÇÕES
     // =============================================

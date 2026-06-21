@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import "./globals.css";
 
 import ConfirmProvider from "@/app/components/ConfirmProvider";
+import PushTokenRegistrar from "@/src/capacitor/PushTokenRegistrar";
 const LogTerminal = dynamic(() => import("@/app/components/LogTerminal"), { ssr: false });
 
 export const metadata = {
@@ -38,6 +39,7 @@ export default function RootLayout({
             <CapacitorInit>
               <ConfirmProvider>{children}</ConfirmProvider>
             </CapacitorInit>
+            <PushTokenRegistrar />
           </AuthProvider>
           <LogTerminal />
         </ErrorBoundary>

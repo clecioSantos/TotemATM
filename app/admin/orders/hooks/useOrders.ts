@@ -6,7 +6,7 @@ import {
   doc, updateDoc, deleteDoc, where, getDocs, getDoc, setDoc
 } from 'firebase/firestore';
 import { Order } from '../types';
-import { firestore } from '../../../../src/services/firebase';
+import { firestore, auth } from '../../../../src/services/firebase';
 import { useAuth } from '@totem/shared/types/AuthProvider';
 import { logger } from '@/src/lib/logger';
 import { useConfirm } from "@/app/components/ConfirmProvider";
@@ -129,27 +129,46 @@ export const useOrders = () => {
   const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
     try {
       const orderRef = doc(firestore, 'orders', orderId);
+      const orderData = orders.find((o) => o.id === orderId);
       const updateData: Record<string, unknown> = { status: newStatus };
       if (newStatus === 'finished') {
         updateData.deliveredAt = Timestamp.now();
       }
+      if (newStatus === 'paid') {
+        updateData.paymentStatus = "PAID";
+      }
       await updateDoc(orderRef, updateData);
-      logger.info("useOrders", `Status do pedido ${orderId} atualizado para ${newStatus}`);
+      logger.info("useOrders", `Pedido ${orderId} atualizado para ${newStatus}`);
 
-      if (newStatus === 'finished') {
-        const orderSnap = await getDoc(orderRef);
-        if (orderSnap.exists()) {
-          const orderData = orderSnap.data() as Record<string, unknown>;
-          const customerId = await findCustomerId(orderData);
-          const companyId = orderData.companyId as string | undefined;
-          if (customerId && companyId) {
-            await scheduleReviewNotification(orderId, customerId, companyId);
-          }
+      if (orderData?.customerId && auth.currentUser) {
+        const statusMessages: Record<string, { title: string; body: string }> = {
+          paid: { title: "Pedido Confirmado", body: "Seu pagamento foi confirmado! Seu pedido já está sendo preparado." },
+          preparing: { title: "Preparando", body: "Seu pedido está sendo preparado com todo carinho!" },
+          ready: { title: "Pedido Pronto", body: "Seu pedido está pronto para entrega/retirada!" },
+          delivering: { title: "Saiu para Entrega", body: "Seu pedido saiu para entrega. Fique atento!" },
+          finished: { title: "Pedido Entregue", body: "Seu pedido foi entregue. Bom apetite!" },
+          cancelled: { title: "Pedido Cancelado", body: "Seu pedido foi cancelado. Entre em contato para mais informações." },
+        };
+
+        const msg = statusMessages[newStatus];
+        if (msg) {
+          const idToken = await auth.currentUser.getIdToken();
+          fetch("/api/push/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+            body: JSON.stringify({ target: "user", uid: orderData.customerId, title: msg.title, body: msg.body, data: { orderId, type: "order_status" } }),
+          }).catch((err) => logger.error("useOrders", "Erro ao enviar push", err));
         }
       }
+
+      if (newStatus === 'finished' && orderData?.customerId) {
+        await scheduleReviewNotification(orderId, orderData.customerId, (orderData as any).companyId);
+      }
+
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
-      logger.error("useOrders", `Erro ao atualizar status do pedido ${orderId}: ${errMsg}`, error);
+      logger.error("useOrders", `Erro ao atualizar pedido ${orderId}: ${errMsg}`, error);
+      throw error;
     }
   };
 
