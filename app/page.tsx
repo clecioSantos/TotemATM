@@ -51,33 +51,15 @@ function LandingContent() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  if (user) {
+  useEffect(() => {
+    if (!user) return;
     const role = (user as any)?.role;
     if (role === "admin" || role === "owner") {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
-          <div className="text-center p-8">
-            <img src="/Logo.png" alt="Bora De Delivery" className="h-16 mx-auto mb-6" />
-            <h1 className="text-2xl font-bold mb-4">Você já está logado</h1>
-            <Link href="/admin" className="inline-flex items-center gap-2 h-12 px-6 bg-[#FF6B00] text-white font-bold rounded-xl hover:bg-[#E65C00] transition-all">
-              Ir para o painel <ArrowRight size={18} />
-            </Link>
-          </div>
-        </div>
-      );
+      window.location.href = "/admin";
+    } else {
+      window.location.href = "/totem";
     }
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
-        <div className="text-center p-8">
-          <img src="/Logo.png" alt="Bora De Delivery" className="h-16 mx-auto mb-6" />
-          <h1 className="text-2xl font-bold mb-4">Você já está logado</h1>
-          <Link href="/totem" className="inline-flex items-center gap-2 h-12 px-6 bg-[#FF6B00] text-white font-bold rounded-xl hover:bg-[#E65C00] transition-all">
-            Ir para o totem <ArrowRight size={18} />
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  }, [user]);
 
   return (
     <>

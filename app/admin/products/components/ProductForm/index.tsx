@@ -228,16 +228,16 @@ export default function ProductForm({ initialData, categories, selectedCategoryI
     <form className="form-container" onSubmit={handleSubmit}>
       <div className="flex gap-6 pb-3">
         <label className="flex items-center gap-3 cursor-pointer select-none">
-          <span className={`relative inline-block w-11 h-6 rounded-full transition-colors ${active ? 'bg-orange-500' : 'bg-gray-300'}`}>
-            <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} className="absolute opacity-0 w-0 h-0" />
-            <span className={`block w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${active ? 'translate-x-5' : 'translate-x-0.5'}`} style={{ marginTop: '2px' }} />
+          <span className={`relative inline-flex items-center w-11 h-6 rounded-full transition-colors shrink-0 ${active ? 'bg-orange-500' : 'bg-gray-300'}`}>
+            <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} className="sr-only" />
+            <span className={`absolute w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${active ? 'translate-x-5' : 'translate-x-0.5'}`} />
           </span>
           <span className="text-sm font-medium text-gray-700">Produto Ativo</span>
         </label>
         <label className="flex items-center gap-3 cursor-pointer select-none">
-          <span className={`relative inline-block w-11 h-6 rounded-full transition-colors ${featured ? 'bg-orange-500' : 'bg-gray-300'}`}>
-            <input type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)} className="absolute opacity-0 w-0 h-0" />
-            <span className={`block w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${featured ? 'translate-x-5' : 'translate-x-0.5'}`} style={{ marginTop: '2px' }} />
+          <span className={`relative inline-flex items-center w-11 h-6 rounded-full transition-colors shrink-0 ${featured ? 'bg-orange-500' : 'bg-gray-300'}`}>
+            <input type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)} className="sr-only" />
+            <span className={`absolute w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${featured ? 'translate-x-5' : 'translate-x-0.5'}`} />
           </span>
           <span className="text-sm font-medium text-gray-700">Produto em Destaque</span>
         </label>
@@ -398,10 +398,10 @@ export default function ProductForm({ initialData, categories, selectedCategoryI
                 )}
                 <div className="flex items-end">
                   <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <span className={`relative inline-block w-9 h-5 rounded-full transition-colors ${group.active !== false ? 'bg-orange-500' : 'bg-gray-300'}`}>
+                    <span className={`relative inline-flex items-center w-9 h-5 rounded-full transition-colors shrink-0 ${group.active !== false ? 'bg-orange-500' : 'bg-gray-300'}`}>
                       <input type="checkbox" checked={group.active !== false}
-                        onChange={e => updateGroup(gi, 'active', e.target.checked)} className="absolute opacity-0 w-0 h-0" />
-                      <span className={`block w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${group.active !== false ? 'translate-x-4' : 'translate-x-0.5'}`} style={{ marginTop: '2px' }} />
+                        onChange={e => updateGroup(gi, 'active', e.target.checked)} className="sr-only" />
+                      <span className={`absolute w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${group.active !== false ? 'translate-x-4' : 'translate-x-0.5'}`} />
                     </span>
                     <span className="text-xs font-medium text-gray-600">Ativo</span>
                   </label>
