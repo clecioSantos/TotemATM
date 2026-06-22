@@ -669,8 +669,8 @@ export default function StoreListingPage() {
                   <p className="text-sm text-[#666] mt-0.5">Descontos especiais hoje!</p>
                 </div>
                 <div className="px-4 pb-2">
-                  <div className="w-full rounded-[12px] overflow-hidden" style={{ aspectRatio: "3/1", background: "linear-gradient(135deg, #FF6B00, #E65C00)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span className="text-4xl">🏷️</span>
+                  <div className="w-full rounded-[12px] overflow-hidden" style={{ aspectRatio: "3/1" }}>
+                    <img src="/banner-bora-de-promocao.png" alt="Promoções" className="w-full h-full object-cover" />
                   </div>
                 </div>
                 <div className="p-3">

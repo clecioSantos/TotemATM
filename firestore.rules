@@ -127,7 +127,7 @@ service cloud.firestore {
     }
 
     match /push_tokens/{tokenId} {
-      allow read: if isAuth() && request.auth.uid == resource.data.uid;
+      allow read: if isAuth();
       allow create: if isAuth();
       allow update: if isAuth() && request.auth.uid == resource.data.uid;
       allow delete: if isAuth() && request.auth.uid == resource.data.uid;
