@@ -5,37 +5,53 @@ import { collection, onSnapshot, query, orderBy, where } from "firebase/firestor
 import { firestore } from "@/src/services/firebase";
 import { useAuth } from "@totem/shared/types/AuthProvider";
 import { UserProfile } from "@totem/shared/types/auth";
-import { Search, ChevronRight, Users, Phone, Mail, ShoppingBag, DollarSign, Loader2 } from "lucide-react";
+import { Search, ChevronRight, Users, Phone, Mail, ShoppingBag, DollarSign, Loader2, Shield, User, Star, Briefcase } from "lucide-react";
 import Link from "next/link";
+
+const roles = [
+  { key: "all", label: "Todos", icon: Users },
+  { key: "client", label: "Clientes", icon: User },
+  { key: "admin", label: "Admin", icon: Shield },
+  { key: "owner", label: "Owner", icon: Star },
+  { key: "collaborator", label: "Colaborador", icon: Briefcase },
+];
+
+const roleColors: Record<string, string> = {
+  client: "bg-blue-50 text-blue-700",
+  admin: "bg-purple-50 text-purple-700",
+  owner: "bg-orange-50 text-orange-700",
+  collaborator: "bg-gray-100 text-gray-700",
+};
 
 export default function OwnerClientsPage() {
   const { user } = useAuth();
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
 
   useEffect(() => {
     const unsub = onSnapshot(collection(firestore, "users"), (snap) => {
       const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setClients(
-        all
-          .filter((c: any) => c.role === "client")
-          .sort((a: any, b: any) => (a.name || "").localeCompare(b.name || ""))
-      );
+      setClients(all.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || "")));
       setLoading(false);
     });
     return () => unsub();
   }, []);
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return clients;
-    const s = search.toLowerCase();
-    return clients.filter((c) =>
-      c.name?.toLowerCase().includes(s) ||
-      c.email?.toLowerCase().includes(s) ||
-      c.phone?.includes(s)
-    );
-  }, [clients, search]);
+    let list = clients;
+    if (roleFilter !== "all") list = list.filter((c: any) => c.role === roleFilter);
+    if (search.trim()) {
+      const s = search.toLowerCase();
+      list = list.filter((c) =>
+        c.name?.toLowerCase().includes(s) ||
+        c.email?.toLowerCase().includes(s) ||
+        c.phone?.includes(s)
+      );
+    }
+    return list;
+  }, [clients, search, roleFilter]);
 
   const profilePercent = (c: any) => {
     let p = 0;
@@ -52,8 +68,21 @@ export default function OwnerClientsPage() {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center gap-3 mb-6">
           <Users size={24} className="text-[#FF6B00]" />
-          <h1 className="text-2xl font-black">Clientes</h1>
+          <h1 className="text-2xl font-black">Usuários</h1>
           <span className="text-sm text-[#999] font-medium">{clients.length} registros</span>
+        </div>
+
+        <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide">
+          {roles.map((r) => (
+            <button key={r.key} onClick={() => setRoleFilter(r.key)}
+              className={`flex items-center gap-1.5 h-9 px-4 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                roleFilter === r.key ? "bg-[#FF6B00] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              <r.icon size={14} />
+              {r.label}
+            </button>
+          ))}
         </div>
 
         <div className="relative mb-6">
@@ -86,6 +115,7 @@ export default function OwnerClientsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-sm text-[#1F1F1F] truncate">{c.name || "Sem nome"}</span>
+                    {c.role && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${roleColors[c.role] || "bg-gray-100 text-gray-700"}`}>{c.role}</span>}
                     {c.isBlocked && <span className="text-[10px] font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">BLOQUEADO</span>}
                   </div>
                   <div className="flex items-center gap-3 mt-0.5 text-xs text-[#666] flex-wrap">

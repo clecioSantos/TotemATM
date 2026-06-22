@@ -27,7 +27,6 @@ export default function OwnerSidebar({ collapsed, onToggle }: SidebarProps) {
   const menuItems = [
     { name: "Dashboard", path: "/owner", icon: <LayoutDashboard size={20} /> },
     { name: "Lojas", path: "/owner/stores", icon: <Store size={20} /> },
-    { name: "Usuários", path: "/owner/users", icon: <Users size={20} /> },
     { name: "Clientes", path: "/owner/clients", icon: <Users size={20} /> },
     { name: "Eventos", path: "/owner/events", icon: <Calendar size={20} /> },
     { name: "Mensagens", path: "/owner/contacts", icon: <MessageSquare size={20} /> },

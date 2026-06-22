@@ -1,8 +1,15 @@
-import { PushNotifications } from "@capacitor/push-notifications";
-
 type NotificationCallback = (data: any) => void;
 
 const listeners: NotificationCallback[] = [];
+
+async function getPushNotifications() {
+  try {
+    const mod = await import("@capacitor/push-notifications");
+    return mod.PushNotifications;
+  } catch {
+    return null;
+  }
+}
 
 export const notificationService = {
   isCapacitor(): boolean {
@@ -11,13 +18,14 @@ export const notificationService = {
 
   async requestPermission(): Promise<boolean> {
     if (!this.isCapacitor()) {
-      // Web Notification API fallback
       if (!("Notification" in window)) return false;
       const result = await Notification.requestPermission();
       return result === "granted";
     }
 
     try {
+      const PushNotifications = await getPushNotifications();
+      if (!PushNotifications) return false;
       const perm = await PushNotifications.requestPermissions();
       return perm.receive === "granted";
     } catch {
@@ -27,11 +35,12 @@ export const notificationService = {
 
   async register(): Promise<string | null> {
     if (!this.isCapacitor()) return null;
-
     try {
+      const PushNotifications = await getPushNotifications();
+      if (!PushNotifications) return null;
       await PushNotifications.register();
       return new Promise((resolve) => {
-        PushNotifications.addListener("registration", (token) => {
+        PushNotifications.addListener("registration", (token: any) => {
           resolve(token.value);
         });
         PushNotifications.addListener("registrationError", () => {
@@ -47,15 +56,16 @@ export const notificationService = {
     listeners.push(callback);
 
     if (this.isCapacitor()) {
-      PushNotifications.addListener("pushNotificationReceived", (notification) => {
-        callback(notification.data);
-      });
-
-      PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
-        callback(action.notification.data);
+      getPushNotifications().then((PushNotifications) => {
+        if (!PushNotifications) return;
+        PushNotifications.addListener("pushNotificationReceived", (notification: any) => {
+          callback(notification.data);
+        });
+        PushNotifications.addListener("pushNotificationActionPerformed", (action: any) => {
+          callback(action.notification.data);
+        });
       });
     } else {
-      // Web fallback
       try {
         navigator.serviceWorker?.addEventListener("message", (event) => {
           if (event.data?.type === "push") callback(event.data);
