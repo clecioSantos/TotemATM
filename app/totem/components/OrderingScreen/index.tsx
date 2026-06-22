@@ -33,6 +33,17 @@ interface OrderingScreenProps {
   onOpenNotifications: () => void;
   onOpenOrders: () => void;
   onOpenProfile: () => void;
+  profileDropdownOpen?: boolean;
+  onToggleProfileDropdown?: () => void;
+  onEditProfile?: () => void;
+  onOpenAddresses?: () => void;
+  onViewAdmin?: () => void;
+  onViewOwner?: () => void;
+  onSignOut?: () => void;
+  userName?: string;
+  userEmail?: string;
+  isAdmin?: boolean;
+  isOwner?: boolean;
   promotions?: Promotion[];
   getProductPromotion?: (productId: string) => Promotion | undefined;
   getPromotionalPrice?: (productId: string, basePrice: number) => number;
@@ -61,6 +72,17 @@ export default function OrderingScreen({
   onOpenNotifications,
   onOpenOrders,
   onOpenProfile,
+  profileDropdownOpen,
+  onToggleProfileDropdown,
+  onEditProfile,
+  onOpenAddresses,
+  onViewAdmin,
+  onViewOwner,
+  onSignOut,
+  userName,
+  userEmail,
+  isAdmin,
+  isOwner,
   promotions = [],
   getProductPromotion,
   getPromotionalPrice,
@@ -292,13 +314,33 @@ export default function OrderingScreen({
               >
                 <ShoppingBag className="h-5 w-5" />
               </button>
-              <button
-                onClick={onOpenProfile}
-                className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-[#666] hover:bg-gray-200 transition-colors"
-                title="Perfil"
-              >
-                <User className="h-5 w-5" />
-              </button>
+              <div className="relative profile-dropdown-container">
+                <button
+                  onClick={onToggleProfileDropdown || onOpenProfile}
+                  className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-[#666] hover:bg-gray-200 transition-colors"
+                  title="Perfil"
+                >
+                  <User className="h-5 w-5" />
+                </button>
+                {(profileDropdownOpen ?? false) && (
+                  <div className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-[#EAEAEA] p-3 w-64 z-50 animate-fade-in">
+                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-gray-100">
+                      <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-[#FF6B00] font-bold text-sm">
+                        {userName?.charAt(0).toUpperCase() || "U"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate">{userName || "Usuário"}</p>
+                        <p className="text-[10px] text-[#999] truncate">{userEmail || ""}</p>
+                      </div>
+                    </div>
+                    <button onClick={onEditProfile} className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors">Editar Perfil</button>
+                    <button onClick={onOpenAddresses} className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors flex items-center gap-2"><MapPin size={14} /> Meus Endereços</button>
+                    {isAdmin ? <button onClick={onViewAdmin} className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors">Painel Admin</button> : null}
+                    {isOwner ? <button onClick={onViewOwner} className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors">Painel Owner</button> : null}
+                    <button onClick={onSignOut} className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 text-sm font-medium text-red-500 transition-colors mt-1 border-t border-gray-100 pt-3">Sair</button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </header>

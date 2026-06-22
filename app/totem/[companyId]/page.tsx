@@ -506,6 +506,7 @@ function TotemContent({ params }: PageProps) {
 
   const closeAllModals = () => {
     setIsProfileOpen(false);
+    setProfileDropdownOpen(false);
     setIsOrdersOpen(false);
     setIsAddressesOpen(false);
     setIsNotificationsOpen(false);
@@ -544,7 +545,26 @@ function TotemContent({ params }: PageProps) {
     unreadCount,
     onOpenNotifications: () => { closeAllModals(); setIsNotificationsOpen(true); },
     onOpenOrders: () => { closeAllModals(); setIsOrdersOpen(true); },
-    onOpenProfile: () => { closeAllModals(); setIsProfileOpen(true); },
+    onOpenProfile: () => { closeAllModals(); setProfileDropdownOpen((current) => !current); },
+    profileDropdownOpen,
+    onToggleProfileDropdown: () => setProfileDropdownOpen((current) => !current),
+    onEditProfile: () => {
+      setEditProfileName(user?.name || "");
+      setEditProfilePhone((user as any)?.phone || "");
+      setEditProfileCpf((user as any)?.cpf || "");
+      setEditProfileBirthDate((user as any)?.birthDate || "");
+      setEditingProfile(true);
+      setProfileDropdownOpen(false);
+      setIsProfileOpen(false);
+    },
+    onOpenAddresses: () => { setProfileDropdownOpen(false); setIsAddressesOpen(true); },
+    onViewAdmin: () => { setProfileDropdownOpen(false); window.location.href = "/admin"; },
+    onViewOwner: () => { setProfileDropdownOpen(false); window.location.href = "/owner"; },
+    onSignOut: () => { setProfileDropdownOpen(false); signOut(); },
+    userName: user?.name || "Usuário",
+    userEmail: user?.email || "",
+    isAdmin: (user as any)?.role === "admin" || (user as any)?.role === "owner",
+    isOwner: (user as any)?.role === "owner",
     promotions,
     getProductPromotion,
     getPromotionalPrice,
@@ -764,13 +784,24 @@ function TotemContent({ params }: PageProps) {
                   </button>
                 </div>
               ) : isAddressesOpen ? (
-                <div className="space-y-4">
-                  <div className="flex flex-col gap-3 max-h-[40vh] overflow-y-auto">
+                <div className="space-y-5">
+                  <div className="border-b border-[#EAEAEA] pb-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-xl font-bold">Meus Endereços</h3>
+                        <p className="text-sm text-gray-500">Gerencie seus endereços no mesmo padrão da edição de perfil.</p>
+                      </div>
+                      {editingAddressId && (
+                        <span className="text-xs font-semibold uppercase text-[#FF6B00]">Modo edição</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-3 max-h-[34vh] overflow-y-auto">
                     {addresses.map((addr) => (
-                      <div key={addr.id} className="p-3 bg-[#FAFAFA] rounded-lg flex justify-between items-center border border-[#EAEAEA]">
+                      <div key={addr.id} className="p-4 bg-[#FAFAFA] rounded-2xl flex justify-between items-center border border-[#EAEAEA]">
                         <div>
-                          <p className="font-bold text-xs">{addr.street}, {addr.number}</p>
-                          <p className="text-[10px] text-[#666]">{addr.neighborhood}</p>
+                          <p className="font-bold text-sm">{addr.street}, {addr.number}</p>
+                          <p className="text-sm text-[#666]">{addr.neighborhood}</p>
                         </div>
                         <div className="flex gap-2">
                           <button
@@ -782,75 +813,94 @@ function TotemContent({ params }: PageProps) {
                               setEditNeighborhood(addr.neighborhoodId || addr.neighborhood);
                               setEditComplement(addr.complement || "");
                             }}
-                            className="p-1 hover:bg-white rounded-lg"
+                            className="p-2 rounded-lg bg-white border border-[#EAEAEA] hover:bg-gray-50"
                           >
                             <ChevronRight className="h-4 w-4" />
                           </button>
-                          <button onClick={() => handleDeleteAddress(addr.id)} className="p-1 hover:bg-red-50 text-red-600 rounded-lg">
+                          <button onClick={() => handleDeleteAddress(addr.id)} className="p-2 rounded-lg bg-white border border-[#EAEAEA] text-red-600 hover:bg-red-50">
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       </div>
                     ))}
                   </div>
-                  <form onSubmit={handleAddAddress} className="space-y-2 pt-4 border-t border-[#EAEAEA] mt-2">
-                    <div className="grid grid-cols-4 gap-2">
+                  <form onSubmit={handleAddAddress} className="space-y-4 pt-4 border-t border-[#EAEAEA] mt-2">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+                      <div className="sm:col-span-3">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Rua</label>
+                        <input
+                          required
+                          className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]"
+                          placeholder="Rua"
+                          value={editStreet}
+                          onChange={(e) => setEditStreet(e.target.value)}
+                        />
+                      </div>
+                      <div className="sm:col-span-1">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Nº</label>
+                        <input
+                          required
+                          className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]"
+                          placeholder="Nº"
+                          value={editNumber}
+                          onChange={(e) => setEditNumber(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Cidade</label>
+                        <select
+                          required
+                          className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]"
+                          value={editCity}
+                          onChange={(e) => setEditCity(e.target.value)}
+                        >
+                          <option value="">Selecione a cidade</option>
+                          {availableCities.map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Bairro</label>
+                        <select
+                          required
+                          className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]"
+                          value={editNeighborhood}
+                          onChange={(e) => setEditNeighborhood(e.target.value)}
+                          disabled={!editCity}
+                        >
+                          <option value="">Selecione o bairro</option>
+                          {availableNeighborhoods.map((n) => (
+                            <option key={n.id} value={n.id}>{n.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Complemento</label>
                       <input
-                        required
-                        className="col-span-3 p-2 bg-[#FAFAFA] rounded-lg border border-[#EAEAEA] text-xs"
-                        placeholder="Rua"
-                        value={editStreet}
-                        onChange={(e) => setEditStreet(e.target.value)}
-                      />
-                      <input
-                        required
-                        className="col-span-1 p-2 bg-[#FAFAFA] rounded-lg border border-[#EAEAEA] text-xs"
-                        placeholder="Nº"
-                        value={editNumber}
-                        onChange={(e) => setEditNumber(e.target.value)}
+                        className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]"
+                        placeholder="Complemento"
+                        value={editComplement}
+                        onChange={(e) => setEditComplement(e.target.value)}
                       />
                     </div>
-                    <select
-                      required
-                      className="w-full p-2 bg-[#FAFAFA] rounded-lg border border-[#EAEAEA] text-xs"
-                      value={editCity}
-                      onChange={(e) => setEditCity(e.target.value)}
-                    >
-                      <option value="">Selecione a cidade</option>
-                      {availableCities.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
-                    <select
-                      required
-                      className="w-full p-2 bg-[#FAFAFA] rounded-lg border border-[#EAEAEA] text-xs"
-                      value={editNeighborhood}
-                      onChange={(e) => setEditNeighborhood(e.target.value)}
-                      disabled={!editCity}
-                    >
-                      <option value="">Selecione o bairro</option>
-                      {availableNeighborhoods.map((n) => (
-                        <option key={n.id} value={n.id}>{n.name}</option>
-                      ))}
-                    </select>
-                    <input
-                      className="w-full p-2 bg-[#FAFAFA] rounded-lg border border-[#EAEAEA] text-xs"
-                      placeholder="Complemento"
-                      value={editComplement}
-                      onChange={(e) => setEditComplement(e.target.value)}
-                    />
-                    <button
-                      type="submit"
-                      className="w-full p-3 bg-[#FF6B00] text-white font-bold rounded-xl flex items-center justify-center gap-2 text-xs"
-                      disabled={savingAddress}
-                    >
-                      {savingAddress ? "Salvando..." : editingAddressId ? <><Plus className="h-4 w-4" /> Salvar Alterações</> : <><Plus className="h-4 w-4" /> Adicionar Endereço</>}
-                    </button>
-                    {editingAddressId && (
-                      <button type="button" onClick={resetAddressForm} className="w-full p-1 text-xs text-[#666] underline text-center">
-                        Cancelar edição
+                    <div className="flex flex-col gap-3">
+                      <button
+                        type="submit"
+                        className="w-full h-12 bg-[#FF6B00] text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm"
+                        disabled={savingAddress}
+                      >
+                        {savingAddress ? "Salvando..." : editingAddressId ? <><Plus className="h-4 w-4" /> Salvar Alterações</> : <><Plus className="h-4 w-4" /> Adicionar Endereço</>}
                       </button>
-                    )}
+                      {editingAddressId && (
+                        <button type="button" onClick={resetAddressForm} className="w-full h-12 bg-[#F3F4F6] text-[#333] font-bold rounded-xl text-sm">
+                          Cancelar edição
+                        </button>
+                      )}
+                    </div>
                   </form>
                 </div>
               ) : (
