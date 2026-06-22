@@ -449,13 +449,13 @@ export default function StoreListingPage() {
       />
 
       {/* Profile & Orders Modals */}
-      {(isOrdersOpen || isAddressesOpen) && (
+      {(isOrdersOpen || isAddressesOpen || editingProfile) && (
         <div
-          className={`fixed inset-0 z-50 flex bg-black/40 backdrop-blur-sm ${editingProfile ? 'items-start' : 'items-end sm:items-center'}`}
-          onClick={() => { if (!editingProfile) { setIsOrdersOpen(false); setIsAddressesOpen(false); } }}
+          className={`fixed inset-0 z-50 flex bg-black/40 backdrop-blur-sm ${editingProfile || isAddressesOpen ? 'items-start sm:items-center' : 'items-end sm:items-center'}`}
+          onClick={() => { setIsOrdersOpen(false); setIsAddressesOpen(false); setEditingProfile(false); }}
         >
           <div
-            className={`bg-white w-full shadow-2xl animate-slide-up ${editingProfile ? 'min-h-screen sm:min-h-0 sm:max-w-lg sm:rounded-2xl sm:mx-auto sm:my-8' : 'max-w-[430px] rounded-t-[24px] p-6'}`}
+            className={`bg-white w-full shadow-2xl animate-slide-up ${editingProfile || isAddressesOpen ? 'min-h-screen sm:min-h-0 sm:max-w-lg sm:rounded-2xl sm:mx-auto sm:my-8 p-6' : 'max-w-[430px] rounded-t-[24px] p-6'}`}
             onClick={(e) => e.stopPropagation()}
           >
             {editingProfile ? (
@@ -506,7 +506,7 @@ export default function StoreListingPage() {
               <h3 className="font-bold text-lg">
                 {isProfileOpen ? "Meu Perfil" : isAddressesOpen ? "Meus Endereços" : "Meus Pedidos"}
               </h3>
-              <button onClick={() => { setIsProfileOpen(false); setIsOrdersOpen(false); setIsAddressesOpen(false); }}>
+              <button onClick={() => { setIsProfileOpen(false); setIsOrdersOpen(false); setIsAddressesOpen(false); setEditingProfile(false); }}>
                 <X className="h-5 w-5" />
               </button>
             </div>

@@ -555,9 +555,11 @@ function TotemContent({ params }: PageProps) {
       setEditProfileBirthDate((user as any)?.birthDate || "");
       setEditingProfile(true);
       setProfileDropdownOpen(false);
-      setIsProfileOpen(false);
+      setIsProfileOpen(true);
+      setIsOrdersOpen(false);
+      setIsAddressesOpen(false);
     },
-    onOpenAddresses: () => { setProfileDropdownOpen(false); setIsAddressesOpen(true); },
+    onOpenAddresses: () => { setProfileDropdownOpen(false); setIsProfileOpen(false); setIsOrdersOpen(false); setIsAddressesOpen(true); },
     onViewAdmin: () => { setProfileDropdownOpen(false); window.location.href = "/admin"; },
     onViewOwner: () => { setProfileDropdownOpen(false); window.location.href = "/owner"; },
     onSignOut: () => { setProfileDropdownOpen(false); signOut(); },
@@ -712,25 +714,25 @@ function TotemContent({ params }: PageProps) {
         onClose={() => setIsNotificationsOpen(false)}
       />
 
-      {(isProfileOpen || isOrdersOpen || isAddressesOpen) && (
+      {(isProfileOpen || isOrdersOpen || isAddressesOpen || editingProfile) && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm"
-          onClick={() => { setIsProfileOpen(false); setIsOrdersOpen(false); setIsAddressesOpen(false); }}
+          className={`fixed inset-0 z-50 flex bg-black/40 backdrop-blur-sm ${editingProfile || isAddressesOpen ? 'items-start sm:items-center' : 'items-end justify-center'}`}
+          onClick={() => { setIsProfileOpen(false); setIsOrdersOpen(false); setIsAddressesOpen(false); setEditingProfile(false); }}
         >
           <div
-            className="bg-white w-full max-w-[430px] rounded-t-[24px] p-6 shadow-2xl animate-slide-up"
+            className={`bg-white w-full shadow-2xl animate-slide-up ${editingProfile || isAddressesOpen ? 'min-h-screen sm:min-h-0 sm:max-w-lg sm:rounded-2xl sm:mx-auto sm:my-8 p-6' : 'max-w-[430px] rounded-t-[24px] p-6'}`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-lg">
-                {isProfileOpen ? "Meu Perfil" : isAddressesOpen ? "Meus Endereços" : "Meus Pedidos"}
+                {isProfileOpen || editingProfile ? "Meu Perfil" : isAddressesOpen ? "Meus Endereços" : "Meus Pedidos"}
               </h3>
-              <button onClick={() => { setIsProfileOpen(false); setIsOrdersOpen(false); setIsAddressesOpen(false); }}>
+              <button onClick={() => { setIsProfileOpen(false); setIsOrdersOpen(false); setIsAddressesOpen(false); setEditingProfile(false); setProfileDropdownOpen(false); }}>
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto max-h-[70vh] p-1">
-              {isProfileOpen ? (
+              {isProfileOpen || editingProfile ? (
                 <div className="space-y-4">
                   {editingProfile ? (
                     <form onSubmit={handleSaveProfile} className="space-y-3">
