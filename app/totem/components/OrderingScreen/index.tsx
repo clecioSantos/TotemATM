@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Product, Category, CartItem, Condiment, CategoryFlavor, SelectedSize, SelectedFlavor, ProductSize, Promotion } from "@totem/shared/types";
-import { ShoppingBag, Trash2, Plus, Minus, X, ArrowLeft, Store, Star, Bell, User, Tag } from "lucide-react";
+import { ShoppingBag, Trash2, Plus, Minus, X, ArrowLeft, Store, Star, Bell, User, Tag, MapPin } from "lucide-react";
 import { firestore } from "@/src/services/firebase";
 import { collection, query, where, onSnapshot, getDocs } from "firebase/firestore";
 import StoreReviewsModal from "../StoreReviewsModal";
@@ -323,7 +323,10 @@ export default function OrderingScreen({
                   <User className="h-5 w-5" />
                 </button>
                 {(profileDropdownOpen ?? false) && (
-                  <div className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-[#EAEAEA] p-3 w-64 z-50 animate-fade-in">
+                  <div
+                  className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-[#EAEAEA] p-3 w-64 z-50 animate-fade-in"
+                  onClick={(e) => e.stopPropagation()}
+                >
                     <div className="flex items-center gap-3 mb-3 pb-3 border-b border-gray-100">
                       <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-[#FF6B00] font-bold text-sm">
                         {userName?.charAt(0).toUpperCase() || "U"}

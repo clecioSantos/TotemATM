@@ -317,12 +317,12 @@ export default function StoreListingPage() {
           <div className="text-right">
             <div className="font-bold text-sm text-brand-primary">R$ {o.total?.toFixed(2)}</div>
             <div className="text-[10px] uppercase font-bold text-brand-muted">{getStatusLabel(o)}</div>
+          </div>
         </div>
-      </div>
       {expandedOrderId === o.id && (
         <div className="p-3 bg-brand-light text-xs space-y-2 border-t border-brand-border">
           <p><strong>Status:</strong> {getStatusLabel(o)}</p>
-            <p><strong>Pedido:</strong> #{o.id.slice(-6).toUpperCase()}</p>
+            <p><strong>Pedido:</strong> {`#${o.id.slice(-6).toUpperCase()}`}</p>
             <p><strong>Endereço:</strong> {o.address?.street}, {o.address?.number} {o.address?.complement ? `- ${o.address.complement}` : ""}</p>
             <p><strong>Bairro:</strong> {o.address?.neighborhood}</p>
             <div className="pt-2 border-t border-brand-border">
@@ -605,12 +605,18 @@ export default function StoreListingPage() {
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
                         <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Cidade</label>
-                        <option value="">Selecione a cidade</option>
-                        {availableCities.map((c) => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                      </select>
-                    </div>
+                        <select
+                          required
+                          className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]"
+                          value={addressCity}
+                          onChange={(e) => setAddressCity(e.target.value)}
+                        >
+                          <option value="">Selecione a cidade</option>
+                          {availableCities.map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
                     <div>
                       <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Bairro</label>
                       <select

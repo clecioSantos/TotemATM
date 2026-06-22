@@ -139,6 +139,18 @@ function TotemContent({ params }: PageProps) {
   }, [user]);
 
   useEffect(() => {
+    if (!profileDropdownOpen) return;
+    const close = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".profile-dropdown-container")) {
+        setProfileDropdownOpen(false);
+      }
+    };
+    setTimeout(() => document.addEventListener("click", close), 0);
+    return () => document.removeEventListener("click", close);
+  }, [profileDropdownOpen]);
+
+  useEffect(() => {
     const unsub = onSnapshot(collection(firestore, "cities"), (snap) => {
       setAvailableCities(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
