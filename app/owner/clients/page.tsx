@@ -15,9 +15,9 @@ export default function OwnerClientsPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    const q = query(collection(firestore, "users"), where("role", "==", "client"), orderBy("name"));
+    const q = query(collection(firestore, "users"), where("role", "==", "client"));
     const unsub = onSnapshot(q, (snap) => {
-      setClients(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setClients(snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => a.name?.localeCompare(b.name)));
       setLoading(false);
     });
     return () => unsub();
