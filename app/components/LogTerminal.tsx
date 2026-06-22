@@ -99,6 +99,7 @@ export default function LogTerminal() {
   const [isOpen, setIsOpen] = useState(false);
   const [logLines, setLogLines] = useState<LogLine[]>(logs);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isSandbox = typeof process !== "undefined" && process.env?.NEXT_PUBLIC_MERCADOPAGO_ENVIRONMENT?.toLowerCase() === "sandbox";
 
   const refresh = useCallback(() => {
@@ -115,7 +116,12 @@ export default function LogTerminal() {
   }, [isSandbox, refresh]);
 
   useEffect(() => {
-    if (isOpen) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!isOpen || !scrollContainerRef.current) return;
+    const el = scrollContainerRef.current;
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    if (isNearBottom) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [logLines, isOpen]);
 
   if (!isSandbox) return null;
@@ -200,7 +206,7 @@ export default function LogTerminal() {
           </div>
 
           {/* Log content */}
-          <div style={{
+          <div ref={scrollContainerRef} style={{
             flex: 1,
             overflowY: "auto",
             padding: "4px 0",
