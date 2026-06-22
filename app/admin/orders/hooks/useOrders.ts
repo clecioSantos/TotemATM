@@ -152,12 +152,20 @@ export const useOrders = () => {
 
         const msg = statusMessages[newStatus];
         if (msg) {
-          const idToken = await auth.currentUser.getIdToken();
-          fetch("/api/push/send", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
-            body: JSON.stringify({ target: "user", uid: orderData.customerId, title: msg.title, body: msg.body, data: { orderId, type: "order_status" } }),
-          }).catch((err) => logger.error("useOrders", "Erro ao enviar push", err));
+          logger.info("useOrders", `Enviando push para cliente ${orderData.customerId}`, { status: newStatus });
+          try {
+            const idToken = await auth.currentUser.getIdToken();
+            const res = await fetch("/api/push/send", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+              body: JSON.stringify({ target: "user", uid: orderData.customerId, title: msg.title, body: msg.body, data: { orderId, type: "order_status" } }),
+            });
+            const resData = await res.json().catch(() => ({}));
+            if (!res.ok) logger.error("useOrders", "Push API retornou erro", resData);
+            else logger.info("useOrders", "Push enviado com sucesso", resData);
+          } catch (err) {
+            logger.error("useOrders", "Erro ao enviar push", err);
+          }
         }
       }
 
