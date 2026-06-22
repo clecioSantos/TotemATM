@@ -60,6 +60,16 @@ export interface UserProfile {
   role: UserRole;
   createdAt: Date | Timestamp;
   companyId?: string;
+  photoURL?: string;
+  provider?: string;
+  cpf?: string;
+  birthDate?: string;
+  totalOrders?: number;
+  totalSpent?: number;
+  lastAccess?: Date | Timestamp;
+  lastOrder?: Date | Timestamp;
+  isBlocked?: boolean;
+  internalNotes?: string;
 }
 
 export type AuthError = { code: string; message: string };

@@ -103,8 +103,6 @@ function LoginForm() {
 
     if (redirectPath) {
       window.location.href = redirectPath;
-    } else if (userRole === "admin" || userRole === "owner") {
-      window.location.href = "/admin";
     } else {
       window.location.href = "/totem";
     }
@@ -228,8 +226,6 @@ function LoginForm() {
 
       if (redirectPath) {
         window.location.href = redirectPath;
-      } else if (userRole === "admin" || userRole === "owner") {
-        window.location.href = "/admin";
       } else {
         window.location.href = "/totem";
       }

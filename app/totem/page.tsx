@@ -6,6 +6,7 @@ import { collection, onSnapshot, query, where, addDoc, serverTimestamp, deleteDo
 import Link from "next/link";
 import { useAuth } from "@totem/shared/types/AuthProvider";
 import { useConfirm } from "@/app/components/ConfirmProvider";
+import CompleteProfileModal from "@/app/components/CompleteProfileModal";
 import { Search, MapPin, User, ShoppingBag, Store, X, LogOut, ChevronRight, Plus, Trash2, Home, Bell, ChevronLeft, ChevronRight as ChevronRightIcon, Tag, Loader2 } from "lucide-react";
 import { logger } from "@/src/lib/logger";
 import NotificationsPanel from "./components/NotificationsPanel";
@@ -53,7 +54,10 @@ export default function StoreListingPage() {
   const [editingProfile, setEditingProfile] = useState(false);
   const [editProfileName, setEditProfileName] = useState("");
   const [editProfilePhone, setEditProfilePhone] = useState("");
+  const [editProfileCpf, setEditProfileCpf] = useState("");
+  const [editProfileBirthDate, setEditProfileBirthDate] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
+  const [showCompleteProfile, setShowCompleteProfile] = useState(false);
 
   const [storeCitySettings, setStoreCitySettings] = useState<any[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -180,6 +184,15 @@ export default function StoreListingPage() {
     }
   };
 
+  const formatPhone = (phone: string) => {
+    const d = phone.replace(/\D/g, '');
+    if (d.length === 13) return `+${d.slice(0,2)} (${d.slice(2,4)}) ${d.slice(4,9)}-${d.slice(9)}`;
+    if (d.length === 12) return `+${d.slice(0,2)} (${d.slice(2,4)}) ${d.slice(4,8)}-${d.slice(8)}`;
+    if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+    if (d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
+    return phone;
+  };
+
   const resetAddressForm = () => {
     setIsEditing(null);
     setAddressStreet("");
@@ -194,7 +207,12 @@ export default function StoreListingPage() {
     if (!user) return;
     setSavingProfile(true);
     try {
-      await updateDoc(doc(firestore, "users", user.uid), { name: editProfileName.trim(), phone: editProfilePhone.trim() || "" });
+      await updateDoc(doc(firestore, "users", user.uid), {
+        name: editProfileName.trim(),
+        phone: editProfilePhone.trim() || "",
+        cpf: editProfileCpf.replace(/\D/g, "") || "",
+        birthDate: editProfileBirthDate || "",
+      });
       setEditingProfile(false);
       refreshProfile();
     } catch (error) {
@@ -203,6 +221,12 @@ export default function StoreListingPage() {
       setSavingProfile(false);
     }
   };
+
+  useEffect(() => {
+    if (!user || (user as any)?.cpf) return;
+    const finishedCount = userOrders.filter((o) => o.status === "finished").length;
+    if (finishedCount >= 5) setShowCompleteProfile(true);
+  }, [user, userOrders]);
 
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -393,13 +417,57 @@ export default function StoreListingPage() {
       {/* Profile & Orders Modals */}
       {(isProfileOpen || isOrdersOpen || isAddressesOpen) && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm"
-          onClick={() => { setIsProfileOpen(false); setIsOrdersOpen(false); setIsAddressesOpen(false); }}
+          className={`fixed inset-0 z-50 flex bg-black/40 backdrop-blur-sm ${editingProfile ? 'items-start' : 'items-end sm:items-center'}`}
+          onClick={() => { if (!editingProfile) { setIsProfileOpen(false); setIsOrdersOpen(false); setIsAddressesOpen(false); } }}
         >
           <div
-            className="bg-white w-full max-w-[430px] rounded-t-[24px] p-6 shadow-2xl animate-slide-up"
+            className={`bg-white w-full shadow-2xl animate-slide-up ${editingProfile ? 'min-h-screen sm:min-h-0 sm:max-w-lg sm:rounded-2xl sm:mx-auto sm:my-8' : 'max-w-[430px] rounded-t-[24px] p-6'}`}
             onClick={(e) => e.stopPropagation()}
           >
+            {editingProfile ? (
+              <>
+                <div className="sticky top-0 bg-white border-b border-[#EAEAEA] px-5 py-4 flex items-center justify-between z-10">
+                  <button onClick={() => setEditingProfile(false)} className="flex items-center gap-1 text-sm font-bold text-[#666] hover:text-[#1F1F1F]">
+                    <X size={18} /> Cancelar
+                  </button>
+                  <h3 className="font-bold text-base">Editar Perfil</h3>
+                  <button onClick={handleSaveProfile} disabled={savingProfile}
+                    className="text-sm font-bold text-[#FF6B00] hover:text-[#E65C00] disabled:opacity-50">
+                    {savingProfile ? <Loader2 size={16} className="animate-spin" /> : "Salvar"}
+                  </button>
+                </div>
+                <div className="px-5 py-6 space-y-5">
+                  <div className="flex flex-col items-center gap-2 mb-2">
+                    <div className="w-20 h-20 rounded-full bg-orange-50 flex items-center justify-center text-[#FF6B00] font-bold text-3xl">
+                      {(user?.name || "?").charAt(0).toUpperCase()}
+                    </div>
+                    <p className="text-sm font-bold">{user?.email}</p>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-500 uppercase mb-1.5 block">Nome</label>
+                    <input type="text" value={editProfileName} onChange={e => setEditProfileName(e.target.value)}
+                      className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]" required />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-500 uppercase mb-1.5 block">Telefone</label>
+                    <input type="tel" value={editProfilePhone} onChange={e => setEditProfilePhone(e.target.value)}
+                      className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]" placeholder="(11) 99999-9999" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-500 uppercase mb-1.5 block">CPF <span className="text-[#999] font-normal normal-case">(opcional)</span></label>
+                    <input type="text" inputMode="numeric" value={editProfileCpf} onChange={e => setEditProfileCpf(e.target.value)}
+                      placeholder="000.000.000-00"
+                      className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-500 uppercase mb-1.5 block">Data de Nascimento <span className="text-[#999] font-normal normal-case">(opcional)</span></label>
+                    <input type="date" value={editProfileBirthDate} onChange={e => setEditProfileBirthDate(e.target.value)}
+                      className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]" />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-lg">
                 {isProfileOpen ? "Meu Perfil" : isAddressesOpen ? "Meus Endereços" : "Meus Pedidos"}
@@ -411,34 +479,11 @@ export default function StoreListingPage() {
             <div className="flex-1 overflow-y-auto max-h-[70vh] p-1">
               {isProfileOpen ? (
                 <div className="space-y-4">
-                  {editingProfile ? (
-                    <form onSubmit={handleSaveProfile} className="space-y-3">
-                      <div>
-                        <label className="text-[10px] font-bold text-gray-500 uppercase">Nome</label>
-                        <input type="text" value={editProfileName} onChange={e => setEditProfileName(e.target.value)}
-                          className="w-full p-3 bg-[#FAFAFA] rounded-lg border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]" required />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-gray-500 uppercase">Telefone</label>
-                        <input type="tel" value={editProfilePhone} onChange={e => setEditProfilePhone(e.target.value)}
-                          className="w-full p-3 bg-[#FAFAFA] rounded-lg border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]" placeholder="(11) 99999-9999" />
-                      </div>
-                      <div className="flex gap-2">
-                        <button type="submit" className="flex-1 p-3 bg-[#FF6B00] text-white font-bold rounded-lg text-sm hover:bg-[#E65C00] transition-all">
-                          {savingProfile ? <Loader2 size={16} className="animate-spin mx-auto" /> : "Salvar"}
-                        </button>
-                        <button type="button" onClick={() => setEditingProfile(false)} className="p-3 bg-[#FAFAFA] font-bold rounded-lg text-sm">Cancelar</button>
-                      </div>
-                    </form>
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-bold">Olá, {user?.name || "Usuário"}</p>
-                        <button onClick={() => { setEditProfileName(user?.name || ""); setEditProfilePhone((user as any)?.phone || ""); setEditingProfile(true); }} className="text-[10px] font-bold text-[#FF6B00] uppercase">Editar</button>
-                      </div>
-                      {(user as any)?.phone && <p className="text-xs text-gray-500 -mt-2">{((phone: string) => { const d = phone.replace(/\D/g, ''); if (d.length === 13) return `+${d.slice(0,2)} (${d.slice(2,4)}) ${d.slice(4,9)}-${d.slice(9)}`; if (d.length === 12) return `+${d.slice(0,2)} (${d.slice(2,4)}) ${d.slice(4,8)}-${d.slice(8)}`; if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`; if (d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`; return phone; })((user as any)?.phone)}</p>}
-                    </>
-                  )}
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold">Olá, {user?.name || "Usuário"}</p>
+                    <button onClick={() => { setEditProfileName(user?.name || ""); setEditProfilePhone((user as any)?.phone || ""); setEditProfileCpf((user as any)?.cpf || ""); setEditProfileBirthDate((user as any)?.birthDate || ""); setEditingProfile(true); }} className="text-[10px] font-bold text-[#FF6B00] uppercase">Editar</button>
+                  </div>
+                  {(user as any)?.phone && <p className="text-xs text-gray-500 -mt-2">{formatPhone((user as any)?.phone)}</p>}
                   <button
                     onClick={() => { setIsProfileOpen(false); setIsAddressesOpen(true); }}
                     className="w-full flex items-center gap-3 p-3 bg-[#FAFAFA] rounded-lg font-bold text-sm"
@@ -570,6 +615,8 @@ export default function StoreListingPage() {
                 </div>
               )}
             </div>
+          </>
+            )}
           </div>
         </div>
       )}
@@ -775,6 +822,14 @@ export default function StoreListingPage() {
           )}
         </div>
       </div>
+      <CompleteProfileModal
+        open={showCompleteProfile}
+        userId={user?.uid || ""}
+        currentCpf={(user as any)?.cpf}
+        currentBirthDate={(user as any)?.birthDate}
+        onClose={() => setShowCompleteProfile(false)}
+        onSaved={() => refreshProfile()}
+      />
     </main>
   );
 }

@@ -14,6 +14,7 @@ import PaymentScreen from "../components/PaymentScreen";
 import NotificationsPanel from "../components/NotificationsPanel";
 import { useNotifications } from "../hooks/useNotifications";
 import { useConfirm } from "@/app/components/ConfirmProvider";
+import CompleteProfileModal from "@/app/components/CompleteProfileModal";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { logger } from "@/src/lib/logger";
 import { X, MapPin, LogOut, ChevronRight, Plus, Trash2, Mail, Send, MessageSquare, Loader2 } from "lucide-react";
@@ -87,7 +88,10 @@ function TotemContent({ params }: PageProps) {
   const [editingProfile, setEditingProfile] = useState(false);
   const [editProfileName, setEditProfileName] = useState("");
   const [editProfilePhone, setEditProfilePhone] = useState("");
+  const [editProfileCpf, setEditProfileCpf] = useState("");
+  const [editProfileBirthDate, setEditProfileBirthDate] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
+  const [showCompleteProfile, setShowCompleteProfile] = useState(false);
 
   const [deliveryStreet, setDeliveryStreet] = useState("");
   const [deliveryCity, setDeliveryCity] = useState("");
@@ -176,7 +180,12 @@ function TotemContent({ params }: PageProps) {
     if (!user) return;
     setSavingProfile(true);
     try {
-      await updateDoc(doc(firestore, "users", user.uid), { name: editProfileName.trim(), phone: editProfilePhone.trim() || "" });
+      await updateDoc(doc(firestore, "users", user.uid), {
+        name: editProfileName.trim(),
+        phone: editProfilePhone.trim() || "",
+        cpf: editProfileCpf.replace(/\D/g, "") || "",
+        birthDate: editProfileBirthDate || "",
+      });
       logger.info("TOTEM_PROFILE", "Perfil atualizado");
       setEditingProfile(false);
       refreshProfile();
@@ -186,6 +195,12 @@ function TotemContent({ params }: PageProps) {
       setSavingProfile(false);
     }
   };
+
+  useEffect(() => {
+    if (!user || (user as any)?.cpf) return;
+    const finishedCount = userOrders.filter((o) => o.status === "finished").length;
+    if (finishedCount >= 5) setShowCompleteProfile(true);
+  }, [user, userOrders]);
 
   const handleDeleteAddress = async (addressId: string) => {
     if (!await showConfirm("Deseja realmente excluir este endereço?")) return;
@@ -719,7 +734,7 @@ function TotemContent({ params }: PageProps) {
                     <>
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-bold">Olá, {user?.name || "Usuário"}</p>
-                        <button onClick={() => { setEditProfileName(user?.name || ""); setEditProfilePhone((user as any)?.phone || ""); setEditingProfile(true); }} className="text-[10px] font-bold text-[#FF6B00] uppercase">Editar</button>
+                        <button onClick={() => { setEditProfileName(user?.name || ""); setEditProfilePhone((user as any)?.phone || ""); setEditProfileCpf((user as any)?.cpf || ""); setEditProfileBirthDate((user as any)?.birthDate || ""); setEditingProfile(true); }} className="text-[10px] font-bold text-[#FF6B00] uppercase">Editar</button>
                       </div>
                       {(user as any)?.phone && <p className="text-xs text-gray-500 -mt-2">{((phone: string) => { const d = phone.replace(/\D/g, ''); if (d.length === 13) return `+${d.slice(0,2)} (${d.slice(2,4)}) ${d.slice(4,9)}-${d.slice(9)}`; if (d.length === 12) return `+${d.slice(0,2)} (${d.slice(2,4)}) ${d.slice(4,8)}-${d.slice(8)}`; if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`; if (d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`; return phone; })((user as any)?.phone)}</p>}
                     </>
@@ -976,6 +991,14 @@ function TotemContent({ params }: PageProps) {
           </div>
         </div>
       )}
+      <CompleteProfileModal
+        open={showCompleteProfile}
+        userId={user?.uid || ""}
+        currentCpf={(user as any)?.cpf}
+        currentBirthDate={(user as any)?.birthDate}
+        onClose={() => setShowCompleteProfile(false)}
+        onSaved={() => refreshProfile()}
+      />
     </>
   );
 }
