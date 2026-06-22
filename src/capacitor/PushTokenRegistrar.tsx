@@ -5,7 +5,6 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, firestore } from "@/src/services/firebase";
 import { pushTokenService } from "@/src/services/push-token.service";
-import { PushNotifications } from "@capacitor/push-notifications";
 import { logger } from "@/src/lib/logger";
 
 export default function PushTokenRegistrar() {
@@ -19,7 +18,7 @@ export default function PushTokenRegistrar() {
       }
       if (registeredRef.current) return;
 
-      const isCapacitor = typeof (window as any)?.Capacitor !== "undefined";
+      const isCapacitor = typeof window !== "undefined" && typeof (window as any)?.Capacitor !== "undefined";
       if (!isCapacitor) return;
 
       logger.info("PUSH_TOKEN", "Iniciando registro push...");
@@ -28,6 +27,8 @@ export default function PushTokenRegistrar() {
         const userSnap = await getDoc(doc(firestore, "users", firebaseUser.uid));
         if (!userSnap.exists()) return;
         const role = userSnap.data().role || "client";
+
+        const { PushNotifications } = await import("@capacitor/push-notifications");
 
         logger.info("PUSH_TOKEN", "Solicitando permissão de notificação...");
         const permResult = await PushNotifications.requestPermissions();
@@ -51,7 +52,7 @@ export default function PushTokenRegistrar() {
           });
 
           logger.info("PUSH_TOKEN", "Chamando PushNotifications.register()...");
-          PushNotifications.register().catch((err) => {
+          PushNotifications.register().catch((err: any) => {
             logger.error("PUSH_TOKEN", "Falha ao chamar register()", String(err));
             if (!resolved) { resolved = true; resolve(null); }
           });
@@ -62,7 +63,7 @@ export default function PushTokenRegistrar() {
         });
 
         if (!token) {
-          logger.warn("PUSH_TOKEN", "Token não obtido em 15s — verifique: 1) Permissão concedida? 2) google-services.json configurado? 3) FCM habilitado no Firebase?");
+          logger.warn("PUSH_TOKEN", "Token não obtido em 15s");
           return;
         }
 
