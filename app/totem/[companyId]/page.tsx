@@ -92,6 +92,7 @@ function TotemContent({ params }: PageProps) {
   const [editProfileBirthDate, setEditProfileBirthDate] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   const [deliveryStreet, setDeliveryStreet] = useState("");
   const [deliveryCity, setDeliveryCity] = useState("");

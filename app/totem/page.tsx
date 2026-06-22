@@ -58,6 +58,7 @@ export default function StoreListingPage() {
   const [editProfileBirthDate, setEditProfileBirthDate] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   const [storeCitySettings, setStoreCitySettings] = useState<any[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -228,6 +229,16 @@ export default function StoreListingPage() {
     if (finishedCount >= 5) setShowCompleteProfile(true);
   }, [user, userOrders]);
 
+  useEffect(() => {
+    if (!profileDropdownOpen) return;
+    const close = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".profile-dropdown-container")) setProfileDropdownOpen(false);
+    };
+    setTimeout(() => document.addEventListener("click", close), 0);
+    return () => document.removeEventListener("click", close);
+  }, [profileDropdownOpen]);
+
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !addressStreet || !addressNumber || !addressNeighborhood || !addressCity) return;
@@ -370,17 +381,17 @@ export default function StoreListingPage() {
             >
               <ShoppingBag className="h-5 w-5" />
             </button>
-            <div className="relative">
+            <div className="relative profile-dropdown-container">
               <button
-                onClick={() => { setIsProfileOpen(true); setIsNotificationsOpen(false); }}
+                onClick={() => { setProfileDropdownOpen(!profileDropdownOpen); setIsNotificationsOpen(false); }}
                 className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-[#666] hover:bg-gray-200 transition-colors"
                 title="Perfil"
               >
                 <User className="h-5 w-5" />
               </button>
-              {isProfileOpen && (
+              {profileDropdownOpen && (
                 <div
-                  className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-[#EAEAEA] p-3 w-64 z-50 hidden lg:block animate-fade-in"
+                  className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-[#EAEAEA] p-3 w-64 z-50 animate-fade-in"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex items-center gap-3 mb-3 pb-3 border-b border-gray-100">
@@ -392,8 +403,8 @@ export default function StoreListingPage() {
                       <p className="text-[10px] text-[#999]">{user?.email}</p>
                     </div>
                   </div>
-                  <button onClick={() => { setEditProfileName(user?.name || ""); setEditProfilePhone((user as any)?.phone || ""); setEditProfileCpf((user as any)?.cpf || ""); setEditProfileBirthDate((user as any)?.birthDate || ""); setEditingProfile(true); setIsProfileOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors">Editar Perfil</button>
-                  <button onClick={() => { setIsProfileOpen(false); setIsAddressesOpen(true); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors flex items-center gap-2"><MapPin size={14} /> Meus Endereços</button>
+                  <button onClick={() => { setEditProfileName(user?.name || ""); setEditProfilePhone((user as any)?.phone || ""); setEditProfileCpf((user as any)?.cpf || ""); setEditProfileBirthDate((user as any)?.birthDate || ""); setEditingProfile(true); setProfileDropdownOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors">Editar Perfil</button>
+                  <button onClick={() => { setProfileDropdownOpen(false); setIsAddressesOpen(true); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors flex items-center gap-2"><MapPin size={14} /> Meus Endereços</button>
                   {(user as any)?.role === "admin" || (user as any)?.role === "owner" ? <a href="/admin" className="block px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors">Painel Admin</a> : null}
                   {(user as any)?.role === "owner" ? <a href="/owner" className="block px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors">Painel Owner</a> : null}
                   <button onClick={() => signOut()} className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 text-sm font-medium text-red-500 transition-colors mt-1 border-t border-gray-100 pt-3">Sair</button>
@@ -438,10 +449,10 @@ export default function StoreListingPage() {
       />
 
       {/* Profile & Orders Modals */}
-      {(isProfileOpen || isOrdersOpen || isAddressesOpen) && (
+      {(isOrdersOpen || isAddressesOpen) && (
         <div
-          className={`fixed inset-0 z-50 flex bg-black/40 backdrop-blur-sm ${editingProfile ? 'items-start' : 'items-end sm:items-center'} ${isProfileOpen ? 'lg:bg-transparent lg:backdrop-blur-none lg:pointer-events-none' : ''}`}
-          onClick={() => { if (!editingProfile) { setIsProfileOpen(false); setIsOrdersOpen(false); setIsAddressesOpen(false); } }}
+          className={`fixed inset-0 z-50 flex bg-black/40 backdrop-blur-sm ${editingProfile ? 'items-start' : 'items-end sm:items-center'}`}
+          onClick={() => { if (!editingProfile) { setIsOrdersOpen(false); setIsAddressesOpen(false); } }}
         >
           <div
             className={`bg-white w-full shadow-2xl animate-slide-up ${editingProfile ? 'min-h-screen sm:min-h-0 sm:max-w-lg sm:rounded-2xl sm:mx-auto sm:my-8' : 'max-w-[430px] rounded-t-[24px] p-6'}`}
