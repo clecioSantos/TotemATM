@@ -26,17 +26,32 @@ interface PageProps {
 
 type TotemStep = 'WELCOME' | 'ORDERING' | 'IDENTIFICATION' | 'REVIEW' | 'PAYMENT' | 'FINISHED';
 
-export default function TotemPage({ searchParams }: { searchParams: { product?: string; size?: string; cond?: string; flav?: string; qty?: string; req?: string } }) {
+export default function TotemPage() {
   const params = useParams();
   const companyId = params.companyId as string;
   if (!companyId) return null;
-  const initialProduct = searchParams.product;
-  const initialSize = searchParams.size;
-  const initialCondiments = searchParams.cond?.split(",");
-  const initialFlavors = searchParams.flav?.split(",");
-  const initialQuantity = searchParams.qty ? parseInt(searchParams.qty) : undefined;
+  const [urlParams, setUrlParams] = useState<URLSearchParams>(() => {
+    if (typeof window === "undefined") return new URLSearchParams();
+    return new URLSearchParams(window.location.search);
+  });
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const current = new URLSearchParams(window.location.search);
+      if (current.toString() !== urlParams.toString()) {
+        setUrlParams(current);
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [urlParams]);
+
+  const initialProduct = urlParams?.get("product") || undefined;
+  const initialSize = urlParams?.get("size") || undefined;
+  const initialCondiments = urlParams?.get("cond")?.split(",");
+  const initialFlavors = urlParams?.get("flav")?.split(",");
+  const initialQuantity = urlParams?.get("qty") ? parseInt(urlParams.get("qty")!) : undefined;
   const initialRequiredSelections = (() => {
-    const r = searchParams.req;
+    const r = urlParams?.get("req");
     if (!r) return undefined;
     const result: Record<string, string[]> = {};
     r.split("|").forEach(part => {
