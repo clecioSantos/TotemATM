@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Product, Category, CartItem, Condiment, CategoryFlavor, SelectedSize, SelectedFlavor, ProductSize, Promotion } from "@totem/shared/types";
 import { ShoppingBag, Trash2, Plus, Minus, X, ArrowLeft, Store, Star, Bell, Tag, MapPin } from "lucide-react";
 import { firestore } from "@/src/services/firebase";
-import { collection, query, where, onSnapshot, getDocs } from "firebase/firestore";
+import { collection, query, where, onSnapshot, getDocs, orderBy } from "firebase/firestore";
 import StoreReviewsModal from "../StoreReviewsModal";
 
 interface OrderingScreenProps {
@@ -42,6 +42,8 @@ interface OrderingScreenProps {
   initialFlavors?: string[];
   initialQuantity?: number;
   initialRequiredSelections?: Record<string, string[]>;
+  isFavorite?: (productId: string) => boolean;
+  onToggleFavorite?: (productId: string, config: { size?: string; condiments: string[]; flavors: string[]; quantity: number; requiredSelections: Record<string, string[]> }) => void;
 }
 
 const BANNER_HEIGHT = 168;
@@ -76,6 +78,8 @@ export default function OrderingScreen({
   initialFlavors,
   initialQuantity,
   initialRequiredSelections,
+  isFavorite,
+  onToggleFavorite,
 }: OrderingScreenProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
@@ -83,6 +87,7 @@ export default function OrderingScreen({
   const [activeCategory, setActiveCategory] = useState<string>("featured");
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const userClosedRef = useRef(false);
   const [selectedCondiments, setSelectedCondiments] = useState<Condiment[]>([]);
   const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null);
   const [selectedFlavors, setSelectedFlavors] = useState<CategoryFlavor[]>([]);
@@ -101,7 +106,7 @@ export default function OrderingScreen({
         const groups = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         const withItems = await Promise.all(groups.map(async (g: any) => {
           const itemsSnap = await getDocs(
-            query(collection(firestore, "requiredItems"), where("groupId", "==", g.id), ...([] as any[]))
+            query(collection(firestore, "requiredItems"), where("groupId", "==", g.id), orderBy("order"))
           );
           return { ...g, items: itemsSnap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => a.order - b.order) };
         }));
@@ -113,30 +118,30 @@ export default function OrderingScreen({
   }, [selectedProduct?.id]);
 
   useEffect(() => {
-    if (!initialProductId || products.length === 0 || selectedProduct) return;
+    if (!initialProductId || products.length === 0 || selectedProduct || userClosedRef.current) return;
+    userClosedRef.current = false;
     const found = products.find(p => p.id === initialProductId);
     if (!found) return;
     setSelectedProduct(found);
     setActiveCategory(found.categoryId || "featured");
+  }, [initialProductId, products, selectedProduct]);
 
+  useEffect(() => {
+    if (!selectedProduct || selectedProduct.id !== initialProductId || userClosedRef.current) return;
     if (initialSize) {
-      const sizes = found.sizes || [];
+      const sizes = selectedProduct.sizes || [];
       const size = sizes.find(s => s.nome === initialSize);
       if (size) setSelectedSize(size);
     }
-
     if (initialCondiments && initialCondiments.length > 0) {
-      const foundCond = condiments.filter(c => initialCondiments.includes(c.id));
-      if (foundCond.length > 0) setSelectedCondiments(foundCond);
+      const found = condiments.filter(c => initialCondiments.includes(c.id));
+      if (found.length > 0) setSelectedCondiments(found);
     }
-
     if (initialFlavors && initialFlavors.length > 0) {
-      const foundFlav = flavors.filter(f => initialFlavors.includes(f.id));
-      if (foundFlav.length > 0) setSelectedFlavors(foundFlav);
+      const found = flavors.filter(f => initialFlavors.includes(f.id));
+      if (found.length > 0) setSelectedFlavors(found);
     }
-
     if (initialQuantity && initialQuantity > 1) setQuantity(initialQuantity);
-
     if (initialRequiredSelections && Object.keys(initialRequiredSelections).length > 0) {
       const mapped: Record<string, Set<string>> = {};
       for (const [key, items] of Object.entries(initialRequiredSelections)) {
@@ -144,7 +149,7 @@ export default function OrderingScreen({
       }
       setRequiredSelections(mapped);
     }
-  }, [initialProductId, products, initialSize, initialCondiments, initialFlavors, initialQuantity, initialRequiredSelections, condiments, flavors, selectedProduct]);
+  }, [selectedProduct, initialProductId, initialSize, initialCondiments, initialFlavors, initialQuantity, initialRequiredSelections, condiments, flavors]);
 
   useEffect(() => {
     if (toast) {
@@ -797,11 +802,13 @@ export default function OrderingScreen({
               <div className="flex items-center gap-3 min-w-0">
                 <button
                   onClick={() => {
+                    userClosedRef.current = true;
                     setSelectedProduct(null);
                     setSelectedCondiments([]);
                     setSelectedSize(null);
                     setSelectedFlavors([]);
                     setQuantity(1);
+                    if (initialProductId) window.history.replaceState({}, "", window.location.pathname);
                   }}
                   className="p-1 hover:bg-gray-100 rounded-full transition-colors shrink-0"
                 >
@@ -846,8 +853,26 @@ export default function OrderingScreen({
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-share-2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                 </button>
-                <button className="p-1 hover:bg-gray-100 rounded-full transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-heart"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                <button
+                  onClick={() => {
+                    if (!onToggleFavorite) return;
+                    const config: any = {};
+                    if (selectedSize) config.size = selectedSize.nome;
+                    if (selectedCondiments.length > 0) config.condiments = selectedCondiments.map(c => c.id);
+                    if (selectedFlavors.length > 0) config.flavors = selectedFlavors.map(f => f.id);
+                    if (quantity > 1) config.quantity = quantity;
+                    if (Object.keys(requiredSelections).length > 0) {
+                      const req: Record<string, string[]> = {};
+                      for (const [key, items] of Object.entries(requiredSelections)) {
+                        req[key] = Array.from(items);
+                      }
+                      config.requiredSelections = req;
+                    }
+                    onToggleFavorite(selectedProduct.id, config);
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill={isFavorite?.(selectedProduct.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-heart"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
                 </button>
               </div>
             </div>
@@ -855,11 +880,13 @@ export default function OrderingScreen({
             <button
               className="absolute top-6 left-6 z-20 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors hidden md:block"
               onClick={() => {
+                userClosedRef.current = true;
                 setSelectedProduct(null);
                 setSelectedCondiments([]);
                 setSelectedSize(null);
                 setSelectedFlavors([]);
                 setQuantity(1);
+                if (initialProductId) window.history.replaceState({}, "", window.location.pathname);
               }}
             >
               <ArrowLeft className="h-6 w-6 text-gray-900" />
@@ -1206,6 +1233,7 @@ export default function OrderingScreen({
                     }).filter((g: any) => g.items.length > 0);
                     const result: any = actions.addToCart(selectedProduct, selectedCondiments, selectedSizeData, selectedFlavorsData, quantity, selectedRequiredItemsData);
                     if (result?.message) setToast({ message: result.message, type: "info" });
+                    userClosedRef.current = true;
                     setSelectedProduct(null);
                     setQuantity(1);
                     setSelectedCondiments([]);

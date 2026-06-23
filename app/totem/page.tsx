@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { firestore } from "@/src/services/firebase";
-import { collection, onSnapshot, query, where, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, orderBy } from "firebase/firestore";
+import { collection, onSnapshot, query, where, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, orderBy, getDoc } from "firebase/firestore";
 import Link from "next/link";
 import { useAuth } from "@totem/shared/types/AuthProvider";
 import { useConfirm } from "@/app/components/ConfirmProvider";
 import CompleteProfileModal from "@/app/components/CompleteProfileModal";
 import ProfileDropdown from "@/app/components/ProfileDropdown";
-import { Search, MapPin, User, ShoppingBag, Store, X, LogOut, ChevronRight, Plus, Trash2, Home, Bell, ChevronLeft, ChevronRight as ChevronRightIcon, Tag, Loader2 } from "lucide-react";
+import { Search, MapPin, User, ShoppingBag, Store, X, LogOut, ChevronRight, Plus, Trash2, Home, Bell, ChevronLeft, ChevronRight as ChevronRightIcon, Tag, Loader2, Heart } from "lucide-react";
 import { logger } from "@/src/lib/logger";
 import NotificationsPanel from "./components/NotificationsPanel";
 import { useNotifications } from "./hooks/useNotifications";
@@ -64,6 +64,8 @@ export default function StoreListingPage() {
 
   const [storeCitySettings, setStoreCitySettings] = useState<any[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
+  const [favorites, setFavorites] = useState<Record<string, any>>({});
   const { unreadCount } = useNotifications(user?.uid);
   const { events, promotions, getStoresForEvent, loading: promosLoading } = usePromotionsForListing();
   const [dayPromoProducts, setDayPromoProducts] = useState<any[]>([]);
@@ -241,6 +243,13 @@ export default function StoreListingPage() {
     return () => document.removeEventListener("click", close);
   }, [profileDropdownOpen]);
 
+  useEffect(() => {
+    if (!user) return;
+    getDoc(doc(firestore, "users", user.uid)).then((snap) => {
+      if (snap.exists()) setFavorites(snap.data().favorites || {});
+    }).catch(() => {});
+  }, [user]);
+
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !addressStreet || !addressNumber || !addressNeighborhood || !addressCity) return;
@@ -375,6 +384,13 @@ export default function StoreListingPage() {
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
+            </button>
+            <button
+              onClick={() => { setIsFavoritesOpen(true); setIsNotificationsOpen(false); setIsOrdersOpen(false); }}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-[#666] hover:bg-gray-100 transition-colors"
+              title="Favoritos"
+            >
+              <Heart className="h-5 w-5" />
             </button>
             <button
               onClick={() => { setIsOrdersOpen(true); setIsNotificationsOpen(false); }}
@@ -883,6 +899,77 @@ export default function StoreListingPage() {
         onClose={() => { setCompleteProfileDismissed(true); setShowCompleteProfile(false); }}
         onSaved={() => refreshProfile()}
       />
+
+      {/* Favorites Modal */}
+      {isFavoritesOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-start sm:items-center bg-black/40 backdrop-blur-sm"
+          onClick={() => setIsFavoritesOpen(false)}
+        >
+          <div
+            className="bg-white w-full sm:max-w-lg sm:rounded-2xl sm:mx-auto sm:my-8 min-h-screen sm:min-h-0 p-6 shadow-2xl animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-bold text-lg">Meus Favoritos</h3>
+              <button onClick={() => setIsFavoritesOpen(false)}>
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+              {Object.keys(favorites).length === 0 ? (
+                <p className="text-sm text-[#666] italic text-center py-8">Nenhum favorito ainda.</p>
+              ) : (
+                (() => {
+                  const grouped: Record<string, any[]> = {};
+                  Object.values(favorites).forEach((fav: any) => {
+                    const store = fav.companyName || "Outros";
+                    if (!grouped[store]) grouped[store] = [];
+                    grouped[store].push(fav);
+                  });
+                  return Object.entries(grouped).map(([storeName, items]) => (
+                    <div key={storeName}>
+                      <h4 className="font-bold text-sm text-[#666] uppercase tracking-wider mb-3 flex items-center gap-2">
+                        {items[0]?.companyLogo ? (
+                          <img src={items[0].companyLogo} alt="" className="w-5 h-5 rounded-full object-cover" />
+                        ) : (
+                          <Store size={16} />
+                        )}
+                        {storeName}
+                      </h4>
+                      <div className="space-y-3">
+                        {items.map((fav: any) => (
+                          <Link
+                            key={fav.productId}
+                            href={`/totem/${fav.companyId}?product=${fav.productId}${fav.size ? `&size=${encodeURIComponent(fav.size)}` : ""}${fav.condiments?.length ? `&cond=${fav.condiments.join(",")}` : ""}${fav.flavors?.length ? `&flav=${fav.flavors.join(",")}` : ""}${fav.quantity > 1 ? `&qty=${fav.quantity}` : ""}${fav.requiredSelections ? `&req=${Object.entries(fav.requiredSelections).map(([k, items]) => `${k}:${(items as string[]).join(",")}`).join("|")}` : ""}`}
+                            className="block bg-white rounded-[16px] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-gray-200/60 p-3 flex flex-row items-center transition-all duration-200 hover:translate-y-[-2px] hover:shadow-md"
+                          >
+                            <div className="relative w-[30%] aspect-[4/3] shrink-0 rounded-xl overflow-hidden bg-gray-100">
+                              {fav.productImage ? (
+                                <img src={fav.productImage} alt={fav.productName} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="flex items-center justify-center h-full text-[#999] text-sm font-bold">{fav.productName?.charAt(0)}</div>
+                              )}
+                            </div>
+                            <div className="flex-1 ml-3 flex flex-col justify-center min-w-0">
+                              <h3 className="text-[16px] font-bold text-gray-900 mb-0.5 truncate">{fav.productName}</h3>
+                              <span className="text-[16px] font-bold text-brand-primary">R$ {(fav.productPrice || 0).toFixed(2)}</span>
+                              {fav.size && <span className="text-[11px] text-gray-500 mt-0.5">{fav.size}</span>}
+                              {fav.condiments?.length > 0 && (
+                                <span className="text-[10px] text-gray-400 truncate">+ {fav.condiments.length} opcionai{fav.condiments.length > 1 ? "s" : "l"}</span>
+                              )}
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ));
+                })()
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

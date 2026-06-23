@@ -26,37 +26,17 @@ interface PageProps {
 
 type TotemStep = 'WELCOME' | 'ORDERING' | 'IDENTIFICATION' | 'REVIEW' | 'PAYMENT' | 'FINISHED';
 
-export default function TotemPage() {
+export default function TotemPage({ searchParams }: { searchParams: { product?: string; size?: string; cond?: string; flav?: string; qty?: string; req?: string } }) {
   const params = useParams();
   const companyId = params.companyId as string;
   if (!companyId) return null;
-  const [initialProduct] = useState<string | undefined>(() => {
-    if (typeof window === "undefined") return undefined;
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get("product") || undefined;
-  });
-  const [initialSize] = useState<string | undefined>(() => {
-    if (typeof window === "undefined") return undefined;
-    return new URLSearchParams(window.location.search).get("size") || undefined;
-  });
-  const [initialCondiments] = useState<string[] | undefined>(() => {
-    if (typeof window === "undefined") return undefined;
-    const c = new URLSearchParams(window.location.search).get("cond");
-    return c ? c.split(",") : undefined;
-  });
-  const [initialFlavors] = useState<string[] | undefined>(() => {
-    if (typeof window === "undefined") return undefined;
-    const f = new URLSearchParams(window.location.search).get("flav");
-    return f ? f.split(",") : undefined;
-  });
-  const [initialQuantity] = useState<number | undefined>(() => {
-    if (typeof window === "undefined") return undefined;
-    const q = new URLSearchParams(window.location.search).get("qty");
-    return q ? parseInt(q) : undefined;
-  });
-  const [initialRequiredSelections] = useState<Record<string, string[]> | undefined>(() => {
-    if (typeof window === "undefined") return undefined;
-    const r = new URLSearchParams(window.location.search).get("req");
+  const initialProduct = searchParams.product;
+  const initialSize = searchParams.size;
+  const initialCondiments = searchParams.cond?.split(",");
+  const initialFlavors = searchParams.flav?.split(",");
+  const initialQuantity = searchParams.qty ? parseInt(searchParams.qty) : undefined;
+  const initialRequiredSelections = (() => {
+    const r = searchParams.req;
     if (!r) return undefined;
     const result: Record<string, string[]> = {};
     r.split("|").forEach(part => {
@@ -64,7 +44,7 @@ export default function TotemPage() {
       if (key && items) result[key] = items.split(",");
     });
     return Object.keys(result).length > 0 ? result : undefined;
-  });
+  })();
   return (
     <ErrorBoundary context="TotemPage">
       <TotemContent params={{ companyId }} initialProductId={initialProduct} initialSize={initialSize} initialCondiments={initialCondiments} initialFlavors={initialFlavors} initialQuantity={initialQuantity} initialRequiredSelections={initialRequiredSelections} />
@@ -135,6 +115,7 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
   const [reviewDeliveryFee, setReviewDeliveryFee] = useState(0);
   const [reviewDeliveryMode, setReviewDeliveryMode] = useState<string>("delivery");
   const [convenienceFee, setConvenienceFee] = useState(0);
+  const [favorites, setFavorites] = useState<Record<string, any>>({});
 
   useEffect(() => {
     getDoc(doc(firestore, "settings", "global")).then((snap) => {
@@ -148,6 +129,16 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
       return () => clearTimeout(timer);
     }
   }, [toast]);
+
+  useEffect(() => {
+    if (!user) return;
+    getDoc(doc(firestore, "users", user.uid)).then((snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setFavorites(data.favorites || {});
+      }
+    }).catch(() => {});
+  }, [user]);
 
   const { unreadCount } = useNotifications(user?.uid);
 
@@ -339,6 +330,33 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
     getProductPromotion,
     getPromotionalPrice,
   } = useTotem(companyId);
+
+  const handleToggleFavorite = useCallback(async (productId: string, config: any) => {
+    if (!user) return;
+    const isFav = !!favorites[productId];
+    const updated = { ...favorites };
+    if (isFav) {
+      delete updated[productId];
+    } else {
+      const prod = products.find(p => p.id === productId);
+      if (!prod) return;
+      updated[productId] = {
+        productId,
+        companyId,
+        ...config,
+        productName: prod.name,
+        productImage: prod.imageUrl || "",
+        productPrice: prod.price,
+        companyName,
+        companyLogo: companyLogo || "",
+        addedAt: new Date().toISOString(),
+      };
+    }
+    setFavorites(updated);
+    try {
+      await updateDoc(doc(firestore, "users", user.uid), { favorites: updated });
+    } catch {}
+  }, [user, favorites, companyId, products]);
 
   const cartTotal = cart.reduce((acc, item) => {
     const basePrice = item.tamanhoSelecionado ? item.tamanhoSelecionado.preco : item.price;
@@ -546,6 +564,8 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
     initialFlavors,
     initialQuantity,
     initialRequiredSelections,
+    isFavorite: (id: string) => !!favorites[id],
+    onToggleFavorite: handleToggleFavorite,
   };
 
   if (loading) {
@@ -559,7 +579,7 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
   const currentScreen = (() => {
     switch (step) {
       case 'ORDERING':
-        return <OrderingScreen {...orderingScreenProps} />;
+        return <OrderingScreen key={initialProductId || "ordering"} {...orderingScreenProps} />;
       case 'REVIEW':
         return (
           <OrderSummaryScreen
@@ -676,7 +696,7 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
       case 'FINISHED':
         return <FinishedScreen />;
       default:
-        return <OrderingScreen {...orderingScreenProps} />;
+        return <OrderingScreen key={initialProductId || "ordering"} {...orderingScreenProps} />;
     }
   })();
 
