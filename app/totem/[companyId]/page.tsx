@@ -14,7 +14,6 @@ import PaymentScreen from "../components/PaymentScreen";
 import NotificationsPanel from "../components/NotificationsPanel";
 import { useNotifications } from "../hooks/useNotifications";
 import { useConfirm } from "@/app/components/ConfirmProvider";
-import CompleteProfileModal from "@/app/components/CompleteProfileModal";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { logger } from "@/src/lib/logger";
 import { X, MapPin, LogOut, ChevronRight, Plus, Trash2, Mail, Send, MessageSquare, Loader2 } from "lucide-react";
@@ -31,14 +30,49 @@ export default function TotemPage() {
   const params = useParams();
   const companyId = params.companyId as string;
   if (!companyId) return null;
+  const [initialProduct] = useState<string | undefined>(() => {
+    if (typeof window === "undefined") return undefined;
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get("product") || undefined;
+  });
+  const [initialSize] = useState<string | undefined>(() => {
+    if (typeof window === "undefined") return undefined;
+    return new URLSearchParams(window.location.search).get("size") || undefined;
+  });
+  const [initialCondiments] = useState<string[] | undefined>(() => {
+    if (typeof window === "undefined") return undefined;
+    const c = new URLSearchParams(window.location.search).get("cond");
+    return c ? c.split(",") : undefined;
+  });
+  const [initialFlavors] = useState<string[] | undefined>(() => {
+    if (typeof window === "undefined") return undefined;
+    const f = new URLSearchParams(window.location.search).get("flav");
+    return f ? f.split(",") : undefined;
+  });
+  const [initialQuantity] = useState<number | undefined>(() => {
+    if (typeof window === "undefined") return undefined;
+    const q = new URLSearchParams(window.location.search).get("qty");
+    return q ? parseInt(q) : undefined;
+  });
+  const [initialRequiredSelections] = useState<Record<string, string[]> | undefined>(() => {
+    if (typeof window === "undefined") return undefined;
+    const r = new URLSearchParams(window.location.search).get("req");
+    if (!r) return undefined;
+    const result: Record<string, string[]> = {};
+    r.split("|").forEach(part => {
+      const [key, items] = part.split(":");
+      if (key && items) result[key] = items.split(",");
+    });
+    return Object.keys(result).length > 0 ? result : undefined;
+  });
   return (
     <ErrorBoundary context="TotemPage">
-      <TotemContent params={{ companyId }} />
+      <TotemContent params={{ companyId }} initialProductId={initialProduct} initialSize={initialSize} initialCondiments={initialCondiments} initialFlavors={initialFlavors} initialQuantity={initialQuantity} initialRequiredSelections={initialRequiredSelections} />
     </ErrorBoundary>
   );
 }
 
-function TotemContent({ params }: PageProps) {
+function TotemContent({ params, initialProductId, initialSize, initialCondiments, initialFlavors, initialQuantity, initialRequiredSelections }: PageProps & { initialProductId?: string; initialSize?: string; initialCondiments?: string[]; initialFlavors?: string[]; initialQuantity?: number; initialRequiredSelections?: Record<string, string[]> }) {
   const router = useRouter();
   const { user, signOut, refreshProfile } = useAuth();
   const { showConfirm } = useConfirm();
@@ -65,7 +99,6 @@ function TotemContent({ params }: PageProps) {
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isOrdersOpen, setIsOrdersOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAddressesOpen, setIsAddressesOpen] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [contactSubject, setContactSubject] = useState("");
@@ -85,14 +118,6 @@ function TotemContent({ params }: PageProps) {
   const [editComplement, setEditComplement] = useState("");
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
   const [savingAddress, setSavingAddress] = useState(false);
-  const [editingProfile, setEditingProfile] = useState(false);
-  const [editProfileName, setEditProfileName] = useState("");
-  const [editProfilePhone, setEditProfilePhone] = useState("");
-  const [editProfileCpf, setEditProfileCpf] = useState("");
-  const [editProfileBirthDate, setEditProfileBirthDate] = useState("");
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [showCompleteProfile, setShowCompleteProfile] = useState(false);
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   const [deliveryStreet, setDeliveryStreet] = useState("");
   const [deliveryCity, setDeliveryCity] = useState("");
@@ -139,18 +164,6 @@ function TotemContent({ params }: PageProps) {
   }, [user]);
 
   useEffect(() => {
-    if (!profileDropdownOpen) return;
-    const close = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest(".profile-dropdown-container")) {
-        setProfileDropdownOpen(false);
-      }
-    };
-    setTimeout(() => document.addEventListener("click", close), 0);
-    return () => document.removeEventListener("click", close);
-  }, [profileDropdownOpen]);
-
-  useEffect(() => {
     const unsub = onSnapshot(collection(firestore, "cities"), (snap) => {
       setAvailableCities(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
@@ -187,33 +200,6 @@ function TotemContent({ params }: PageProps) {
     setEditComplement("");
     setEditCity("");
   };
-
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-    setSavingProfile(true);
-    try {
-      await updateDoc(doc(firestore, "users", user.uid), {
-        name: editProfileName.trim(),
-        phone: editProfilePhone.trim() || "",
-        cpf: editProfileCpf.replace(/\D/g, "") || "",
-        birthDate: editProfileBirthDate || "",
-      });
-      logger.info("TOTEM_PROFILE", "Perfil atualizado");
-      setEditingProfile(false);
-      refreshProfile();
-    } catch (error) {
-      logger.error("TOTEM_PROFILE", "Erro ao atualizar perfil", error);
-    } finally {
-      setSavingProfile(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!user || (user as any)?.cpf) return;
-    const finishedCount = userOrders.filter((o) => o.status === "finished").length;
-    if (finishedCount >= 5) setShowCompleteProfile(true);
-  }, [user, userOrders]);
 
   const handleDeleteAddress = async (addressId: string) => {
     if (!await showConfirm("Deseja realmente excluir este endereço?")) return;
@@ -334,6 +320,7 @@ function TotemContent({ params }: PageProps) {
     flavors,
     companyName,
     companyBanner,
+    companyLogo,
     companyOpen,
     averageRating,
     reviewCount,
@@ -516,18 +503,11 @@ function TotemContent({ params }: PageProps) {
     }
   }, [currentOrderId, clearCart, router]);
 
-  const closeAllModals = () => {
-    setIsProfileOpen(false);
-    setProfileDropdownOpen(false);
-    setIsOrdersOpen(false);
-    setIsAddressesOpen(false);
-    setIsNotificationsOpen(false);
-  };
-
   const orderingScreenProps = {
     companyId,
     companyName,
     companyBanner,
+    companyLogo,
     companyOpen,
     averageRating,
     reviewCount,
@@ -555,33 +535,17 @@ function TotemContent({ params }: PageProps) {
     },
     onCancel: () => router.push('/totem'),
     unreadCount,
-    onOpenNotifications: () => { closeAllModals(); setIsNotificationsOpen(true); },
-    onOpenOrders: () => { closeAllModals(); setIsOrdersOpen(true); },
-    onOpenProfile: () => { closeAllModals(); setProfileDropdownOpen((current) => !current); },
-    profileDropdownOpen,
-    onToggleProfileDropdown: () => setProfileDropdownOpen((current) => !current),
-    onEditProfile: () => {
-      setEditProfileName(user?.name || "");
-      setEditProfilePhone((user as any)?.phone || "");
-      setEditProfileCpf((user as any)?.cpf || "");
-      setEditProfileBirthDate((user as any)?.birthDate || "");
-      setEditingProfile(true);
-      setProfileDropdownOpen(false);
-      setIsProfileOpen(true);
-      setIsOrdersOpen(false);
-      setIsAddressesOpen(false);
-    },
-    onOpenAddresses: () => { setProfileDropdownOpen(false); setIsProfileOpen(false); setIsOrdersOpen(false); setIsAddressesOpen(true); },
-    onViewAdmin: () => { setProfileDropdownOpen(false); window.location.href = "/admin"; },
-    onViewOwner: () => { setProfileDropdownOpen(false); window.location.href = "/owner"; },
-    onSignOut: () => { setProfileDropdownOpen(false); signOut(); },
-    userName: user?.name || "Usuário",
-    userEmail: user?.email || "",
-    isAdmin: (user as any)?.role === "admin" || (user as any)?.role === "owner",
-    isOwner: (user as any)?.role === "owner",
+    onOpenNotifications: () => setIsNotificationsOpen(true),
+    onOpenOrders: () => setIsOrdersOpen(true),
     promotions,
     getProductPromotion,
     getPromotionalPrice,
+    initialProductId,
+    initialSize,
+    initialCondiments,
+    initialFlavors,
+    initialQuantity,
+    initialRequiredSelections,
   };
 
   if (loading) {
@@ -726,78 +690,25 @@ function TotemContent({ params }: PageProps) {
         onClose={() => setIsNotificationsOpen(false)}
       />
 
-      {(isProfileOpen || isOrdersOpen || isAddressesOpen || editingProfile) && (
+      {(isOrdersOpen || isAddressesOpen) && (
         <div
-          className={`fixed inset-0 z-50 flex bg-black/40 backdrop-blur-sm ${editingProfile || isAddressesOpen ? 'items-start sm:items-center' : 'items-end justify-center'}`}
-          onClick={() => { setIsProfileOpen(false); setIsOrdersOpen(false); setIsAddressesOpen(false); setEditingProfile(false); }}
+          className={`fixed inset-0 z-50 flex bg-black/40 backdrop-blur-sm ${isAddressesOpen ? 'items-start sm:items-center' : 'items-end justify-center'}`}
+          onClick={() => { setIsOrdersOpen(false); setIsAddressesOpen(false); }}
         >
           <div
-            className={`bg-white w-full shadow-2xl animate-slide-up ${editingProfile || isAddressesOpen ? 'min-h-screen sm:min-h-0 sm:max-w-lg sm:rounded-2xl sm:mx-auto sm:my-8 p-6' : 'max-w-[430px] rounded-t-[24px] p-6'}`}
+            className={`bg-white w-full shadow-2xl animate-slide-up ${isAddressesOpen ? 'min-h-screen sm:min-h-0 sm:max-w-lg sm:rounded-2xl sm:mx-auto sm:my-8 p-6' : 'max-w-[430px] rounded-t-[24px] p-6'}`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-lg">
-                {isProfileOpen || editingProfile ? "Meu Perfil" : isAddressesOpen ? "Meus Endereços" : "Meus Pedidos"}
+                {isAddressesOpen ? "Meus Endereços" : "Meus Pedidos"}
               </h3>
-              <button onClick={() => { setIsProfileOpen(false); setIsOrdersOpen(false); setIsAddressesOpen(false); setEditingProfile(false); setProfileDropdownOpen(false); }}>
+              <button onClick={() => { setIsOrdersOpen(false); setIsAddressesOpen(false); }}>
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto max-h-[70vh] p-1">
-              {isProfileOpen || editingProfile ? (
-                <div className="space-y-4">
-                  {editingProfile ? (
-                    <form onSubmit={handleSaveProfile} className="space-y-3">
-                      <div>
-                        <label className="text-[10px] font-bold text-gray-500 uppercase">Nome</label>
-                        <input type="text" value={editProfileName} onChange={e => setEditProfileName(e.target.value)}
-                          className="w-full p-3 bg-[#FAFAFA] rounded-lg border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]" required />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-gray-500 uppercase">Telefone</label>
-                        <input type="tel" value={editProfilePhone} onChange={e => setEditProfilePhone(e.target.value)}
-                          className="w-full p-3 bg-[#FAFAFA] rounded-lg border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]" placeholder="(11) 99999-9999" />
-                      </div>
-                      <div className="flex gap-2">
-                        <button type="submit" className="flex-1 p-3 bg-[#FF6B00] text-white font-bold rounded-lg text-sm hover:bg-[#E65C00] transition-all">
-                          {savingProfile ? <Loader2 size={16} className="animate-spin mx-auto" /> : "Salvar"}
-                        </button>
-                        <button type="button" onClick={() => setEditingProfile(false)} className="p-3 bg-[#FAFAFA] font-bold rounded-lg text-sm">Cancelar</button>
-                      </div>
-                    </form>
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-bold">Olá, {user?.name || "Usuário"}</p>
-                        <button onClick={() => { setEditProfileName(user?.name || ""); setEditProfilePhone((user as any)?.phone || ""); setEditProfileCpf((user as any)?.cpf || ""); setEditProfileBirthDate((user as any)?.birthDate || ""); setEditingProfile(true); }} className="text-[10px] font-bold text-[#FF6B00] uppercase">Editar</button>
-                      </div>
-                      {(user as any)?.phone && <p className="text-xs text-gray-500 -mt-2">{((phone: string) => { const d = phone.replace(/\D/g, ''); if (d.length === 13) return `+${d.slice(0,2)} (${d.slice(2,4)}) ${d.slice(4,9)}-${d.slice(9)}`; if (d.length === 12) return `+${d.slice(0,2)} (${d.slice(2,4)}) ${d.slice(4,8)}-${d.slice(8)}`; if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`; if (d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`; return phone; })((user as any)?.phone)}</p>}
-                    </>
-                  )}
-                  <button
-                    onClick={() => { setIsProfileOpen(false); setIsAddressesOpen(true); }}
-                    className="w-full flex items-center gap-3 p-3 bg-[#FAFAFA] rounded-lg font-bold text-sm"
-                  >
-                    <MapPin size={18} /> Meus Endereços
-                  </button>
-                  {(user as any)?.role === "admin" || (user as any)?.role === "owner" ? (
-                    <Link href="/admin" className="block p-3 bg-[#FF6B00] text-white text-center rounded-lg font-bold">
-                      Acessar Painel Admin
-                    </Link>
-                  ) : null}
-                  {(user as any)?.role === "owner" ? (
-                    <Link href="/owner" className="block p-3 bg-[#222] text-white text-center rounded-lg font-bold">
-                      Acessar Painel Owner
-                    </Link>
-                  ) : null}
-                  <button onClick={() => { setIsProfileOpen(false); setIsContactOpen(true); }} className="w-full flex items-center gap-3 p-3 bg-[#FAFAFA] rounded-lg font-bold text-sm">
-                    <Mail size={18} /> Entrar em Contato
-                  </button>
-                  <button onClick={() => signOut()} className="flex items-center gap-2 text-red-500 font-bold w-full">
-                    <LogOut size={18} /> Sair
-                  </button>
-                </div>
-              ) : isAddressesOpen ? (
+              {isAddressesOpen ? (
                 <div className="space-y-5">
                   <div className="border-b border-[#EAEAEA] pb-4">
                     <div className="flex items-center justify-between gap-3">
@@ -1056,14 +967,6 @@ function TotemContent({ params }: PageProps) {
           </div>
         </div>
       )}
-      <CompleteProfileModal
-        open={showCompleteProfile}
-        userId={user?.uid || ""}
-        currentCpf={(user as any)?.cpf}
-        currentBirthDate={(user as any)?.birthDate}
-        onClose={() => setShowCompleteProfile(false)}
-        onSaved={() => refreshProfile()}
-      />
     </>
   );
 }

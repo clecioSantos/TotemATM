@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useAuth } from "@totem/shared/types/AuthProvider";
 import { useConfirm } from "@/app/components/ConfirmProvider";
 import CompleteProfileModal from "@/app/components/CompleteProfileModal";
+import ProfileDropdown from "@/app/components/ProfileDropdown";
 import { Search, MapPin, User, ShoppingBag, Store, X, LogOut, ChevronRight, Plus, Trash2, Home, Bell, ChevronLeft, ChevronRight as ChevronRightIcon, Tag, Loader2 } from "lucide-react";
 import { logger } from "@/src/lib/logger";
 import NotificationsPanel from "./components/NotificationsPanel";
@@ -58,6 +59,7 @@ export default function StoreListingPage() {
   const [editProfileBirthDate, setEditProfileBirthDate] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
+  const [completeProfileDismissed, setCompleteProfileDismissed] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   const [storeCitySettings, setStoreCitySettings] = useState<any[]>([]);
@@ -224,10 +226,10 @@ export default function StoreListingPage() {
   };
 
   useEffect(() => {
-    if (!user || (user as any)?.cpf) return;
+    if (!user || (user as any)?.cpf || completeProfileDismissed) return;
     const finishedCount = userOrders.filter((o) => o.status === "finished").length;
     if (finishedCount >= 5) setShowCompleteProfile(true);
-  }, [user, userOrders]);
+  }, [user, userOrders, completeProfileDismissed]);
 
   useEffect(() => {
     if (!profileDropdownOpen) return;
@@ -383,33 +385,20 @@ export default function StoreListingPage() {
             </button>
             <div className="relative profile-dropdown-container">
               <button
-                onClick={() => { setProfileDropdownOpen(!profileDropdownOpen); setIsNotificationsOpen(false); }}
+                onClick={() => { setShowCompleteProfile(false); setCompleteProfileDismissed(true); setProfileDropdownOpen(!profileDropdownOpen); setIsNotificationsOpen(false); }}
                 className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-[#666] hover:bg-gray-200 transition-colors"
                 title="Perfil"
               >
                 <User className="h-5 w-5" />
               </button>
-              {profileDropdownOpen && (
-                <div
-                  className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-[#EAEAEA] p-3 w-64 z-50 animate-fade-in"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="flex items-center gap-3 mb-3 pb-3 border-b border-gray-100">
-                    <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-[#FF6B00] font-bold text-sm">
-                      {(user?.name || "?").charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold truncate">{user?.name || "Usuário"}</p>
-                      <p className="text-[10px] text-[#999]">{user?.email}</p>
-                    </div>
-                  </div>
-                  <button onClick={() => { setEditProfileName(user?.name || ""); setEditProfilePhone((user as any)?.phone || ""); setEditProfileCpf((user as any)?.cpf || ""); setEditProfileBirthDate((user as any)?.birthDate || ""); setEditingProfile(true); setProfileDropdownOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors">Editar Perfil</button>
-                  <button onClick={() => { setProfileDropdownOpen(false); setIsAddressesOpen(true); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors flex items-center gap-2"><MapPin size={14} /> Meus Endereços</button>
-                  {(user as any)?.role === "admin" || (user as any)?.role === "owner" ? <a href="/admin" className="block px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors">Painel Admin</a> : null}
-                  {(user as any)?.role === "owner" ? <a href="/owner" className="block px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors">Painel Owner</a> : null}
-                  <button onClick={() => signOut()} className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 text-sm font-medium text-red-500 transition-colors mt-1 border-t border-gray-100 pt-3">Sair</button>
-                </div>
-              )}
+              <ProfileDropdown
+                open={profileDropdownOpen}
+                onClose={() => setProfileDropdownOpen(false)}
+                user={user}
+                onEditProfile={() => { setEditProfileName(user?.name || ""); setEditProfilePhone((user as any)?.phone || ""); setEditProfileCpf((user as any)?.cpf || ""); setEditProfileBirthDate((user as any)?.birthDate || ""); setEditingProfile(true); setProfileDropdownOpen(false); }}
+                onAddresses={() => { setProfileDropdownOpen(false); setIsAddressesOpen(true); }}
+                onSignOut={() => { setProfileDropdownOpen(false); signOut(); }}
+              />
             </div>
           </div>
         </div>
@@ -891,7 +880,7 @@ export default function StoreListingPage() {
         userId={user?.uid || ""}
         currentCpf={(user as any)?.cpf}
         currentBirthDate={(user as any)?.birthDate}
-        onClose={() => setShowCompleteProfile(false)}
+        onClose={() => { setCompleteProfileDismissed(true); setShowCompleteProfile(false); }}
         onSaved={() => refreshProfile()}
       />
     </main>

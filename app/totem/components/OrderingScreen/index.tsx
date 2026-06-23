@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Product, Category, CartItem, Condiment, CategoryFlavor, SelectedSize, SelectedFlavor, ProductSize, Promotion } from "@totem/shared/types";
-import { ShoppingBag, Trash2, Plus, Minus, X, ArrowLeft, Store, Star, Bell, User, Tag, MapPin } from "lucide-react";
+import { ShoppingBag, Trash2, Plus, Minus, X, ArrowLeft, Store, Star, Bell, Tag, MapPin } from "lucide-react";
 import { firestore } from "@/src/services/firebase";
 import { collection, query, where, onSnapshot, getDocs } from "firebase/firestore";
 import StoreReviewsModal from "../StoreReviewsModal";
@@ -10,6 +10,7 @@ interface OrderingScreenProps {
   companyId: string;
   companyName: string;
   companyBanner: string;
+  companyLogo: string;
   companyOpen: boolean | null;
   averageRating: number;
   reviewCount: number;
@@ -32,21 +33,15 @@ interface OrderingScreenProps {
   unreadCount: number;
   onOpenNotifications: () => void;
   onOpenOrders: () => void;
-  onOpenProfile: () => void;
-  profileDropdownOpen?: boolean;
-  onToggleProfileDropdown?: () => void;
-  onEditProfile?: () => void;
-  onOpenAddresses?: () => void;
-  onViewAdmin?: () => void;
-  onViewOwner?: () => void;
-  onSignOut?: () => void;
-  userName?: string;
-  userEmail?: string;
-  isAdmin?: boolean;
-  isOwner?: boolean;
   promotions?: Promotion[];
   getProductPromotion?: (productId: string) => Promotion | undefined;
   getPromotionalPrice?: (productId: string, basePrice: number) => number;
+  initialProductId?: string;
+  initialSize?: string;
+  initialCondiments?: string[];
+  initialFlavors?: string[];
+  initialQuantity?: number;
+  initialRequiredSelections?: Record<string, string[]>;
 }
 
 const BANNER_HEIGHT = 168;
@@ -55,6 +50,7 @@ export default function OrderingScreen({
   companyId,
   companyName,
   companyBanner,
+  companyLogo,
   companyOpen,
   averageRating,
   reviewCount,
@@ -71,21 +67,15 @@ export default function OrderingScreen({
   unreadCount = 0,
   onOpenNotifications,
   onOpenOrders,
-  onOpenProfile,
-  profileDropdownOpen,
-  onToggleProfileDropdown,
-  onEditProfile,
-  onOpenAddresses,
-  onViewAdmin,
-  onViewOwner,
-  onSignOut,
-  userName,
-  userEmail,
-  isAdmin,
-  isOwner,
   promotions = [],
   getProductPromotion,
   getPromotionalPrice,
+  initialProductId,
+  initialSize,
+  initialCondiments,
+  initialFlavors,
+  initialQuantity,
+  initialRequiredSelections,
 }: OrderingScreenProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
@@ -123,15 +113,45 @@ export default function OrderingScreen({
   }, [selectedProduct?.id]);
 
   useEffect(() => {
+    if (!initialProductId || products.length === 0 || selectedProduct) return;
+    const found = products.find(p => p.id === initialProductId);
+    if (!found) return;
+    setSelectedProduct(found);
+    setActiveCategory(found.categoryId || "featured");
+
+    if (initialSize) {
+      const sizes = found.sizes || [];
+      const size = sizes.find(s => s.nome === initialSize);
+      if (size) setSelectedSize(size);
+    }
+
+    if (initialCondiments && initialCondiments.length > 0) {
+      const foundCond = condiments.filter(c => initialCondiments.includes(c.id));
+      if (foundCond.length > 0) setSelectedCondiments(foundCond);
+    }
+
+    if (initialFlavors && initialFlavors.length > 0) {
+      const foundFlav = flavors.filter(f => initialFlavors.includes(f.id));
+      if (foundFlav.length > 0) setSelectedFlavors(foundFlav);
+    }
+
+    if (initialQuantity && initialQuantity > 1) setQuantity(initialQuantity);
+
+    if (initialRequiredSelections && Object.keys(initialRequiredSelections).length > 0) {
+      const mapped: Record<string, Set<string>> = {};
+      for (const [key, items] of Object.entries(initialRequiredSelections)) {
+        mapped[key] = new Set(items);
+      }
+      setRequiredSelections(mapped);
+    }
+  }, [initialProductId, products, initialSize, initialCondiments, initialFlavors, initialQuantity, initialRequiredSelections, condiments, flavors, selectedProduct]);
+
+  useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => setToast(null), 5000);
       return () => clearTimeout(timer);
     }
   }, [toast]);
-
-  useEffect(() => {
-    setRequiredSelections({});
-  }, [selectedProduct?.id, selectedSize?.nome]);
 
   useEffect(() => {
     if (!companyId) return;
@@ -314,36 +334,6 @@ export default function OrderingScreen({
               >
                 <ShoppingBag className="h-5 w-5" />
               </button>
-              <div className="relative profile-dropdown-container">
-                <button
-                  onClick={onToggleProfileDropdown || onOpenProfile}
-                  className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-[#666] hover:bg-gray-200 transition-colors"
-                  title="Perfil"
-                >
-                  <User className="h-5 w-5" />
-                </button>
-                {(profileDropdownOpen ?? false) && (
-                  <div
-                  className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-[#EAEAEA] p-3 w-64 z-50 animate-fade-in"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-gray-100">
-                      <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-[#FF6B00] font-bold text-sm">
-                        {userName?.charAt(0).toUpperCase() || "U"}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold truncate">{userName || "Usuário"}</p>
-                        <p className="text-[10px] text-[#999] truncate">{userEmail || ""}</p>
-                      </div>
-                    </div>
-                    <button onClick={onEditProfile} className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors">Editar Perfil</button>
-                    <button onClick={onOpenAddresses} className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors flex items-center gap-2"><MapPin size={14} /> Meus Endereços</button>
-                    {isAdmin ? <button onClick={onViewAdmin} className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors">Painel Admin</button> : null}
-                    {isOwner ? <button onClick={onViewOwner} className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors">Painel Owner</button> : null}
-                    <button onClick={onSignOut} className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 text-sm font-medium text-red-500 transition-colors mt-1 border-t border-gray-100 pt-3">Sair</button>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </header>
@@ -800,10 +790,70 @@ export default function OrderingScreen({
 
       {/* Product Detail Modal */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 md:px-0">
-          <div className="relative w-full h-full md:w-[85vw] md:h-auto max-w-[95vw] lg:max-w-[1200px] md:max-h-[95vh] md:min-h-[75vh] mx-auto flex flex-col md:flex-row overflow-hidden bg-white md:rounded-2xl md:shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="relative w-full h-full md:w-[85vw] md:h-auto md:max-h-[95vh] md:min-h-[75vh] mx-auto flex flex-col md:flex-row overflow-hidden bg-white md:rounded-2xl md:shadow-2xl max-w-[100vw]">
+            {/* Header fixo para mobile (Estilo aiqfome) */}
+            <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 z-30 shrink-0 sticky top-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <button
+                  onClick={() => {
+                    setSelectedProduct(null);
+                    setSelectedCondiments([]);
+                    setSelectedSize(null);
+                    setSelectedFlavors([]);
+                    setQuantity(1);
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded-full transition-colors shrink-0"
+                >
+                  <ArrowLeft className="h-6 w-6 text-brand-primary" />
+                </button>
+                <h3 className="font-extrabold text-[15px] text-gray-900 uppercase truncate">
+                  {selectedProduct.name}
+                </h3>
+              </div>
+              <div className="flex items-center gap-4 shrink-0 text-brand-primary">
+                <button
+                  onClick={async () => {
+                    const params = new URLSearchParams();
+                    params.set("product", selectedProduct.id);
+                    if (selectedSize) params.set("size", selectedSize.nome);
+                    if (selectedCondiments.length > 0) params.set("cond", selectedCondiments.map(c => c.id).join(","));
+                    if (selectedFlavors.length > 0) params.set("flav", selectedFlavors.map(f => f.id).join(","));
+                    if (quantity > 1) params.set("qty", String(quantity));
+                    if (Object.keys(requiredSelections).length > 0) {
+                      const req = Object.entries(requiredSelections)
+                        .map(([key, items]) => `${key}:${Array.from(items).join(",")}`)
+                        .join("|");
+                      params.set("req", req);
+                    }
+                    const shareUrl = `${window.location.origin}/totem/${companyId}?${params.toString()}`;
+                    const shareData = {
+                      title: selectedProduct.name,
+                      text: `Olha só esse produto da ${companyName || "Bora"}: ${selectedProduct.name}${selectedProduct.description ? ` - ${selectedProduct.description}` : ""}`,
+                      url: shareUrl,
+                    };
+                    if (navigator.share) {
+                      try { await navigator.share(shareData); return; } catch {}
+                    }
+                    try {
+                      await navigator.clipboard.writeText(shareUrl);
+                      setToast({ message: "Link copiado!" });
+                    } catch {
+                      setToast({ message: "Erro ao copiar link" });
+                    }
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-share-2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                </button>
+                <button className="p-1 hover:bg-gray-100 rounded-full transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-heart"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                </button>
+              </div>
+            </div>
+
             <button
-              className="absolute top-6 left-6 z-20 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+              className="absolute top-6 left-6 z-20 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors hidden md:block"
               onClick={() => {
                 setSelectedProduct(null);
                 setSelectedCondiments([]);
@@ -815,7 +865,7 @@ export default function OrderingScreen({
               <ArrowLeft className="h-6 w-6 text-gray-900" />
             </button>
             <div
-              className="w-full md:w-1/2 bg-gray-100 shrink-0 overflow-hidden relative transition-all duration-200 min-h-[280px] md:min-h-[320px]"
+              className="w-full md:w-1/2 bg-gray-100 shrink-0 overflow-hidden relative transition-all duration-200 min-h-[280px] md:min-h-[320px] hidden md:block"
               style={{ height: Math.max(24, 40 - detailScrollY * 0.12) + "vh" }}
             >
               <div
@@ -876,13 +926,73 @@ export default function OrderingScreen({
                 className="flex-1 min-h-0 overflow-y-auto space-y-6"
                 onScroll={(e) => setDetailScrollY(e.currentTarget.scrollTop)}
               >
+                {/* Imagem para mobile (Estilo aiqfome) */}
+                <div className="md:hidden w-full aspect-[4/3] relative overflow-hidden bg-gray-50 -mx-4 w-[calc(100%+2rem)] shrink-0 mb-3 shadow-sm">
+                  <img
+                    src={selectedProduct.imageUrl || "https://placehold.co/600x600?text=Sem+Imagem"}
+                    alt={selectedProduct.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                {/* Detalhes do produto para mobile (Estilo aiqfome) */}
+                <div className="md:hidden flex flex-col pb-4 border-b border-gray-100">
+                  {/* Info da Loja */}
+                  <div className="flex items-center justify-between mb-2">
+                    <button onClick={() => setSelectedProduct(null)} className="flex items-center gap-1.5">
+                      <img src={companyLogo || companyBanner || "/Logo.png"} alt={companyName} className="w-6 h-6 rounded-full object-cover border border-gray-200" />
+                      <span className="font-bold text-[14px] text-gray-800 flex items-center gap-0.5">
+                        {companyName || "Carregando..."} <span className="text-gray-400 text-xs font-normal">›</span>
+                      </span>
+                    </button>
+                    {isClosed ? (
+                      <span className="text-[11px] font-bold text-red-600 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full uppercase tracking-wide">
+                        loja fechada
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-bold text-green-600 bg-green-50 border border-green-100 px-2 py-0.5 rounded-full uppercase tracking-wide">
+                        loja aberta
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Nome do Produto */}
+                  <h2 className="text-[20px] font-black text-gray-950 leading-snug uppercase mb-1">
+                    {selectedProduct.name}
+                  </h2>
+
+                  {/* Preço do Produto */}
+                  <div className="text-brand-primary text-[19px] font-black mb-2">
+                    R$ {effectivePrice.toFixed(2)}
+                  </div>
+
+                  {/* Descrição */}
+                  <p className="text-[13px] text-gray-500 leading-relaxed font-medium">
+                    {selectedProduct.description}
+                  </p>
+                </div>
+
                 {/* Tamanhos */}
                 {productSizes.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="font-bold text-lg text-brand-dark">Escolha o Tamanho</h4>
-                    <div className="grid grid-cols-1 gap-3">
+                  <div className="space-y-1">
+                    {/* Cabeçalho do Grupo Estilo aiqfome */}
+                    <div className="flex items-center justify-between -mx-4 px-4 py-2.5 bg-[#F4F5F7] border-y border-gray-100/80 md:mx-0 md:rounded-lg md:px-3 md:py-2">
+                      <div>
+                        <h4 className="font-extrabold text-[14px] text-gray-800 lowercase">
+                          escolha o tamanho
+                        </h4>
+                        <p className="text-[11px] text-gray-500 font-medium">
+                          selecione 1
+                        </p>
+                      </div>
+                      <span className="bg-brand-primary text-white text-[9px] font-extrabold px-2.5 py-1 rounded-[10px] uppercase tracking-wider shrink-0">
+                        obrigatório
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
                       {productSizes.map((size, idx) => {
                         const isSelected = selectedSize?.nome === size.nome;
+                        const price = getPrice(selectedProduct!, size.preco);
                         return (
                           <button
                             key={idx}
@@ -890,16 +1000,20 @@ export default function OrderingScreen({
                               setSelectedSize(size);
                               setSelectedFlavors([]);
                             }}
-                            className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all min-w-0 ${
-                              isSelected ? "border-brand-primary bg-brand-light" : "border-gray-200/60 bg-gray-50"
-                            }`}
+                            className="w-full flex items-center justify-between py-3.5 border-b border-gray-100 transition-all text-left hover:bg-gray-50/40 active:bg-gray-50/60"
                           >
-                            <span className="font-medium text-brand-dark min-w-0 truncate">{size.nome}</span>
-                            <span className="font-bold text-brand-muted ml-4 flex-shrink-0 text-right">
-                              {(() => {
-                                const p = getPrice(selectedProduct!, size.preco);
-                                return p > 0 ? `R$ ${p.toFixed(2)}` : "Grátis";
-                              })()}
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                                isSelected ? 'border-brand-primary bg-brand-primary' : 'border-gray-300 bg-white'
+                              }`}>
+                                {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                              </div>
+                              <span className="font-bold text-[13.5px] text-gray-700 uppercase min-w-0 truncate">
+                                {size.nome}
+                              </span>
+                            </div>
+                            <span className="font-bold text-[13.5px] text-gray-600 ml-4 flex-shrink-0 text-right">
+                              {price > 0 ? `R$ ${price.toFixed(2)}` : "Grátis"}
                             </span>
                           </button>
                         );
@@ -934,20 +1048,32 @@ export default function OrderingScreen({
                     });
                   };
 
+                  const isSingleSelect = maxQty === 1;
+                  const isRequired = minQty > 0;
+
                   return (
-                    <div key={groupKey} className="space-y-3">
-                      <h4 className="font-bold text-lg text-brand-dark">{group.name}</h4>
-                      <p className="text-sm text-brand-muted">
-                        {selections.size} de{" "}
-                        {group.rule === "BETWEEN"
-                          ? `${minQty} - ${maxQty}`
-                          : group.rule === "MIN"
-                          ? `mín. ${minQty}`
-                          : group.rule === "MAX"
-                          ? `máx. ${maxQty}`
-                          : `exatas ${maxQty}`}
-                      </p>
-                      <div className="grid grid-cols-1 gap-3">
+                    <div key={groupKey} className="space-y-1">
+                      {/* Cabeçalho do Grupo Estilo aiqfome */}
+                      <div className="flex items-center justify-between -mx-4 px-4 py-2.5 bg-[#F4F5F7] border-y border-gray-100/80 md:mx-0 md:rounded-lg md:px-3 md:py-2">
+                        <div>
+                          <h4 className="font-extrabold text-[14px] text-gray-800 lowercase">
+                            {group.name}
+                          </h4>
+                          <p className="text-[11px] text-gray-500 font-medium">
+                            {group.rule === "EXACTLY" && maxQty === 1
+                              ? "selecione 1"
+                              : group.rule === "BETWEEN"
+                              ? `selecione de ${minQty} a ${maxQty}`
+                              : `selecione até ${maxQty}`}
+                          </p>
+                        </div>
+                        {isRequired && (
+                          <span className="bg-brand-primary text-white text-[9px] font-extrabold px-2.5 py-1 rounded-[10px] uppercase tracking-wider shrink-0">
+                            obrigatório
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col">
                         {items.map((item: any) => {
                           const isSelected = selections.has(item.id);
                           const disabled = !isSelected && selections.size >= maxQty;
@@ -956,18 +1082,32 @@ export default function OrderingScreen({
                               key={item.id}
                               onClick={() => toggleItem(item.id)}
                               disabled={disabled}
-                              className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all min-w-0 ${
-                                isSelected
-                                  ? "border-brand-primary bg-brand-light"
-                                  : disabled
-                                  ? "border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed"
-                                  : "border-gray-200/60 bg-gray-50"
+                              className={`w-full flex items-center justify-between py-3.5 border-b border-gray-100 transition-all text-left ${
+                                disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-gray-50/40 active:bg-gray-50/60"
                               }`}
                             >
-                              <span className="font-medium text-brand-dark min-w-0 truncate">{item.name}</span>
-                              <span className="font-bold text-brand-muted ml-4 flex-shrink-0 text-right">
+                              <div className="flex items-center gap-3.5 min-w-0">
+                                {isSingleSelect ? (
+                                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                                    isSelected ? 'border-brand-primary bg-brand-primary' : 'border-gray-300 bg-white'
+                                  }`}>
+                                    {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                  </div>
+                                ) : (
+                                  <div className={`w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 transition-all ${
+                                    isSelected ? 'border-brand-primary bg-brand-primary' : 'border-gray-300 bg-white'
+                                  }`}>
+                                    {isSelected && (
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                    )}
+                                  </div>
+                                )}
+                                <span className="font-bold text-[13.5px] text-gray-700 uppercase min-w-0 truncate">
+                                  {item.name}
+                                </span>
+                              </div>
+                              <span className="font-bold text-[13.5px] text-gray-600 ml-4 flex-shrink-0 text-right">
                                 {item.additionalPrice > 0 ? `+ R$ ${Number(item.additionalPrice).toFixed(2)}` : ""}
-                                {isSelected && <span className="ml-2 text-brand-primary">✓</span>}
                               </span>
                             </button>
                           );
@@ -979,58 +1119,77 @@ export default function OrderingScreen({
 
                 {/* Condimentos */}
                 {productCondiments.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="font-bold text-lg text-brand-dark">Adicionais</h4>
-                    <div className="grid grid-cols-1 gap-3">
+                  <div className="space-y-1">
+                    {/* Cabeçalho do Grupo Estilo aiqfome */}
+                    <div className="flex items-center justify-between -mx-4 px-4 py-2.5 bg-[#F4F5F7] border-y border-gray-100/80 md:mx-0 md:rounded-lg md:px-3 md:py-2">
+                      <div>
+                        <h4 className="font-extrabold text-[14px] text-gray-800 lowercase">
+                          mais alguma coisa?
+                        </h4>
+                        <p className="text-[11px] text-gray-500 font-medium">
+                          opcional • escolha quantos quiser
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col">
                       {productCondiments.map(cond => {
-                        const isSelected = selectedCondiments.find(c => c.id === cond.id);
+                        const isSelected = !!selectedCondiments.find(c => c.id === cond.id);
                         return (
                           <button
                             key={cond.id}
                             onClick={() => toggleCondiment(cond)}
-                            className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all min-w-0 ${
-                              isSelected ? "border-brand-primary bg-brand-light" : "border-gray-200/60 bg-gray-50"
-                            }`}
+                            className="w-full flex items-center justify-between py-3.5 border-b border-gray-100 transition-all text-left hover:bg-gray-50/40 active:bg-gray-50/60"
                           >
-                            <span className="font-medium text-brand-dark min-w-0 truncate">{cond.name}</span>
-                            <span className="font-bold text-brand-muted ml-4 flex-shrink-0 text-right">+ R$ {cond.price.toFixed(2)}</span>
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              <div className={`w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 transition-all ${
+                                isSelected ? 'border-brand-primary bg-brand-primary' : 'border-gray-300 bg-white'
+                              }`}>
+                                {isSelected && (
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                )}
+                              </div>
+                              <span className="font-bold text-[13.5px] text-gray-700 uppercase min-w-0 truncate">
+                                {cond.name}
+                              </span>
+                            </div>
+                            <span className="font-bold text-[13.5px] text-gray-600 ml-4 flex-shrink-0 text-right">
+                              + R$ {cond.price.toFixed(2)}
+                            </span>
                           </button>
                         );
                       })}
                     </div>
                   </div>
                 )}
-
-                {/* Quantidade */}
-                <div className="space-y-3 pt-4 border-t border-gray-200/60">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-lg text-brand-dark">Quantidade</h4>
-                    {(() => {
-                      if (!selectedProduct) return null;
-                      const promo = getProductPromotion?.(selectedProduct.id);
-                      if (promo?.maxPerOrder != null) {
-                        return <span className="text-xs text-brand-muted">Máx. {promo.maxPerOrder} unidade(s) no valor promocional</span>;
-                      }
-                      return null;
-                    })()}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      className="w-10 h-10 rounded-xl border border-gray-200/60 text-lg font-bold text-brand-muted disabled:opacity-50 flex items-center justify-center"
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      disabled={quantity <= 1}
-                    >-</button>
-                    <span className="text-lg font-bold w-10 text-center text-brand-dark">{quantity}</span>
-                    <button
-                      className="w-10 h-10 rounded-xl border border-gray-200/60 text-lg font-bold text-brand-primary flex items-center justify-center"
-                      onClick={() => setQuantity(quantity + 1)}
-                    >+</button>
-                  </div>
-                </div>
               </div>
-              <div className="shrink-0">
+
+              {/* Barra inferior flutuante (Estilo aiqfome) */}
+              <div className="shrink-0 pt-4 pb-2 border-t border-gray-100 bg-white flex items-center justify-between gap-4 w-full">
+                {/* Seletor de Quantidade minimalista */}
+                <div className="flex items-center gap-3.5 bg-[#F4F5F7] rounded-full p-1.5 px-3 shrink-0">
+                  <button
+                    className="w-8 h-8 rounded-full bg-white text-gray-600 font-extrabold text-[18px] disabled:opacity-40 flex items-center justify-center shadow-sm transition-all active:scale-95"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    disabled={quantity <= 1}
+                  >
+                    -
+                  </button>
+                  <span className="text-[16px] font-extrabold w-6 text-center text-gray-800">{quantity}</span>
+                  <button
+                    className="w-8 h-8 rounded-full bg-white text-gray-600 font-extrabold text-[18px] flex items-center justify-center shadow-sm transition-all active:scale-95"
+                    onClick={() => setQuantity(quantity + 1)}
+                  >
+                    +
+                  </button>
+                </div>
+
+                {/* Botão de Adicionar / Loja Fechada */}
                 <button
-                  className="w-full h-[64px] flex items-center justify-between gap-4 px-6 bg-brand-primary hover:bg-brand-primaryHover text-white rounded-[16px] font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`flex-1 h-[52px] flex items-center justify-between gap-3 px-6 rounded-full font-black text-[15px] tracking-wide transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase shadow-md ${
+                    isClosed
+                      ? 'bg-[#B0B3C1] text-white cursor-not-allowed'
+                      : 'bg-brand-primary hover:bg-brand-primaryHover text-white active:scale-98'
+                  }`}
                   disabled={(productSizes.length > 0 && !selectedSize) || !requiredGroupsValid}
                   onClick={() => {
                     const selectedSizeData: SelectedSize | undefined = selectedSize
@@ -1054,8 +1213,14 @@ export default function OrderingScreen({
                     setSelectedFlavors([]);
                   }}
                 >
-                  <span className="flex-1 min-w-0 truncate whitespace-nowrap text-left">Adicionar ao Pedido</span>
-                  <span className="flex-shrink-0 whitespace-nowrap">R$ {productTotal.toFixed(2)}</span>
+                  <span className="truncate whitespace-nowrap text-left">
+                    {isClosed ? 'loja fechada' : 'adicionar'}
+                  </span>
+                  {!isClosed && (
+                    <span className="whitespace-nowrap bg-white/20 px-3 py-1 rounded-full text-[13px] font-bold">
+                      R$ {productTotal.toFixed(2)}
+                    </span>
+                  )}
                 </button>
               </div>
             </div>

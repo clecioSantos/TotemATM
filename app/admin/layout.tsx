@@ -11,9 +11,14 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [collapsed, setCollapsed] = useState(() =>
-    typeof window !== "undefined" ? window.innerWidth < 768 : true
-  );
+  const [collapsed, setCollapsed] = useState(true);
+
+  useEffect(() => {
+    setCollapsed(window.innerWidth < 768);
+    const handleResize = () => setCollapsed(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
     <AuthProvider>

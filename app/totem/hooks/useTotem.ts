@@ -44,6 +44,7 @@ export const useTotem = (companyId: string) => {
   const [loading, setLoading] = useState(true);
   const [companyName, setCompanyName] = useState<string>("");
   const [companyBanner, setCompanyBanner] = useState<string>("");
+  const [companyLogo, setCompanyLogo] = useState<string>("");
   const [tempoPreparoMin, setTempoPreparoMin] = useState<number>(0);
   const [tempoPreparoMax, setTempoPreparoMax] = useState<number>(0);
   const [companyOpen, setCompanyOpen] = useState<boolean | null>(null);
@@ -65,6 +66,7 @@ export const useTotem = (companyId: string) => {
           const data = docSnap.data();
           setCompanyName(data.name);
           setCompanyBanner(data.banner || "");
+          setCompanyLogo(data.logo || "");
           setTempoPreparoMin(data.tempoPreparoMin || 0);
           setTempoPreparoMax(data.tempoPreparoMax || 0);
           setCompanyOpen(data.open !== undefined ? data.open : null);
@@ -569,6 +571,7 @@ export const useTotem = (companyId: string) => {
     flavors,
     companyName,
     companyBanner,
+    companyLogo,
     companyOpen,
     averageRating,
     reviewCount,
