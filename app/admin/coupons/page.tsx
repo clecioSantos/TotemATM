@@ -49,7 +49,7 @@ function CouponsContent() {
       const global = globalSnap.exists() ? globalSnap.data().couponsEnabled : undefined;
       const store = companySnap.exists() ? companySnap.data().couponsEnabled : undefined;
       if (global === false || store !== true) {
-        router.replace("/admin");
+        router.replace("/totem");
       }
     }).catch(() => {});
   }, [user?.companyId, router]);

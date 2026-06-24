@@ -14,7 +14,15 @@
       },
       "oauth_client": [
         {
-          "client_id": "385376701713-aghgngo61julkm77qvev5ultq0of37bb.apps.googleusercontent.com",
+          "client_id": "385376701713-68liid6i2ltppaqatctj9lb9j31580ji.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.boradelivery.app",
+            "certificate_hash": "7694c3d83126554cbb4626795af6342b36d8def0"
+          }
+        },
+        {
+          "client_id": "385376701713-mf70pkmeatfklm4srebrltu3un6ecfuc.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.boradelivery.app",

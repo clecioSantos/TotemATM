@@ -53,12 +53,7 @@ function LandingContent() {
 
   useEffect(() => {
     if (!user) return;
-    const role = (user as any)?.role;
-    if (role === "admin" || role === "owner") {
-      window.location.href = "/admin";
-    } else {
-      window.location.href = "/totem";
-    }
+    window.location.href = "/totem";
   }, [user]);
 
   return (

@@ -69,7 +69,7 @@ function VerifyEmailContent() {
         if (res.ok) {
           const data = await res.json();
           const role = data.role || "client";
-          router.replace(role === "admin" || role === "owner" ? "/admin" : "/totem");
+          router.replace("/totem");
           return;
         }
         setError("Erro ao restaurar sessão. Faça login novamente.");
