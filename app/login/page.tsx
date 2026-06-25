@@ -375,7 +375,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={!canSubmit}
-              className="w-full h-12 bg-[#FF6B00] text-white font-bold rounded-xl hover:bg-[#E65C00] disabled:bg-[#EAEAEA] disabled:text-[#999] disabled:cursor-not-allowed transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-orange-200/50"
+              className={`w-full h-12 font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2 shadow-lg ${canSubmit ? 'bg-[#FF6B00] text-white hover:bg-[#E65C00] shadow-orange-200/50' : 'bg-[#FF6B00]/60 text-white/70 cursor-not-allowed'}`}
             >
               {loading ? (
                 <><Loader2 size={18} className="animate-spin" /> Entrando...</>

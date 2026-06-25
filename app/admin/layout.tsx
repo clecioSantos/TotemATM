@@ -9,10 +9,10 @@ import "../globals.css";
 
 function AdminGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    if (loading) return;
+    if (isLoading) return;
     if (!user) {
       router.replace("/login?redirect=/admin");
       return;
@@ -23,7 +23,7 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, router]);
 
-  if (loading || !user) return null;
+  if (isLoading || !user) return null;
   const role = (user as any)?.role;
   if (role !== "admin" && role !== "owner") return null;
 
