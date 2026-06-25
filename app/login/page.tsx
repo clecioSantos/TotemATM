@@ -432,6 +432,20 @@ function LoginForm() {
             </button>
           </div>
 
+          {typeof window !== "undefined" && !(window as any)?.Capacitor && /Mobi|Android/i.test(navigator.userAgent) && (
+            <div className="mt-6 text-center">
+              <a
+                href="https://play.google.com/store/apps/details?id=com.boradedelivery.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF6B00] text-white font-bold rounded-xl text-sm hover:bg-[#E65C00] transition-all shadow-md"
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.807 1.626a1 1 0 010 1.732l-2.807 1.626L15.206 12l2.492-2.492zM5.864 2.658L16.8 8.99l-2.302 2.302-8.634-8.634z"/></svg>
+                Baixar App
+              </a>
+            </div>
+          )}
+
           <p className="text-center text-xs text-[#999] mt-4 lg:hidden">
             © 2026 Bora De Delivery
           </p>
