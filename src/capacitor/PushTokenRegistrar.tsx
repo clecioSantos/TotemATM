@@ -18,7 +18,8 @@ export default function PushTokenRegistrar() {
       }
       if (registeredRef.current) return;
 
-      const isCapacitor = typeof window !== "undefined" && typeof (window as any)?.Capacitor !== "undefined";
+      const Capacitor = (window as any)?.Capacitor;
+      const isCapacitor = Capacitor && (Capacitor.getPlatform() === "android" || Capacitor.getPlatform() === "ios");
       if (!isCapacitor) return;
 
       logger.info("PUSH_TOKEN", "Iniciando registro push...");

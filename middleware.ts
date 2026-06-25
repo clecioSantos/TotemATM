@@ -65,6 +65,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!totem|api/webhooks/mercadopago|api|_next/static|_next/image|favicon.ico).*)",
+    "/((?!totem|login|api/webhooks/mercadopago|api|_next/static|_next/image|favicon.ico).*)",
   ],
 };

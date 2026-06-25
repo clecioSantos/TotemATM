@@ -1,10 +1,34 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "./components/Sidebar";
-import { AuthProvider } from "@/app/admin/orders/AuthContext";
+import { AuthProvider, useAuth } from "@/app/admin/orders/AuthContext";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import "../globals.css";
+
+function AdminGuard({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      router.replace("/login?redirect=/admin");
+      return;
+    }
+    const role = (user as any)?.role;
+    if (role !== "admin" && role !== "owner") {
+      router.replace("/totem");
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user) return null;
+  const role = (user as any)?.role;
+  if (role !== "admin" && role !== "owner") return null;
+
+  return <>{children}</>;
+}
 
 export default function AdminLayout({
   children,
@@ -23,6 +47,7 @@ export default function AdminLayout({
   return (
     <AuthProvider>
       <ErrorBoundary context="AdminLayout">
+        <AdminGuard>
         <div className="admin-layout">
           {!collapsed && (
             <div 
@@ -40,6 +65,7 @@ export default function AdminLayout({
             </div>
           </main>
         </div>
+        </AdminGuard>
       </ErrorBoundary>
     </AuthProvider>
   );

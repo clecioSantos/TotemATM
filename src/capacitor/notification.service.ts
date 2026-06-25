@@ -13,7 +13,8 @@ async function getPushNotifications() {
 
 export const notificationService = {
   isCapacitor(): boolean {
-    return typeof window !== "undefined" && typeof (window as any).Capacitor !== "undefined";
+    const Capacitor = typeof window !== "undefined" ? (window as any)?.Capacitor : undefined;
+    return Capacitor && (Capacitor.getPlatform() === "android" || Capacitor.getPlatform() === "ios");
   },
 
   async requestPermission(): Promise<boolean> {
