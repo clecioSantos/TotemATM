@@ -21,7 +21,7 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
     if (role !== "admin" && role !== "owner") {
       router.replace("/totem");
     }
-  }, [user, loading, router]);
+  }, [user, isLoading, router]);
 
   if (isLoading || !user) return null;
   const role = (user as any)?.role;
