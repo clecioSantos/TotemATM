@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Cookie, Shield, FileText } from "lucide-react";
 import { getActiveDocument, LegalDocument, LEGAL_DOCUMENTS } from "@/src/services/lgpd/legal-documents";
 
@@ -83,6 +84,7 @@ const fallbackContent = sections
   .join("");
 
 export default function CookiesPage() {
+  const router = useRouter();
   const [doc, setDoc] = useState<LegalDocument | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -165,12 +167,11 @@ export default function CookiesPage() {
             <img src="/Logo.png" alt="Bora De Delivery" className="h-9 w-auto" />
           </Link>
           <nav className="flex items-center gap-6">
-            <Link
-              href="/"
+            <button onClick={() => router.back()}
               className="text-sm font-medium text-[#666] hover:text-[#1F1F1F] transition-colors"
             >
-              Voltar ao início
-            </Link>
+              Voltar
+            </button>
           </nav>
         </div>
       </header>

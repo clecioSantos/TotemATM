@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Shield, FileText, Cookie, Plus, History, Download, Trash2, CheckCircle, X, Loader2, AlertTriangle, Eye, EyeOff } from "lucide-react";
+import { Shield, FileText, Cookie, Plus, History, Download, Trash2, CheckCircle, X, Loader2, AlertTriangle, Eye, EyeOff, Copy } from "lucide-react";
 import { useAuth } from "@totem/shared/types/AuthProvider";
 import { collection, query, getDocs, orderBy, addDoc, serverTimestamp, onSnapshot, Timestamp } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
@@ -164,7 +164,7 @@ export default function AdminLGPD() {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <button onClick={() => setShowContent(v.conteudo?.substring(0, 500) + "...")} className="p-1.5 hover:bg-gray-100 rounded-lg"><Eye size={16} /></button>
+                    <button onClick={() => setShowContent(v.conteudo || "")} className="p-1.5 hover:bg-gray-100 rounded-lg" title="Visualizar"><Eye size={16} /></button>
                   </div>
                 </div>
               ))
@@ -226,9 +226,12 @@ export default function AdminLGPD() {
       {showContent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowContent(null)}>
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between mb-4">
+            <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold">Visualizar Conteúdo</h3>
-              <button onClick={() => setShowContent(null)} className="p-1 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => { navigator.clipboard.writeText(showContent || ""); setToast("Conteúdo copiado!"); setTimeout(() => setToast(null), 3000); }} className="p-1.5 hover:bg-gray-100 rounded-lg text-sm flex items-center gap-1" title="Copiar"><Copy size={16} /> Copiar</button>
+                <button onClick={() => setShowContent(null)} className="p-1 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
+              </div>
             </div>
             <div className="text-sm text-gray-700 whitespace-pre-wrap">{showContent}</div>
           </div>

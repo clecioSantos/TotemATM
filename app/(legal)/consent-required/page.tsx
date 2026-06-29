@@ -98,7 +98,7 @@ export default function ConsentRequiredPage() {
               <div>
                 <span className="text-sm font-bold text-gray-800 flex items-center gap-1">
                   <FileText size={16} /> Li e aceito os{" "}
-                  <Link href="/termos" target="_blank" className="text-[#FF6B00] hover:underline">Termos de Uso</Link>
+                  <Link href="/termos" className="text-[#FF6B00] hover:underline">Termos de Uso</Link>
                 </span>
                 <span className="text-[11px] text-[#999]">Versão mais recente dos termos</span>
               </div>
@@ -111,7 +111,7 @@ export default function ConsentRequiredPage() {
               <div>
                 <span className="text-sm font-bold text-gray-800 flex items-center gap-1">
                   <Shield size={16} /> Li e aceito a{" "}
-                  <Link href="/privacidade" target="_blank" className="text-[#FF6B00] hover:underline">Política de Privacidade</Link>
+                  <Link href="/privacidade" className="text-[#FF6B00] hover:underline">Política de Privacidade</Link>
                 </span>
                 <span className="text-[11px] text-[#999]">Versão mais recente da política</span>
               </div>
@@ -124,7 +124,7 @@ export default function ConsentRequiredPage() {
               <div>
                 <span className="text-sm font-bold text-gray-800 flex items-center gap-1">
                   <Cookie size={16} /> Li e aceito a{" "}
-                  <Link href="/cookies" target="_blank" className="text-[#FF6B00] hover:underline">Política de Cookies</Link>
+                  <Link href="/cookies" className="text-[#FF6B00] hover:underline">Política de Cookies</Link>
                 </span>
                 <span className="text-[11px] text-[#999]">Versão mais recente da política</span>
               </div>
