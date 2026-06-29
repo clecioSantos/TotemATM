@@ -3,6 +3,8 @@ import type { NextRequest } from "next/server";
 
 const PUBLIC_ROUTES = ["/login", "/register", "/forgot-password", "/verify-email"];
 
+const PUBLIC_PREFIXES = ["/termos", "/privacidade", "/cookies", "/consent-required"];
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   try {
@@ -17,7 +19,8 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith('/totem') ||
       pathname === '/api/health' ||
       pathname.includes('/favicon.ico') ||
-      pathname.includes('.')
+      pathname.includes('.') ||
+      PUBLIC_PREFIXES.some(prefix => pathname === prefix)
     ) {
       return NextResponse.next();
     }

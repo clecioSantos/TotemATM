@@ -10,8 +10,10 @@ import { logger } from "@/src/lib/logger";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import {
   Eye, EyeOff, Loader2, CheckCircle, XCircle, ArrowRight,
-  ArrowLeft, User, Mail, Lock, Phone, ChevronRight
+  ArrowLeft, User, Mail, Lock, Phone, ChevronRight, FileText, Shield, Cookie
 } from "lucide-react";
+import { getActiveDocument, saveUserConsent, LEGAL_DOCUMENTS } from "@/src/services/lgpd/legal-documents";
+import { createAuditLog } from "@/src/services/lgpd/audit-log";
 
 const benefits = [
   "Gestão de pedidos em tempo real",
@@ -37,6 +39,9 @@ function RegisterForm() {
   const [error, setError] = useState("");
   const [registered, setRegistered] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [acceptedCookies, setAcceptedCookies] = useState(true);
 
   const nameRef = useRef<HTMLInputElement>(null);
 
@@ -67,7 +72,7 @@ function RegisterForm() {
   const confirmError = touched.confirm && confirmPassword.length > 0 && confirmPassword !== password;
   const confirmValid = confirmPassword.length > 0 && confirmPassword === password;
 
-  const canSubmit = nameValid && emailValid && passwordValid && confirmValid && !loading;
+  const canSubmit = nameValid && emailValid && passwordValid && confirmValid && !loading && acceptedTerms && acceptedPrivacy;
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,6 +98,30 @@ function RegisterForm() {
         logger.info("REGISTER_PAGE", "E-mail de verificação enviado", { email });
       } catch (verifyErr) {
         logger.warn("REGISTER_PAGE", "Falha ao enviar e-mail de verificação", verifyErr);
+      }
+
+      try {
+        const termsDoc = await getActiveDocument(LEGAL_DOCUMENTS.TERMOS_USO);
+        const privacyDoc = await getActiveDocument(LEGAL_DOCUMENTS.POLITICA_PRIVACIDADE);
+        await saveUserConsent(userCredential.user.uid, {
+          acceptedTerms: true,
+          acceptedPrivacyPolicy: true,
+          acceptedCookies: true,
+          termsVersion: termsDoc?.versao || 1,
+          privacyVersion: privacyDoc?.versao || 1,
+          cookiesVersion: 1,
+          acceptedAt: undefined as any,
+          acceptanceSource: "register",
+          deviceInfo: navigator.userAgent,
+        });
+        await createAuditLog({
+          usuario: userCredential.user.uid,
+          acao: "termos_aceites",
+          tipo: "consentimento",
+          detalhes: `Usuário aceitou termos (v${termsDoc?.versao || 1}) e privacidade (v${privacyDoc?.versao || 1}) durante cadastro.`,
+        });
+      } catch (err) {
+        console.error("Erro ao salvar consentimento:", err);
       }
 
       setRegisteredEmail(email.trim());
@@ -428,6 +457,22 @@ function RegisterForm() {
                 <p className="text-xs text-[#FF4D4F] text-center font-medium">{error}</p>
               </div>
             )}
+
+            {/* LGPD Consent */}
+            <div className="space-y-3 mb-6">
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-gray-200 cursor-pointer transition-colors hover:border-[#FF6B00]">
+                <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} className="mt-0.5 accent-[#FF6B00]" required />
+                <div className="text-xs text-[#666] leading-relaxed">
+                  Li e aceito os <Link href="/termos" target="_blank" className="text-[#FF6B00] font-bold hover:underline">Termos de Uso</Link>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-gray-200 cursor-pointer transition-colors hover:border-[#FF6B00]">
+                <input type="checkbox" checked={acceptedPrivacy} onChange={(e) => setAcceptedPrivacy(e.target.checked)} className="mt-0.5 accent-[#FF6B00]" required />
+                <div className="text-xs text-[#666] leading-relaxed">
+                  Li e aceito a <Link href="/privacidade" target="_blank" className="text-[#FF6B00] font-bold hover:underline">Política de Privacidade</Link>
+                </div>
+              </label>
+            </div>
 
             {/* Submit */}
             <button

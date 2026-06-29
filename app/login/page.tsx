@@ -9,7 +9,9 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { logger } from "@/src/lib/logger";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
-import { Eye, EyeOff, Loader2, CheckCircle, ArrowRight, Mail, RefreshCw, X, Send } from "lucide-react";
+import { Eye, EyeOff, Loader2, CheckCircle, ArrowRight, Mail, RefreshCw, X, Send, Shield } from "lucide-react";
+import StoreButton from "@/app/components/StoreButton";
+import { checkConsentRequired } from "@/src/services/lgpd/legal-documents";
 
 const benefits = [
   "Gestão de pedidos em tempo real",
@@ -33,6 +35,11 @@ function LoginForm() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [pendingGoogleCred, setPendingGoogleCred] = useState<{ credential: any; email: string } | null>(null);
   const [isContactOpen, setIsContactOpen] = useState(false);
+  const [showDownloadApp, setShowDownloadApp] = useState(false);
+
+  useEffect(() => {
+    setShowDownloadApp(!(window as any)?.Capacitor);
+  }, []);
   const [contactSubject, setContactSubject] = useState("");
   const [contactMessage, setContactMessage] = useState("");
   const [contactPhone, setContactPhone] = useState("");
@@ -41,6 +48,7 @@ function LoginForm() {
 
   const emailRef = useRef<HTMLInputElement>(null);
   const [isRestrictedEnv, setIsRestrictedEnv] = useState(false);
+  const [storeToast, setStoreToast] = useState<string | null>(null);
 
   useEffect(() => {
     emailRef.current?.focus();
@@ -50,9 +58,19 @@ function LoginForm() {
     };
     // Check immediately and after a delay for Capacitor bridge init
     check();
-    const t = setTimeout(check, 1000);
+    const t = setTimeout(() => {
+      check();
+      setShowDownloadApp(!(window as any)?.Capacitor);
+    }, 1000);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (storeToast) {
+      const t = setTimeout(() => setStoreToast(null), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [storeToast]);
 
   const emailError = touched.email && email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const passwordError = touched.password && password && password.length < 6;
@@ -100,6 +118,15 @@ function LoginForm() {
         if (ud.exists()) userRole = (ud.data() as any).role || "client";
       } catch { /* fallback */ }
     }
+
+    // Check if user needs to accept updated legal documents
+    try {
+      const consentCheck = await checkConsentRequired(googleUser.uid);
+      if (consentCheck && (consentCheck.terms || consentCheck.privacy || consentCheck.cookies)) {
+        window.location.href = "/consent-required";
+        return;
+      }
+    } catch {}
 
     if (redirectPath) {
       window.location.href = redirectPath;
@@ -225,6 +252,14 @@ function LoginForm() {
       }
 
       if (redirectPath) {
+        // Check if user needs to accept updated legal documents
+        try {
+          const consentCheck = await checkConsentRequired(userCredential.user.uid);
+          if (consentCheck && (consentCheck.terms || consentCheck.privacy || consentCheck.cookies)) {
+            window.location.href = "/consent-required";
+            return;
+          }
+        } catch {}
         window.location.href = redirectPath;
       } else {
         window.location.href = "/totem";
@@ -432,24 +467,49 @@ function LoginForm() {
             </button>
           </div>
 
-          {typeof window !== "undefined" && !(window as any)?.Capacitor && /Mobi|Android/i.test(navigator.userAgent) && (
-            <div className="mt-6 text-center">
-              <a
-                href="https://play.google.com/store/apps/details?id=com.boradedelivery.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF6B00] text-white font-bold rounded-xl text-sm hover:bg-[#E65C00] transition-all shadow-md"
-              >
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.807 1.626a1 1 0 010 1.732l-2.807 1.626L15.206 12l2.492-2.492zM5.864 2.658L16.8 8.99l-2.302 2.302-8.634-8.634z"/></svg>
-                Baixar App
-              </a>
+          <div className="mt-6 flex flex-row items-center justify-center gap-2">
+            <StoreButton
+              type="apple"
+              url={process.env.NEXT_PUBLIC_APP_STORE_URL}
+              onUnavailableClick={() => setStoreToast("Em breve disponível na App Store.")}
+            />
+            <StoreButton
+              type="google"
+              url={process.env.NEXT_PUBLIC_GOOGLE_PLAY_URL}
+              onUnavailableClick={() => setStoreToast("Em breve disponível no Google Play.")}
+            />
             </div>
-          )}
 
           <p className="text-center text-xs text-[#999] mt-4 lg:hidden">
             © 2026 Bora De Delivery
           </p>
         </div>
+
+        {storeToast && (
+          <div
+            className="fixed bottom-24 left-4 right-4 z-[60] max-w-[430px] mx-auto animate-slide-up"
+            style={{
+              background: "#f0fdf4",
+              color: "#166534",
+              border: "1px solid #bbf7d0",
+              borderRadius: 12,
+              padding: "12px 16px",
+              fontSize: 13,
+              fontWeight: 600,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <span>{storeToast}</span>
+              <button
+                onClick={() => setStoreToast(null)}
+                style={{ marginLeft: "auto", opacity: 0.6, background: "none", border: "none", cursor: "pointer", fontSize: 16 }}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Contact Modal */}

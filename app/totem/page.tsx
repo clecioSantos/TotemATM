@@ -8,7 +8,7 @@ import { useAuth } from "@totem/shared/types/AuthProvider";
 import { useConfirm } from "@/app/components/ConfirmProvider";
 import CompleteProfileModal from "@/app/components/CompleteProfileModal";
 import ProfileDropdown from "@/app/components/ProfileDropdown";
-import { Search, MapPin, User, ShoppingBag, Store, X, LogOut, ChevronRight, Plus, Trash2, Home, Bell, ChevronLeft, ChevronRight as ChevronRightIcon, Tag, Loader2, Heart } from "lucide-react";
+import { Search, MapPin, User, ShoppingBag, Store, X, LogOut, ChevronRight, Plus, Trash2, Home, Bell, ChevronLeft, ChevronRight as ChevronRightIcon, Tag, Loader2, Heart, Shield } from "lucide-react";
 import { logger } from "@/src/lib/logger";
 import NotificationsPanel from "./components/NotificationsPanel";
 import { useNotifications } from "./hooks/useNotifications";
@@ -542,6 +542,9 @@ export default function StoreListingPage() {
                   <button onClick={() => signOut()} className="flex items-center gap-2 text-red-500 font-bold w-full">
                     <LogOut size={18} /> Sair
                   </button>
+                  <Link href="/privacy" className="flex items-center gap-2 text-gray-500 font-bold w-full text-sm">
+                    <Shield size={18} /> Minha Privacidade
+                  </Link>
                 </div>
               ) : isAddressesOpen ? (
                 <div className="space-y-5">

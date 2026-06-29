@@ -26,6 +26,15 @@ service cloud.firestore {
             && request.auth.uid in get(/databases/$(database)/documents/companies/$(companyId)).data.adminIds);
     }
 
+    function isSystemAdmin() {
+      return isAuth() && (
+        request.auth.token.role == "owner"
+        || request.auth.token.role == "admin"
+        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "owner"
+        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
+      );
+    }
+
     // =============================================
     // COLEÇÕES PÚBLICAS (leitura pública, escrita autenticada)
     // =============================================
@@ -107,7 +116,10 @@ service cloud.firestore {
     // =============================================
 
     match /users/{userId} {
-      allow read: if isAuth();
+      allow read: if isAuth() && (
+        request.auth.uid == userId
+        || (resource != null && resource.data.companyId != null && isStoreAdmin(resource.data.companyId))
+      );
       allow write: if isAuth() && (
         request.auth.uid == userId
         || (resource != null && resource.data.companyId != null && isStoreAdmin(resource.data.companyId))
@@ -235,6 +247,37 @@ service cloud.firestore {
 
     match /mercadopago_oauth_states/{stateId} {
       allow read, write: if false;
+    }
+
+    // =============================================
+    // DOCUMENTOS LEGAIS (LGPD) - leitura pública
+    // =============================================
+
+    match /legal_documents/{documentId} {
+      allow read: if true;
+      match /versions/{versionId} {
+        allow read: if true;
+        allow write: if isSystemAdmin();
+      }
+    }
+
+    // =============================================
+    // SOLICITAÇÕES DE EXCLUSÃO (LGPD)
+    // =============================================
+
+    match /deletion_requests/{requestId} {
+      allow create: if isAuth();
+      allow read, write: if isSystemAdmin();
+    }
+
+    // =============================================
+    // LOGS DE AUDITORIA (LGPD)
+    // =============================================
+
+    match /audit_logs/{logId} {
+      allow read: if isSystemAdmin();
+      allow create: if isAuth();
+      allow write: if false;
     }
   }
 }

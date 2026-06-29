@@ -290,8 +290,8 @@ function LandingContent() {
             </div>
             <div className="flex items-center gap-6 text-xs text-[#666]">
               <span>v1.0.0</span>
-              <span>Termos de uso</span>
-              <span>Privacidade</span>
+              <a href="/termos" target="_blank" className="hover:text-[#FF6B00] transition-colors">Termos de uso</a>
+              <a href="/privacidade" target="_blank" className="hover:text-[#FF6B00] transition-colors">Privacidade</a>
             </div>
           </div>
         </div>

@@ -313,13 +313,13 @@ export default function OrderingScreen({
 
   return (
     <div className="flex h-screen w-screen bg-brand-light overflow-hidden text-brand-dark font-sans select-none">
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+      <div className="flex-1 flex flex-col h-full overflow-x-hidden relative">
         <header className="sticky top-0 bg-white z-10 border-b border-[#EAEAEA]">
-          <div className="flex items-center justify-between px-4 pt-3 pb-2">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between px-4 pt-3 pb-2 max-w-full">
+            <div className="flex items-center gap-2 shrink-0">
               <img src="/Logo.png" alt="Bora" className="h-[42px] w-auto" />
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={onOpenNotifications}
                 className="w-9 h-9 rounded-full flex items-center justify-center text-[#666] hover:bg-gray-100 transition-colors relative"
@@ -954,7 +954,7 @@ export default function OrderingScreen({
                 onScroll={(e) => setDetailScrollY(e.currentTarget.scrollTop)}
               >
                 {/* Imagem para mobile (Estilo aiqfome) */}
-                <div className="md:hidden w-full aspect-[4/3] relative overflow-hidden bg-gray-50 -mx-4 w-[calc(100%+2rem)] shrink-0 mb-3 shadow-sm">
+                <div className="md:hidden w-full aspect-[4/3] relative overflow-hidden bg-gray-50 rounded-xl shrink-0 mb-3 shadow-sm">
                   <img
                     src={selectedProduct.imageUrl || "https://placehold.co/600x600?text=Sem+Imagem"}
                     alt={selectedProduct.name}

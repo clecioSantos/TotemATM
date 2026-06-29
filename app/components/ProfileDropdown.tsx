@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { User, MapPin, LogOut } from "lucide-react";
+import { User, MapPin, LogOut, Shield } from "lucide-react";
 import Link from "next/link";
 
 interface ProfileDropdownProps {
@@ -63,6 +63,10 @@ export default function ProfileDropdown({ open, onClose, user, onEditProfile, on
         className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-red-50 text-sm font-medium text-red-500 transition-colors mt-1 border-t border-gray-100 pt-3 flex items-center gap-2">
         <LogOut size={15} /> Sair
       </button>
+      <Link href="/privacy"
+        className="block px-3 py-2.5 rounded-xl hover:bg-gray-50 text-sm font-medium transition-colors flex items-center gap-2 text-gray-500">
+        <Shield size={15} /> Minha Privacidade
+      </Link>
     </div>
   );
 }
