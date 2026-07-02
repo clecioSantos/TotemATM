@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
 
       await db.collection("orders").doc(cleanOrderId).update({
         paymentStatus: "FAILED",
-        status: "cancelled",
+        status: "abandoned",
         cancelledAt: new Date(),
         cancelReason: `Cartão rejeitado: ${payment.status_detail || ""}`,
         updatedAt: new Date(),
@@ -237,7 +237,7 @@ export async function POST(req: NextRequest) {
         const db = getAdminDb();
         await db.collection("orders").doc(errOrderId).update({
           paymentStatus: "FAILED",
-          status: "cancelled",
+          status: "abandoned",
           cancelledAt: new Date(),
           cancelReason: `Erro no processamento: ${error?.message || "desconhecido"}`,
           updatedAt: new Date(),

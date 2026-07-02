@@ -291,9 +291,20 @@ function ProductsContent() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-gray-900">Configurações da Categoria</h3>
                   {!editingCategory && (
-                    <button onClick={() => setEditingCategory({ ...selectedCategory })} className="text-sm font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1">
-                      <Edit3 size={14} /> Editar
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setEditingCategory({ ...selectedCategory })} className="text-sm font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1">
+                        <Edit3 size={14} /> Editar
+                      </button>
+                      <button onClick={async () => {
+                        if (await showConfirm("Excluir esta categoria?")) {
+                          await removeCategory(selectedCategory.id);
+                          setSelectedCatId("");
+                          setEditingCategory(null);
+                        }
+                      }} className="text-sm font-semibold text-red-600 hover:text-red-700 flex items-center gap-1">
+                        <Trash2 size={14} /> Excluir
+                      </button>
+                    </div>
                   )}
                 </div>
 

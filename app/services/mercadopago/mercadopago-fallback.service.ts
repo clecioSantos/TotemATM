@@ -58,12 +58,12 @@ export async function scheduleMercadoPagoFallbackChecks(
     if (data?.paymentStatus !== "PAID") {
       await orderRef.update({
         paymentStatus: "EXPIRED",
-        status: "cancelled",
+        status: "abandoned",
         cancelledAt: new Date(),
         cancelReason: "QR Code expirado sem pagamento",
       });
 
-      logger.info("MP_FALLBACK_FAILED", "Pedido cancelado por expiração do QR Code", {
+      logger.info("MP_FALLBACK_FAILED", "Pedido abandonado por expiração do QR Code", {
         orderId,
         paymentId,
         storeId,
@@ -192,7 +192,7 @@ export async function reconcilePendingMercadoPagoPayments(): Promise<{
 
           await db.collection("orders").doc(orderId).update({
             paymentStatus: result.status === "cancelled" ? "CANCELLED" : "FAILED",
-            status: "cancelled",
+            status: "abandoned",
             cancelledAt: new Date(),
             cancelReason: `Pagamento ${result.status} no Mercado Pago`,
             updatedAt: new Date(),

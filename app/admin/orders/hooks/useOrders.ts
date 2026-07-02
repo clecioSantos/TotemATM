@@ -45,7 +45,7 @@ export const useOrders = () => {
           });
 
           const filtered = items.filter(
-            (o) => o.paymentStatus !== "WAITING_PAYMENT" && o.paymentStatus !== "PENDING"
+            (o) => o.status !== "abandoned" && o.paymentStatus !== "WAITING_PAYMENT" && o.paymentStatus !== "PENDING"
           );
           setOrders(filtered.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
           setLoading(false);

@@ -27,7 +27,7 @@ export interface Order {
     quantity: number;
   }[];
   total: number;
-  status: 'pending' | 'paid' | 'preparing' | 'ready' | 'delivering' | 'finished' | 'cancelled';
+  status: 'pending' | 'paid' | 'preparing' | 'ready' | 'delivering' | 'finished' | 'cancelled' | 'abandoned';
   source: 'totem';
   createdAt: any;
 }

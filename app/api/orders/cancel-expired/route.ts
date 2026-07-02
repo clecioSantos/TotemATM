@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       const data = doc.data();
 
       // Pular se já foi cancelado por outro processo
-      if (data.status === "cancelled" || data.paymentStatus === "CANCELLED" || data.paymentStatus === "EXPIRED" || data.paymentStatus === "FAILED") {
+      if (data.status === "cancelled" || data.status === "abandoned" || data.paymentStatus === "CANCELLED" || data.paymentStatus === "EXPIRED" || data.paymentStatus === "FAILED") {
         skipped++;
         continue;
       }
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
       await db.collection("orders").doc(doc.id).update({
         paymentStatus: "EXPIRED",
-        status: "cancelled",
+        status: "abandoned",
         cancelledAt: new Date(),
         cancelReason: `Pedido expirou após ${EXPIRATION_MINUTES}min sem pagamento`,
         updatedAt: new Date(),
