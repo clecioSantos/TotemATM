@@ -119,6 +119,7 @@ service cloud.firestore {
       allow read: if isAuth() && (
         request.auth.uid == userId
         || (resource != null && resource.data.companyId != null && isStoreAdmin(resource.data.companyId))
+        || isSystemAdmin()
       );
       allow write: if isAuth() && (
         request.auth.uid == userId

@@ -11,7 +11,7 @@ import { Product } from "@totem/shared/types";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { logger } from "@/src/lib/logger";
 import { useConfirm } from "@/app/components/ConfirmProvider";
-import { Plus, Settings, ShoppingBag, Package, Layers, Edit3, Trash2, Save, X, Check } from "lucide-react";
+import { Plus, Settings, ShoppingBag, Package, Layers, Edit3, Trash2, Save, X, Check, FolderPlus } from "lucide-react";
 import { doc, updateDoc } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
 import "./page.css";
@@ -32,6 +32,8 @@ function ProductsContent() {
   const [editingCondimentId, setEditingCondimentId] = useState<string | null>(null);
   const [newProductOpen, setNewProductOpen] = useState(false);
   const [newCondimentOpen, setNewCondimentOpen] = useState(false);
+  const [newCategoryOpen, setNewCategoryOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [catSaving, setCatSaving] = useState(false);
 
@@ -82,7 +84,44 @@ function ProductsContent() {
           <option value="">Selecione uma categoria</option>
           {categories.map((cat) => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}
         </select>
+        <button onClick={() => { setNewCategoryOpen(true); setNewCategoryName(""); }}
+          className="flex items-center gap-1.5 px-3 py-2 bg-orange-50 text-orange-700 rounded-lg text-sm font-bold hover:bg-orange-100 transition-colors"
+          title="Nova categoria">
+          <FolderPlus size={18} /> Nova Categoria
+        </button>
       </div>
+
+      {newCategoryOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setNewCategoryOpen(false)}>
+          <div className="bg-white rounded-2xl p-6 shadow-2xl w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg">Nova Categoria</h3>
+              <button onClick={() => setNewCategoryOpen(false)} className="p-1 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
+            </div>
+            <input value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)}
+              placeholder="Nome da categoria"
+              className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00] mb-4"
+              autoFocus
+              onKeyDown={async (e) => {
+                if (e.key === "Enter" && newCategoryName.trim()) {
+                  await saveCategory({ name: newCategoryName.trim() } as any);
+                  setNewCategoryOpen(false);
+                  setNewCategoryName("");
+                }
+              }}
+            />
+            <div className="flex gap-2">
+              <button onClick={() => setNewCategoryOpen(false)} className="flex-1 h-11 rounded-xl border border-[#EAEAEA] text-sm font-bold text-[#666] hover:bg-gray-50 transition-all">Cancelar</button>
+              <button onClick={async () => {
+                if (!newCategoryName.trim()) return;
+                await saveCategory({ name: newCategoryName.trim() } as any);
+                setNewCategoryOpen(false);
+                setNewCategoryName("");
+              }} className="flex-1 h-11 rounded-xl bg-[#FF6B00] text-white text-sm font-bold hover:bg-[#E65C00] transition-all">Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {!selectedCatId ? (
         <div className="text-center py-20 text-gray-400">
