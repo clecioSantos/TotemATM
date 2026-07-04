@@ -9,7 +9,7 @@ service cloud.firestore {
 
     function isOwner(companyId) {
       return isAuth()
-        && ((request.auth.token.role == "owner" || request.auth.token.role == "admin")
+        && (request.auth.token.role == "owner"
           || (companyId != null
             && companyId != "default"
             && exists(/databases/$(database)/documents/companies/$(companyId))
@@ -29,9 +29,7 @@ service cloud.firestore {
     function isSystemAdmin() {
       return isAuth() && (
         request.auth.token.role == "owner"
-        || request.auth.token.role == "admin"
         || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "owner"
-        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
       );
     }
 
@@ -90,11 +88,12 @@ service cloud.firestore {
     // =============================================
 
     match /addresses/{addressId} {
-      allow read, delete: if isAuth() && request.auth.uid == resource.data.userId;
-      allow create: if isAuth() && request.auth.uid == request.resource.data.userId;
-      allow update: if isAuth()
-        && request.auth.uid == resource.data.userId
-        && request.auth.uid == request.resource.data.userId;
+      allow read, delete: if isAuth() && (request.auth.uid == resource.data.userId || isSystemAdmin());
+      allow create: if isAuth() && (request.auth.uid == request.resource.data.userId || isSystemAdmin());
+      allow update: if isAuth() && (
+        (request.auth.uid == resource.data.userId && request.auth.uid == request.resource.data.userId)
+        || isSystemAdmin()
+      );
     }
 
     // =============================================
@@ -125,6 +124,7 @@ service cloud.firestore {
         request.auth.uid == userId
         || (resource != null && resource.data.companyId != null && isStoreAdmin(resource.data.companyId))
         || (request.resource.data.companyId != null && isStoreAdmin(request.resource.data.companyId))
+        || isSystemAdmin()
       );
     }
 
@@ -180,7 +180,7 @@ service cloud.firestore {
     // =============================================
 
     match /commission_audit_log/{logId} {
-      allow read: if isOwner(resource.data.companyId);
+      allow read: if isOwner(resource.data.companyId) || isSystemAdmin();
       allow create: if isAuth();
       allow update, delete: if false;
     }
@@ -191,10 +191,9 @@ service cloud.firestore {
 
     match /coupons/{couponId} {
       allow read: if isAuth();
-      allow create: if isAuth() && isStoreAdmin(request.resource.data.storeId);
+      allow create: if isAuth() && (isStoreAdmin(request.resource.data.storeId) || isSystemAdmin());
       allow update, delete: if isAuth()
-        && resource.data.storeId != null
-        && isStoreAdmin(resource.data.storeId);
+        && (resource.data.storeId == null || isStoreAdmin(resource.data.storeId) || isSystemAdmin());
     }
 
     // =============================================

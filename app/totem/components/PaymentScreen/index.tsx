@@ -50,18 +50,26 @@ export default function PaymentScreen({ orderId, total, originalTotal, companyId
 
   const [commissionPercent, setCommissionPercent] = useState(0);
   const [convenienceFee, setConvenienceFee] = useState(0);
+  const [pixFee, setPixFee] = useState(0);
+  const [creditCardFee, setCreditCardFee] = useState(0);
 
   useEffect(() => {
     getDoc(doc(firestore, "companies", companyId)).then((snap) => {
       if (snap.exists()) setCommissionPercent(snap.data().platform_commission_percent || 0);
     }).catch(() => {});
     getDoc(doc(firestore, "settings", "global")).then((snap) => {
-      if (snap.exists()) setConvenienceFee(snap.data().convenienceFee || 0);
+      if (snap.exists()) {
+        setConvenienceFee(snap.data().convenienceFee || 0);
+        setPixFee(snap.data().pixFee || 0);
+        setCreditCardFee(snap.data().creditCardFee || 0);
+      }
     }).catch(() => {});
   }, [companyId]);
 
+  const methodFee = method === "credit_card" ? creditCardFee : pixFee;
+  const effectiveRate = Math.max(0, commissionPercent - methodFee);
   const splitTotal = pixOnlyBlocked ? displayTotal : total;
-  const baseFee = (splitTotal * commissionPercent) / 100;
+  const baseFee = (splitTotal * effectiveRate) / 100;
   const boraShare = baseFee + convenienceFee;
   const storeShare = splitTotal - boraShare;
 
@@ -118,12 +126,25 @@ export default function PaymentScreen({ orderId, total, originalTotal, companyId
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3 text-xs space-y-1">
               <p className="font-bold text-amber-800 mb-1">💰 Split de Pagamento</p>
               <div className="flex justify-between text-amber-700">
-                <span>Taxa de Conveniência</span>
-                <span className="font-semibold">R$ {convenienceFee.toFixed(2)}</span>
+                <span>Comissão da Loja</span>
+                <span className="font-semibold">{commissionPercent}%</span>
               </div>
               <div className="flex justify-between text-amber-700">
-                <span>Comissão ({commissionPercent}%)</span>
+                <span>Taxa do {method === "credit_card" ? "Cartão" : "PIX"}</span>
+                <span className="font-semibold">-{methodFee}%</span>
+              </div>
+              <div className="flex justify-between text-amber-800 font-semibold">
+                <span>Taxa Efetiva</span>
+                <span>{effectiveRate}%</span>
+              </div>
+              <hr className="border-amber-300" />
+              <div className="flex justify-between text-amber-700">
+                <span>Comissão ({effectiveRate}%)</span>
                 <span className="font-semibold">R$ {baseFee.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-amber-700">
+                <span>Taxa de Conveniência</span>
+                <span className="font-semibold">R$ {convenienceFee.toFixed(2)}</span>
               </div>
               <div className="border-t border-amber-300 pt-1 mt-1 flex justify-between font-bold text-amber-900">
                 <span>Total Bora</span>

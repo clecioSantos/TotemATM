@@ -5,18 +5,26 @@ import { collection, onSnapshot, query, orderBy, doc, getDoc, setDoc } from "fir
 import { firestore } from "@/src/services/firebase";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { logger } from "@/src/lib/logger";
+import { useAuth } from "@totem/shared/types/AuthProvider";
+import { useRouter } from "next/navigation";
 import {
   Store, Calendar, Tag, TrendingUp, ShoppingBag,
   Loader2, Store as StoreIcon, Settings, Ticket, DollarSign
 } from "lucide-react";
 
 function OwnerDashboardContent() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const isOwner = (user as any)?.role === "owner";
+
   const [stores, setStores] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [promotions, setPromotions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [listLoading, setListLoading] = useState(true);
   const [globalCouponsEnabled, setGlobalCouponsEnabled] = useState<boolean | null>(null);
   const [globalConvenienceFee, setGlobalConvenienceFee] = useState<number>(0);
+  const [globalPixFee, setGlobalPixFee] = useState<number>(0);
+  const [globalCreditCardFee, setGlobalCreditCardFee] = useState<number>(0);
   const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => {
@@ -24,6 +32,8 @@ function OwnerDashboardContent() {
       if (snap.exists()) {
         setGlobalCouponsEnabled(snap.data().couponsEnabled === true);
         setGlobalConvenienceFee(snap.data().convenienceFee || 0);
+        setGlobalPixFee(snap.data().pixFee || 0);
+        setGlobalCreditCardFee(snap.data().creditCardFee || 0);
       }
     }).catch(() => {});
   }, []);
@@ -43,10 +53,10 @@ function OwnerDashboardContent() {
 
     const unsubPromotions = onSnapshot(collection(firestore, "promotions"), (snap) => {
       setPromotions(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      setLoading(false);
+      setListLoading(false);
     }, (err) => {
       logger.error("OWNER", "Erro ao carregar promoções", err);
-      setLoading(false);
+      setListLoading(false);
     });
 
     return () => {
@@ -80,7 +90,16 @@ function OwnerDashboardContent() {
     };
   }, [stores, events, promotions]);
 
-  if (loading) {
+  useEffect(() => {
+    if (!authLoading && user && !isOwner) {
+      router.replace("/");
+    }
+  }, [user, authLoading, isOwner, router]);
+
+  if (authLoading) return null;
+  if (!user || !isOwner) return null;
+
+  if (listLoading) {
     return (
       <div className="p-6 flex flex-col items-center justify-center gap-4 text-gray-400" style={{ paddingTop: 100 }}>
         <Loader2 size={32} className="animate-spin" />
@@ -236,6 +255,80 @@ function OwnerDashboardContent() {
                     await setDoc(doc(firestore, "settings", "global"), { convenienceFee: globalConvenienceFee }, { merge: true });
                   } catch (err) {
                     logger.error("OWNER", "Erro ao salvar taxa de conveniência", err);
+                  } finally {
+                    setSavingSettings(false);
+                  }
+                }}
+                disabled={savingSettings}
+                className="px-5 py-2.5 bg-blue-600 text-white font-bold rounded-xl text-sm hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {savingSettings ? <Loader2 size={16} className="animate-spin" /> : null}
+                Atualizar
+              </button>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-100 mt-4 pt-4">
+            <label className="flex items-center gap-3">
+              <DollarSign size={16} className="text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">Taxa PIX (%)</span>
+            </label>
+            <p className="text-xs text-gray-500 mt-0.5 mb-2">
+              Percentual descontado da comissão da loja quando o pagamento for via PIX.
+            </p>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                value={globalPixFee}
+                onChange={(e) => setGlobalPixFee(Math.max(0, parseFloat(e.target.value) || 0))}
+                step="0.10"
+                min="0"
+                className="w-32 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm font-semibold outline-none focus:border-blue-500 transition-colors"
+              />
+              <button
+                onClick={async () => {
+                  setSavingSettings(true);
+                  try {
+                    await setDoc(doc(firestore, "settings", "global"), { pixFee: globalPixFee }, { merge: true });
+                  } catch (err) {
+                    logger.error("OWNER", "Erro ao salvar taxa PIX", err);
+                  } finally {
+                    setSavingSettings(false);
+                  }
+                }}
+                disabled={savingSettings}
+                className="px-5 py-2.5 bg-blue-600 text-white font-bold rounded-xl text-sm hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {savingSettings ? <Loader2 size={16} className="animate-spin" /> : null}
+                Atualizar
+              </button>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-100 mt-4 pt-4">
+            <label className="flex items-center gap-3">
+              <DollarSign size={16} className="text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">Taxa Cartão de Crédito (%)</span>
+            </label>
+            <p className="text-xs text-gray-500 mt-0.5 mb-2">
+              Percentual descontado da comissão da loja quando o pagamento for via cartão de crédito.
+            </p>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                value={globalCreditCardFee}
+                onChange={(e) => setGlobalCreditCardFee(Math.max(0, parseFloat(e.target.value) || 0))}
+                step="0.10"
+                min="0"
+                className="w-32 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm font-semibold outline-none focus:border-blue-500 transition-colors"
+              />
+              <button
+                onClick={async () => {
+                  setSavingSettings(true);
+                  try {
+                    await setDoc(doc(firestore, "settings", "global"), { creditCardFee: globalCreditCardFee }, { merge: true });
+                  } catch (err) {
+                    logger.error("OWNER", "Erro ao salvar taxa cartão de crédito", err);
                   } finally {
                     setSavingSettings(false);
                   }

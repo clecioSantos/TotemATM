@@ -71,9 +71,20 @@ export async function POST(req: NextRequest) {
             mercadopagoUserId = companyData.mercadopago_user_id as string | undefined;
 
             // Comissão da plataforma
-            let baseFee = companyData.platform_commission_percent
-              ? Math.round((amount * companyData.platform_commission_percent) / 100 * 100) / 100
-              : 0;
+            let effectiveRate = companyData.platform_commission_percent || 0;
+
+            // Desconta a taxa do método de pagamento (PIX)
+            try {
+              const globalSnap = await db.collection("settings").doc("global").get();
+              if (globalSnap.exists) {
+                const pixFee = globalSnap.data().pixFee || 0;
+                effectiveRate = Math.max(0, effectiveRate - pixFee);
+              }
+            } catch (globalErr) {
+              logger.warn("API_PIX", `[${requestId}] Erro ao ler taxas globais`, globalErr);
+            }
+
+            let baseFee = Math.round((amount * effectiveRate) / 100 * 100) / 100;
 
             // Soma a taxa de conveniência do pedido (vai para a plataforma, não para a loja)
             let orderConvenienceFee = 0;

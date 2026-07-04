@@ -75,7 +75,7 @@ export default function NewStorePage() {
     },
     tempoPreparoMin: "",
     tempoPreparoMax: "",
-    platform_commission_percent: 6.00,
+    platform_commission_percent: 8.00,
     enabled: false,
   });
 

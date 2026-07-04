@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, Star } from "lucide-react";
 import { collection, addDoc, getDoc, doc, query, where, getDocs, Timestamp, updateDoc } from "firebase/firestore";
-import { firestore } from "@/src/services/firebase";
+import { firestore, auth } from "@/src/services/firebase";
 import { useReviewByOrderId } from "../hooks/useReviews";
 
 interface Props {
@@ -77,7 +77,23 @@ export default function ReviewModal({ userId, orderId, isOpen, onClose, onReview
         updatedAt: now,
       });
 
-      await updateCompanyRating(orderData.companyId || "");
+      const companyId = orderData.companyId || "";
+      await updateCompanyRating(companyId);
+
+      const token = await auth.currentUser?.getIdToken();
+      if (token) {
+        fetch("/api/notify/store", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            companyId,
+            title: "⭐ Nova Avaliação",
+            body: `${orderData.customerName || "Um cliente"} avaliou a loja com ${rating} estrela(s).`,
+            data: { type: "new_review" },
+          }),
+        }).catch(() => {});
+      }
+
       setSubmitted(true);
       setRefreshKey(k => k + 1);
       onReviewSubmitted?.();

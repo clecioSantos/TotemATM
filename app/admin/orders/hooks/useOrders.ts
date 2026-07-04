@@ -71,8 +71,28 @@ export const useOrders = () => {
         companyId: user?.companyId,
         total: Number(orderData.total) || 0,
         status: orderData.status || 'pending',
+        paymentStatus: orderData.status === 'paid' ? 'PAID' : (orderData.paymentStatus || 'WAITING_PAYMENT'),
         createdAt: Timestamp.now(),
       });
+
+      if (orderData.status === 'paid' && orderData.customerId && auth.currentUser) {
+        try {
+          const idToken = await auth.currentUser.getIdToken();
+          await fetch("/api/push/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+            body: JSON.stringify({
+              target: "user", uid: orderData.customerId,
+              title: "Pedido Confirmado",
+              body: "Seu pagamento foi confirmado! Seu pedido já está sendo preparado.",
+              data: { orderId: docRef.id, type: "order_status" },
+            }),
+          });
+        } catch (pushErr) {
+          logger.warn("useOrders", "Erro ao enviar push de confirmação", pushErr);
+        }
+      }
+
       logger.info("useOrders", `Pedido criado: ${docRef.id}`);
       return docRef.id;
     } catch (error) {

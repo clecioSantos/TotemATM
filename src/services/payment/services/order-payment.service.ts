@@ -1,4 +1,5 @@
 import { getAdminDb } from "@/src/services/firebase-admin";
+import { pushSender } from "@/src/services/push-sender.service";
 import { logger } from "@/src/lib/logger";
 
 export async function markOrderAsPaid(orderId: string): Promise<boolean> {
@@ -58,12 +59,25 @@ export async function processApprovedPayment(params: {
       storeId,
     });
 
-    // Registrar uso de cupom se houver
+    // Notificar loja e registrar uso de cupom
     try {
       const db = getAdminDb();
       const orderDoc = await db.collection("orders").doc(orderId).get();
       const orderData = orderDoc.data();
+      const companyId = orderData?.companyId || storeId;
 
+      // Notificar loja sobre novo pedido
+      if (companyId) {
+        const customerName = orderData?.customerName || orderData?.userName || "Cliente";
+        const itemCount = orderData?.items?.length || 0;
+        pushSender.sendToStore(companyId, {
+          title: "🆕 Novo Pedido Recebido",
+          body: `${customerName} fez um pedido de ${itemCount} item(ns) — R$ ${(orderData?.total || 0).toFixed(2)}`,
+          data: { orderId, type: "new_order" },
+        }).catch((err) => logger.warn("ORDER_PAYMENT", "Erro ao enviar push para loja", err));
+      }
+
+      // Registrar uso de cupom se houver
       if (orderData?.couponId && orderData?.couponCode) {
         const usageRef = db.collection("coupon_usage").doc();
         await usageRef.set({

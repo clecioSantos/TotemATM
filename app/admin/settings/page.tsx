@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/app/admin/orders/AuthContext";
 import { Copy, Check, QrCode, ExternalLink, LogOut, Store, Save, Loader2 } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
-import { firestore } from "@/src/services/firebase";
+import { firestore, auth } from "@/src/services/firebase";
 import { doc, getDoc, updateDoc, collection, onSnapshot, FirestoreError } from "firebase/firestore";
 import { logger } from "@/src/lib/logger";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
@@ -191,6 +191,21 @@ function ConfigurationsContent() {
     setSaving(true);
     try {
       await updateDoc(doc(firestore, "companies", user.companyId), companyData);
+
+      const token = await auth.currentUser?.getIdToken();
+      if (token) {
+        fetch("/api/notify/store", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            companyId: user.companyId,
+            title: "🔧 Loja Atualizada",
+            body: "As configurações da loja foram alteradas.",
+            data: { type: "store_update" },
+          }),
+        }).catch(() => {});
+      }
+
       await showAlert("Dados da empresa atualizados!");
     } catch (error) {
       console.error("Erro ao salvar:", error);
