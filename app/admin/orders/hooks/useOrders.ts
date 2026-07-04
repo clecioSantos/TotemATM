@@ -75,21 +75,34 @@ export const useOrders = () => {
         createdAt: Timestamp.now(),
       });
 
-      if (orderData.status === 'paid' && orderData.customerId && auth.currentUser) {
-        try {
-          const idToken = await auth.currentUser.getIdToken();
-          await fetch("/api/push/send", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+      if (auth.currentUser) {
+        const idToken = await auth.currentUser.getIdToken();
+        const headers = { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` };
+
+        // Notificar loja sobre novo pedido
+        if (user?.companyId) {
+          fetch("/api/push/send", {
+            method: "POST", headers,
+            body: JSON.stringify({
+              target: "store", companyId: user.companyId,
+              title: "🆕 Novo Pedido Criado",
+              body: `Pedido #${docRef.id.slice(-6).toUpperCase()} registrado no balcão — R$ ${(orderData.total || 0).toFixed(2)}`,
+              data: { orderId: docRef.id, type: "new_order" },
+            }),
+          }).catch(err => logger.warn("useOrders", "Erro ao notificar loja", err));
+        }
+
+        // Notificar cliente se houver customerId
+        if (orderData.customerId) {
+          fetch("/api/push/send", {
+            method: "POST", headers,
             body: JSON.stringify({
               target: "user", uid: orderData.customerId,
               title: "Pedido Confirmado",
               body: "Seu pagamento foi confirmado! Seu pedido já está sendo preparado.",
               data: { orderId: docRef.id, type: "order_status" },
             }),
-          });
-        } catch (pushErr) {
-          logger.warn("useOrders", "Erro ao enviar push de confirmação", pushErr);
+          }).catch(err => logger.warn("useOrders", "Erro ao notificar cliente", err));
         }
       }
 
