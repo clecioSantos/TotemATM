@@ -14,6 +14,7 @@ export interface Coupon {
   firstPurchaseOnly: boolean;
   deliveryOnly: boolean;
   pickupOnly: boolean;
+  pixOnly: boolean;
   active: boolean;
   startDate: string;
   endDate: string;

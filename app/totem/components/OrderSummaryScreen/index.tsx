@@ -14,6 +14,7 @@ interface CouponApplied {
   value: number;
   discountValue: number;
   finalTotal: number;
+  pixOnly?: boolean;
 }
 
 interface OrderSummaryScreenProps {
@@ -79,6 +80,7 @@ export default function OrderSummaryScreen({
           subtotal,
           customerId: user?.uid,
           deliveryMode,
+          paymentMethod: "PIX",
         }),
       });
       const data = await res.json();
@@ -90,6 +92,7 @@ export default function OrderSummaryScreen({
           value: data.coupon.value,
           discountValue: data.discountValue,
           finalTotal: data.finalTotal,
+          pixOnly: data.coupon.pixOnly,
         };
         setAppliedCoupon(info);
         onCouponChange(info);

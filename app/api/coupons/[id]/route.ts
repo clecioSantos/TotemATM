@@ -17,7 +17,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const updateData: any = { updatedAt: Timestamp.now() };
     const fields = [
       "type", "value", "minOrderValue", "maxDiscount", "usageLimit",
-      "perCustomerLimit", "firstPurchaseOnly", "deliveryOnly", "pickupOnly",
+      "perCustomerLimit", "firstPurchaseOnly", "deliveryOnly", "pickupOnly", "pixOnly",
       "active", "startDate", "endDate"
     ];
 

@@ -29,6 +29,8 @@ interface IdentificationScreenProps {
   onConfirm: (deliveryFee: number, deliveryMode?: string) => void;
   onBack: () => void;
   companyId: string;
+  schedulingRequired?: boolean;
+  schedulingConfigured?: boolean;
 }
 
 function getCartCompanyId(): string | null {
@@ -43,7 +45,7 @@ function getCartCompanyId(): string | null {
 }
 
 export default function IdentificationScreen({
-  addressStreet, setAddressStreet, addressCity, setAddressCity, addressNumber, setAddressNumber, addressNeighborhood, setAddressNeighborhood, addressComplement, setAddressComplement, onConfirm, onBack, companyId: companyIdProp
+  addressStreet, setAddressStreet, addressCity, setAddressCity, addressNumber, setAddressNumber, addressNeighborhood, setAddressNeighborhood, addressComplement, setAddressComplement, onConfirm, onBack, companyId: companyIdProp, schedulingRequired, schedulingConfigured
 }: IdentificationScreenProps) {
   const { user } = useAuth();
   const params = useParams();
@@ -437,7 +439,7 @@ export default function IdentificationScreen({
         <div className="flex flex-col gap-3 mt-4">
           <button 
             className="w-full bg-brand-primary hover:bg-brand-primaryHover text-white font-bold py-4 rounded-[12px] transition-all disabled:opacity-50" 
-            disabled={isSubmitting || (deliveryMode === "delivery" && (!addressStreet || !addressNumber || !addressNeighborhood || !isCityDeliveryEnabled || !isNeighborhoodSupported))} 
+            disabled={isSubmitting || (deliveryMode === "delivery" && (!addressStreet || !addressNumber || !addressNeighborhood || !isCityDeliveryEnabled || !isNeighborhoodSupported)) || (schedulingRequired && !schedulingConfigured)} 
             onClick={handleConfirmAndSave}
           >
             {isSubmitting ? "ENVIANDO..." : deliveryMode === "pickup" ? "CONFIRMAR RETIRADA" : "CONFIRMAR E ENVIAR"}

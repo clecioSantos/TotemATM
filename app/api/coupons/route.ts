@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { storeId, code, type, value, minOrderValue, maxDiscount, usageLimit, perCustomerLimit, firstPurchaseOnly, deliveryOnly, pickupOnly, active, startDate, endDate } = body;
+    const { storeId, code, type, value, minOrderValue, maxDiscount, usageLimit, perCustomerLimit, firstPurchaseOnly, deliveryOnly, pickupOnly, pixOnly, active, startDate, endDate } = body;
 
     if (!storeId || !code || !type || value == null) {
       return NextResponse.json(
@@ -111,6 +111,7 @@ export async function POST(req: NextRequest) {
       firstPurchaseOnly: !!firstPurchaseOnly,
       deliveryOnly: !!deliveryOnly,
       pickupOnly: !!pickupOnly,
+      pixOnly: !!pixOnly,
       active: active !== false,
       startDate: startDate || null,
       endDate: endDate || null,

@@ -24,6 +24,7 @@ interface CouponData {
   firstPurchaseOnly: boolean;
   deliveryOnly: boolean;
   pickupOnly: boolean;
+  pixOnly: boolean;
   active: boolean;
   startDate?: string;
   endDate?: string;
@@ -65,6 +66,7 @@ function CouponsContent() {
     firstPurchaseOnly: false,
     deliveryOnly: false,
     pickupOnly: false,
+    pixOnly: false,
     active: true,
     startDate: "",
     endDate: "",
@@ -101,30 +103,32 @@ function CouponsContent() {
       maxDiscount: "",
       usageLimit: "",
       perCustomerLimit: "",
-      firstPurchaseOnly: false,
-      deliveryOnly: false,
-      pickupOnly: false,
-      active: true,
-      startDate: "",
-      endDate: "",
-    });
-    setEditingId(null);
-    setError("");
-  };
+    firstPurchaseOnly: false,
+    deliveryOnly: false,
+    pickupOnly: false,
+    pixOnly: false,
+    active: true,
+    startDate: "",
+    endDate: "",
+  });
+  setEditingId(null);
+  setError("");
+};
 
-  const openEdit = (coupon: CouponData) => {
-    setForm({
-      code: coupon.code,
-      type: coupon.type,
-      value: String(coupon.value),
-      minOrderValue: coupon.minOrderValue ? String(coupon.minOrderValue) : "",
-      maxDiscount: coupon.maxDiscount ? String(coupon.maxDiscount) : "",
-      usageLimit: coupon.usageLimit ? String(coupon.usageLimit) : "",
-      perCustomerLimit: coupon.perCustomerLimit ? String(coupon.perCustomerLimit) : "",
-      firstPurchaseOnly: coupon.firstPurchaseOnly,
-      deliveryOnly: coupon.deliveryOnly,
-      pickupOnly: coupon.pickupOnly,
-      active: coupon.active,
+const openEdit = (coupon: CouponData) => {
+  setForm({
+    code: coupon.code,
+    type: coupon.type,
+    value: String(coupon.value),
+    minOrderValue: coupon.minOrderValue ? String(coupon.minOrderValue) : "",
+    maxDiscount: coupon.maxDiscount ? String(coupon.maxDiscount) : "",
+    usageLimit: coupon.usageLimit ? String(coupon.usageLimit) : "",
+    perCustomerLimit: coupon.perCustomerLimit ? String(coupon.perCustomerLimit) : "",
+    firstPurchaseOnly: coupon.firstPurchaseOnly,
+    deliveryOnly: coupon.deliveryOnly,
+    pickupOnly: coupon.pickupOnly,
+    pixOnly: coupon.pixOnly,
+    active: coupon.active,
       startDate: coupon.startDate ? coupon.startDate.split("T")[0] : "",
       endDate: coupon.endDate ? coupon.endDate.split("T")[0] : "",
     });
@@ -161,6 +165,7 @@ function CouponsContent() {
         firstPurchaseOnly: form.firstPurchaseOnly,
         deliveryOnly: form.deliveryOnly,
         pickupOnly: form.pickupOnly,
+        pixOnly: form.pixOnly,
         active: form.active,
         startDate: form.startDate || null,
         endDate: form.endDate || null,
@@ -339,6 +344,10 @@ function CouponsContent() {
                   <input type="checkbox" checked={form.pickupOnly} onChange={e => setForm({ ...form, pickupOnly: e.target.checked })} className="w-4 h-4 accent-orange-500" />
                   <span className="text-sm font-medium">Somente retirada</span>
                 </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={form.pixOnly} onChange={e => setForm({ ...form, pixOnly: e.target.checked })} className="w-4 h-4 accent-orange-500" />
+                  <span className="text-sm font-medium">Apenas PIX</span>
+                </label>
               </div>
 
               {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
@@ -392,6 +401,7 @@ function CouponsContent() {
                       {coupon.firstPurchaseOnly && <span className="text-purple-600 font-medium">1ª compra</span>}
                       {coupon.deliveryOnly && <span className="text-blue-600 font-medium">Entrega</span>}
                       {coupon.pickupOnly && <span className="text-amber-600 font-medium">Retirada</span>}
+                      {coupon.pixOnly && <span className="text-cyan-600 font-medium">💠 PIX</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">

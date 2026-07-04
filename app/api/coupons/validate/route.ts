@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { code, storeId, subtotal, customerId, deliveryMode } = body;
+    const { code, storeId, subtotal, customerId, deliveryMode, paymentMethod } = body;
 
     logger.info("COUPON_VALIDATE", `[${requestId}] Validando cupom`, {
       code,
@@ -110,7 +110,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 10. Calcular desconto
+    // 10. Apenas PIX
+    if (coupon.pixOnly && paymentMethod && paymentMethod !== "PIX") {
+      return NextResponse.json({ valid: false, reason: "Cupom válido apenas para pagamento via PIX." });
+    }
+
+    // 11. Calcular desconto
     let discountValue = 0;
     if (coupon.type === "percentage") {
       discountValue = (orderValue * coupon.value) / 100;
@@ -133,6 +138,7 @@ export async function POST(req: NextRequest) {
         type: coupon.type,
         value: coupon.value,
         maxDiscount: coupon.maxDiscount,
+        pixOnly: coupon.pixOnly,
       },
     });
   } catch (error: any) {

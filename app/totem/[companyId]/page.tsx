@@ -16,7 +16,7 @@ import { useNotifications } from "../hooks/useNotifications";
 import { useConfirm } from "@/app/components/ConfirmProvider";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { logger } from "@/src/lib/logger";
-import { X, MapPin, LogOut, ChevronRight, Plus, Trash2, Mail, Send, MessageSquare, Loader2 } from "lucide-react";
+import { X, MapPin, LogOut, ChevronRight, Plus, Trash2, Mail, Send, MessageSquare, Loader2, Store } from "lucide-react";
 import Link from "next/link";
 import "@/page.css";
 
@@ -124,6 +124,7 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
   const [orderTotal, setOrderTotal] = useState(0);
+  const [originalTotal, setOriginalTotal] = useState(0);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [toast, setToast] = useState<{ message: string; type?: "error" | "info" } | null>(null);
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
@@ -132,6 +133,12 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
   const [convenienceFee, setConvenienceFee] = useState(0);
   const [favorites, setFavorites] = useState<Record<string, any>>({});
   const [orderContactPhone, setOrderContactPhone] = useState("");
+
+  const userPhone = (user as any)?.phone || "";
+
+  useEffect(() => {
+    setOrderContactPhone(userPhone);
+  }, [userPhone]);
 
   useEffect(() => {
     getDoc(doc(firestore, "settings", "global")).then((snap) => {
@@ -285,10 +292,25 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
         className="p-3 flex justify-between items-center cursor-pointer"
         onClick={() => setExpandedOrderId(expandedOrderId === o.id ? null : o.id)}
       >
-        <div>
-          <div className="font-bold text-sm">{o.companyName || "Loja"}</div>
-          <div className="text-xs text-brand-muted">
-            {o.createdAt ? new Date(o.createdAt.seconds * 1000).toLocaleString() : ""}
+        <div className="flex items-center gap-2">
+          {companyLogo ? (
+            <img src={companyLogo} alt="" className="w-7 h-7 rounded-full object-cover border border-gray-200" />
+          ) : (
+            <div className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
+              <Store size={14} className="text-orange-500" />
+            </div>
+          )}
+          <div>
+            <Link
+              href={`/totem/${companyId}`}
+              onClick={(e) => e.stopPropagation()}
+              className="font-bold text-sm text-brand-dark hover:text-brand-primary transition-colors"
+            >
+              {companyName || o.companyName || "Loja"}
+            </Link>
+            <div className="text-xs text-brand-muted">
+              {o.createdAt ? new Date(o.createdAt.seconds * 1000).toLocaleString() : ""}
+            </div>
           </div>
         </div>
         <div className="text-right">
@@ -429,7 +451,7 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
       return;
     }
 
-    if (requiresContact && !(user as any)?.phone && !orderContactPhone.trim()) {
+    if (requiresContact && !orderContactPhone.trim()) {
       setToast({ message: "Informe seu telefone para contato.", type: "error" });
       return;
     }
@@ -454,13 +476,15 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
     setIsProcessingPayment(true);
 
     try {
-      if (requiresContact && !(user as any)?.phone && orderContactPhone.trim()) {
+      if (requiresContact && !userPhone && orderContactPhone.trim()) {
         await updateDoc(doc(firestore, "users", user!.uid), {
           phone: orderContactPhone.trim(),
         }).catch(() => {});
       }
 
-      let total = cartTotal + reviewDeliveryFee + convenienceFee;
+      const baseTotal = cartTotal + reviewDeliveryFee + convenienceFee;
+      setOriginalTotal(baseTotal);
+      let total = baseTotal;
       if (appliedCoupon) {
         total = Math.max(0, total - appliedCoupon.discountValue);
       }
@@ -691,20 +715,18 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
                           ))}
                         </div>
                       )}
-                      {!(user as any)?.phone && (
-                        <div className="mt-3">
-                          <label className="text-[10px] font-bold text-purple-700 uppercase block mb-1">
-                            Telefone para contato
-                          </label>
-                          <input
-                            type="tel"
-                            value={orderContactPhone}
-                            onChange={(e) => setOrderContactPhone(e.target.value)}
-                            placeholder="(11) 99999-9999"
-                            className="w-full px-3 py-2.5 rounded-lg border border-purple-300 bg-white text-sm font-medium outline-none focus:border-purple-500"
-                          />
-                        </div>
-                      )}
+                      <div className="mt-3">
+                        <label className="text-[10px] font-bold text-purple-700 uppercase block mb-1">
+                          Telefone para contato
+                        </label>
+                        <input
+                          type="tel"
+                          value={orderContactPhone}
+                          onChange={(e) => setOrderContactPhone(e.target.value)}
+                          placeholder="(11) 99999-9999"
+                          className="w-full px-3 py-2.5 rounded-lg border border-purple-300 bg-white text-sm font-medium outline-none focus:border-purple-500"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -724,20 +746,24 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
               onConfirm={handleFinish}
               onBack={() => setStep('ORDERING')}
               companyId={companyId}
+              schedulingRequired={hasRequiredScheduling}
+              schedulingConfigured={!!(scheduledDate && scheduledTime)}
             />
           </div>
         );
       case 'PAYMENT':
         return (
-          <PaymentScreen
-            orderId={currentOrderId}
-            total={orderTotal}
-            companyId={companyId}
-            customerName={user?.name}
-            customerEmail={user?.email}
-            onPaymentConfirmed={handlePaymentConfirmed}
-            onCancel={() => setStep('ORDERING')}
-          />
+            <PaymentScreen
+              orderId={currentOrderId}
+              total={orderTotal}
+              originalTotal={originalTotal}
+              companyId={companyId}
+              customerName={user?.name}
+              customerEmail={user?.email}
+              appliedCoupon={appliedCoupon}
+              onPaymentConfirmed={handlePaymentConfirmed}
+              onCancel={() => setStep('ORDERING')}
+            />
         );
       case 'FINISHED':
         return <FinishedScreen />;

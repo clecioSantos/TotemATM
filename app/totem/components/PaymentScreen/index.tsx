@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, getDoc } from "firebase/firestore";
 import { firestore, auth } from "@/src/services/firebase";
 import { Copy, CheckCircle, Loader2, CreditCard, X } from "lucide-react";
 import { logger } from "@/src/lib/logger";
@@ -18,20 +18,52 @@ function getPaymentCompanyId(fallback: string): string {
   return fallback;
 }
 
+interface CouponInfo {
+  id: string;
+  code: string;
+  type: "percentage" | "fixed";
+  value: number;
+  discountValue: number;
+  finalTotal: number;
+  pixOnly?: boolean;
+}
+
 interface PaymentScreenProps {
   orderId: string;
   total: number;
+  originalTotal?: number;
   companyId: string;
   customerName?: string;
   customerEmail?: string;
+  appliedCoupon?: CouponInfo | null;
   onPaymentConfirmed: () => void;
   onCancel: () => void;
 }
 
-export default function PaymentScreen({ orderId, total, companyId: pageCompanyId, customerName, customerEmail, onPaymentConfirmed, onCancel }: PaymentScreenProps) {
+export default function PaymentScreen({ orderId, total, originalTotal, companyId: pageCompanyId, customerName, customerEmail, appliedCoupon, onPaymentConfirmed, onCancel }: PaymentScreenProps) {
   const companyId = getPaymentCompanyId(pageCompanyId);
   const [method, setMethod] = useState<"pix" | "credit_card" | null>(null);
   const isSandbox = typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_MERCADOPAGO_ENVIRONMENT?.toLowerCase() === 'sandbox';
+
+  const pixOnlyBlocked = method === "credit_card" && appliedCoupon?.pixOnly;
+  const displayTotal = pixOnlyBlocked ? (originalTotal ?? total) : total;
+
+  const [commissionPercent, setCommissionPercent] = useState(0);
+  const [convenienceFee, setConvenienceFee] = useState(0);
+
+  useEffect(() => {
+    getDoc(doc(firestore, "companies", companyId)).then((snap) => {
+      if (snap.exists()) setCommissionPercent(snap.data().platform_commission_percent || 0);
+    }).catch(() => {});
+    getDoc(doc(firestore, "settings", "global")).then((snap) => {
+      if (snap.exists()) setConvenienceFee(snap.data().convenienceFee || 0);
+    }).catch(() => {});
+  }, [companyId]);
+
+  const splitTotal = pixOnlyBlocked ? displayTotal : total;
+  const baseFee = (splitTotal * commissionPercent) / 100;
+  const boraShare = baseFee + convenienceFee;
+  const storeShare = splitTotal - boraShare;
 
   return (
     <div className="min-h-screen w-screen bg-gradient-to-b from-brand-light to-gray-100 flex items-center justify-center p-4 lg:p-8">
@@ -39,7 +71,12 @@ export default function PaymentScreen({ orderId, total, companyId: pageCompanyId
 
         <div className="mb-6 text-center">
           <h2 className="text-2xl font-bold text-brand-dark">Finalizar Pedido</h2>
-          <p className="text-3xl font-black text-brand-primary mt-2">R$ {total.toFixed(2).replace(".", ",")}</p>
+          <p className="text-3xl font-black text-brand-primary mt-2">R$ {displayTotal.toFixed(2).replace(".", ",")}</p>
+          {pixOnlyBlocked && (
+            <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2">
+              💡 O cupom <strong>{appliedCoupon?.code}</strong> é válido apenas para PIX. Selecione PIX para usar o desconto.
+            </p>
+          )}
         </div>
 
         <div className="mb-6">
@@ -73,16 +110,47 @@ export default function PaymentScreen({ orderId, total, companyId: pageCompanyId
         )}
 
         {method === "credit_card" && (
-          <CardPaymentForm orderId={orderId} total={total} companyId={companyId} customerName={customerName} customerEmail={customerEmail} onPaymentConfirmed={onPaymentConfirmed} />
+          <CardPaymentForm orderId={orderId} total={pixOnlyBlocked ? (originalTotal ?? total) : total} companyId={companyId} customerName={customerName} customerEmail={customerEmail} onPaymentConfirmed={onPaymentConfirmed} />
         )}
 
         {isSandbox && (
-          <button
-            onClick={onPaymentConfirmed}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-[12px] font-bold text-sm border-2 border-dashed border-amber-400 text-amber-700 bg-amber-50 hover:bg-amber-100 transition-all mb-2"
-          >
-            🪙 Mock Pagamento (Sandbox)
-          </button>
+          <>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3 text-xs space-y-1">
+              <p className="font-bold text-amber-800 mb-1">💰 Split de Pagamento</p>
+              <div className="flex justify-between text-amber-700">
+                <span>Taxa de Conveniência</span>
+                <span className="font-semibold">R$ {convenienceFee.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-amber-700">
+                <span>Comissão ({commissionPercent}%)</span>
+                <span className="font-semibold">R$ {baseFee.toFixed(2)}</span>
+              </div>
+              <div className="border-t border-amber-300 pt-1 mt-1 flex justify-between font-bold text-amber-900">
+                <span>Total Bora</span>
+                <span>R$ {boraShare.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-bold text-green-800">
+                <span>Total Loja</span>
+                <span>R$ {storeShare.toFixed(2)}</span>
+              </div>
+            </div>
+            <button
+              onClick={async () => {
+                await fetch("/api/payments/sandbox", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    orderId,
+                    total: pixOnlyBlocked ? displayTotal : undefined,
+                  }),
+                });
+                onPaymentConfirmed();
+              }}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-[12px] font-bold text-sm border-2 border-dashed border-amber-400 text-amber-700 bg-amber-50 hover:bg-amber-100 transition-all mb-2"
+            >
+              🪙 Mock Pagamento ({method === "credit_card" ? "Cartão" : "PIX"})
+            </button>
+          </>
         )}
 
         <button
@@ -164,6 +232,11 @@ function PixPaymentContent({ orderId, total, companyId, customerName, customerEm
 
         if (data.sandbox) {
           logger.info("PaymentScreen", `Sandbox ativo — pedido ${orderId} pago automaticamente`);
+          fetch("/api/payments/sandbox", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderId }),
+          }).catch(() => {});
           onConfirmedRef.current();
           return;
         }

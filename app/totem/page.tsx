@@ -312,10 +312,25 @@ export default function StoreListingPage() {
           className="p-3 flex justify-between items-center cursor-pointer"
           onClick={() => setExpandedOrderId(expandedOrderId === o.id ? null : o.id)}
         >
-          <div>
-            <div className="font-bold text-sm">{store?.name || o.companyName || "Loja"}</div>
-            <div className="text-xs text-brand-muted">
-              {o.createdAt ? new Date(o.createdAt.seconds * 1000).toLocaleString() : "Data indisponível"}
+          <div className="flex items-center gap-2">
+            {store?.logo ? (
+              <img src={store.logo} alt="" className="w-7 h-7 rounded-full object-cover border border-gray-200" />
+            ) : (
+              <div className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
+                <Store size={14} className="text-orange-500" />
+              </div>
+            )}
+            <div>
+              <Link
+                href={`/totem/${o.companyId}`}
+                onClick={(e) => e.stopPropagation()}
+                className="font-bold text-sm text-brand-dark hover:text-brand-primary transition-colors"
+              >
+                {store?.name || o.companyName || "Loja"}
+              </Link>
+              <div className="text-xs text-brand-muted">
+                {o.createdAt ? new Date(o.createdAt.seconds * 1000).toLocaleString() : "Data indisponível"}
+              </div>
             </div>
           </div>
           <div className="text-right">
