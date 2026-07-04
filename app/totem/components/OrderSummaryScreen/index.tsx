@@ -54,7 +54,7 @@ export default function OrderSummaryScreen({
     ]).then(([globalSnap, companySnap]) => {
       const g = globalSnap.exists() ? globalSnap.data().couponsEnabled : undefined;
       const s = companySnap.exists() ? companySnap.data().couponsEnabled : undefined;
-      setCouponsEnabled(g !== false && s === true);
+      setCouponsEnabled(g !== false && s !== false);
     }).catch(() => {});
   }, [companyId]);
 

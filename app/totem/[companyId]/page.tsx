@@ -131,6 +131,7 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
   const [reviewDeliveryMode, setReviewDeliveryMode] = useState<string>("delivery");
   const [convenienceFee, setConvenienceFee] = useState(0);
   const [favorites, setFavorites] = useState<Record<string, any>>({});
+  const [orderContactPhone, setOrderContactPhone] = useState("");
 
   useEffect(() => {
     getDoc(doc(firestore, "settings", "global")).then((snap) => {
@@ -248,6 +249,8 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
         });
       }
       resetAddressForm();
+    } catch (error) {
+      logger.error("TOTEM_PAGE", "Erro ao salvar endereço", error);
     } finally {
       setSavingAddress(false);
     }
@@ -426,6 +429,11 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
       return;
     }
 
+    if (requiresContact && !(user as any)?.phone && !orderContactPhone.trim()) {
+      setToast({ message: "Informe seu telefone para contato.", type: "error" });
+      return;
+    }
+
     if (scheduledDate && scheduledTime) {
       const selected = new Date(`${scheduledDate}T${scheduledTime}`);
       if (selected < earliestDate) {
@@ -446,6 +454,12 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
     setIsProcessingPayment(true);
 
     try {
+      if (requiresContact && !(user as any)?.phone && orderContactPhone.trim()) {
+        await updateDoc(doc(firestore, "users", user!.uid), {
+          phone: orderContactPhone.trim(),
+        }).catch(() => {});
+      }
+
       let total = cartTotal + reviewDeliveryFee + convenienceFee;
       if (appliedCoupon) {
         total = Math.max(0, total - appliedCoupon.discountValue);
@@ -474,6 +488,9 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
 
       if (requiresContact) {
         orderData.requiresCustomerContact = true;
+        if (orderContactPhone.trim()) {
+          orderData.customerPhone = orderContactPhone.trim();
+        }
       }
 
       if (appliedCoupon) {
@@ -672,6 +689,20 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
                           {contactInstructions.map((text, i) => (
                             <p key={i} className="text-xs text-purple-800 whitespace-pre-wrap">{text}</p>
                           ))}
+                        </div>
+                      )}
+                      {!(user as any)?.phone && (
+                        <div className="mt-3">
+                          <label className="text-[10px] font-bold text-purple-700 uppercase block mb-1">
+                            Telefone para contato
+                          </label>
+                          <input
+                            type="tel"
+                            value={orderContactPhone}
+                            onChange={(e) => setOrderContactPhone(e.target.value)}
+                            placeholder="(11) 99999-9999"
+                            className="w-full px-3 py-2.5 rounded-lg border border-purple-300 bg-white text-sm font-medium outline-none focus:border-purple-500"
+                          />
                         </div>
                       )}
                     </div>

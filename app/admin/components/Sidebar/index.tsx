@@ -41,7 +41,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     ]).then(([globalSnap, companySnap]) => {
       const global = globalSnap.exists() ? globalSnap.data().couponsEnabled : undefined;
       const store = companySnap.exists() ? companySnap.data().couponsEnabled : undefined;
-      setCouponsEnabled(global !== false && store === true);
+      setCouponsEnabled(global !== false && store !== false);
     }).catch(() => {});
   }, [user?.companyId]);
 

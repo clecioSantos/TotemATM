@@ -62,7 +62,6 @@ export default function StoreListingPage() {
   const [completeProfileDismissed, setCompleteProfileDismissed] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
-  const [storeCitySettings, setStoreCitySettings] = useState<any[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
   const [favorites, setFavorites] = useState<Record<string, any>>({});
@@ -85,13 +84,6 @@ export default function StoreListingPage() {
   const isSandbox = process.env.NEXT_PUBLIC_MERCADOPAGO_ENVIRONMENT?.toLowerCase() === "sandbox"
     || process.env.NEXT_PUBLIC_MERCADOPAGO_ENVIRONMENT?.toLowerCase() === "test";
 
-  useEffect(() => {
-    const unsub = onSnapshot(collection(firestore, "storeCitySettings"), (snap) => {
-      setStoreCitySettings(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    });
-    return () => unsub();
-  }, []);
-
   const activeCategories = categories.filter((cat) => 
     cat.key === "all" || stores.some((store) => store.areasAtuacao?.includes(cat.key))
   );
@@ -100,10 +92,8 @@ export default function StoreListingPage() {
     const matchesName = store.name.toLowerCase().includes(search.toLowerCase());
     let matchesCity = true;
     if (cityFilter) {
-      const hasSettings = storeCitySettings.some(
-        (s) => s.companyId === store.id && s.cityId === cityFilter && s.enabled
-      );
-      matchesCity = hasSettings;
+      const selectedCity = cities.find((c) => c.id === cityFilter);
+      matchesCity = selectedCity ? store.cidade === selectedCity.name : false;
     }
     let matchesCategory = true;
     if (categoryFilter !== "all") {
@@ -283,6 +273,9 @@ export default function StoreListingPage() {
         await showAlert("Endereço adicionado!");
       }
       resetAddressForm();
+    } catch (error) {
+      logger.error("TOTEM_PAGE", "Erro ao salvar endereço", error);
+      await showAlert("Erro ao salvar endereço. Tente novamente.");
     } finally {
       setSavingAddress(false);
     }

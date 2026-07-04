@@ -118,7 +118,7 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
             </div>
           )}
 
-          {order.address && (
+          {order.address ? (
             <div className="order-address-delivery-info" style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
               <p style={{ fontSize: '10px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Endereço de Entrega</p>
               <p style={{ fontSize: '14px', color: '#334155', fontWeight: '600' }}>
@@ -126,7 +126,11 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
               </p>
               <p style={{ fontSize: '13px', color: '#64748b' }}>{order.address.neighborhood}{order.address.complement ? ` - ${order.address.complement}` : ''}</p>
             </div>
-          )}
+          ) : order.deliveryMode === "pickup" || !order.deliveryMode ? (
+            <div className="order-address-delivery-info" style={{ marginBottom: '1.5rem', padding: '1rem', background: '#fef3c7', borderRadius: '12px', border: '1px solid #fcd34d' }}>
+              <p style={{ fontSize: '10px', fontWeight: 'bold', color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>🏪 Balcão</p>
+            </div>
+          ) : null}
 
           <table className="details-table">
             <thead>

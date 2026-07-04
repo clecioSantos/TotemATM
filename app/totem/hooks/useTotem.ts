@@ -376,7 +376,8 @@ export const useTotem = (companyId: string) => {
       number: string;
       neighborhood: string;
       complement?: string;
-    };
+    } | null;
+    deliveryMode?: string;
     deliveryFee?: number;
     paymentMethod?: string;
     paymentStatus?: string;
@@ -480,6 +481,7 @@ export const useTotem = (companyId: string) => {
         customerPhone: (user as any)?.phone || null,
         tableNumber: "",
         address: identification.address || null,
+        deliveryMode: identification.deliveryMode || "delivery",
         deliveryFee,
         paymentMethod: identification.paymentMethod || "PIX",
         paymentStatus: identification.paymentStatus || "WAITING_PAYMENT",

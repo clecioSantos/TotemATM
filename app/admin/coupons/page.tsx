@@ -48,7 +48,7 @@ function CouponsContent() {
     ]).then(([globalSnap, companySnap]) => {
       const global = globalSnap.exists() ? globalSnap.data().couponsEnabled : undefined;
       const store = companySnap.exists() ? companySnap.data().couponsEnabled : undefined;
-      if (global === false || store !== true) {
+      if (global === false || store === false) {
         router.replace("/totem");
       }
     }).catch(() => {});
