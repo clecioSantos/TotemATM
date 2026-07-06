@@ -748,6 +748,8 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
               companyId={companyId}
               schedulingRequired={hasRequiredScheduling}
               schedulingConfigured={!!(scheduledDate && scheduledTime)}
+              requiresContact={requiresContact}
+              phoneFilled={!!orderContactPhone.trim()}
             />
           </div>
         );

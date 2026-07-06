@@ -31,6 +31,8 @@ interface IdentificationScreenProps {
   companyId: string;
   schedulingRequired?: boolean;
   schedulingConfigured?: boolean;
+  requiresContact?: boolean;
+  phoneFilled?: boolean;
 }
 
 function getCartCompanyId(): string | null {
@@ -45,7 +47,7 @@ function getCartCompanyId(): string | null {
 }
 
 export default function IdentificationScreen({
-  addressStreet, setAddressStreet, addressCity, setAddressCity, addressNumber, setAddressNumber, addressNeighborhood, setAddressNeighborhood, addressComplement, setAddressComplement, onConfirm, onBack, companyId: companyIdProp, schedulingRequired, schedulingConfigured
+  addressStreet, setAddressStreet, addressCity, setAddressCity, addressNumber, setAddressNumber, addressNeighborhood, setAddressNeighborhood, addressComplement, setAddressComplement, onConfirm, onBack, companyId: companyIdProp, schedulingRequired, schedulingConfigured, requiresContact, phoneFilled
 }: IdentificationScreenProps) {
   const { user } = useAuth();
   const params = useParams();
@@ -236,6 +238,7 @@ export default function IdentificationScreen({
     }
 
     onConfirm(deliveryPrice, deliveryMode);
+    setIsSubmitting(false);
   };
 
   return (
@@ -279,129 +282,149 @@ export default function IdentificationScreen({
           </div>
         )}
 
-        {/* Endereços Salvos */}
-        {user && addresses.length > 0 && (
-          <div className="mb-6 flex flex-col gap-1">
-            <span className="text-[10px] font-bold tracking-widest text-brand-muted uppercase ml-1 mb-2">Meus endereços</span>
-            <div className="flex flex-col border border-brand-border rounded-[12px] overflow-hidden">
-              <button
-                onClick={handleSelectNewAddress}
-                className={`p-4 border-b border-brand-border transition-all text-left flex items-center gap-3 ${
-                  selectedAddressId === "new"
-                    ? "bg-brand-light"
-                    : "bg-brand-surface hover:bg-brand-light"
-                }`}
-              >
-                <PlusCircle className="h-5 w-5 text-brand-primary" />
-                <span className="text-sm font-bold text-brand-dark">Novo endereço</span>
-              </button>
-
-              {addresses.map((addr) => (
-                <button
-                  key={addr.id}
-                  onClick={() => handleSelectAddress(addr)}
-                  className={`p-4 border-b border-brand-border last:border-0 transition-all text-left ${
-                    selectedAddressId === addr.id
-                      ? "bg-brand-light"
-                      : "bg-brand-surface hover:bg-brand-light"
-                  }`}
-                >
-                  <p className="text-sm font-bold text-brand-dark">{addr.street}, {addr.number}</p>
-                  <p className="text-xs text-brand-muted">{addr.neighborhood}</p>
-                </button>
-              ))}
+        {/* Endereço da Loja (Retirada) */}
+        {deliveryMode === "pickup" && companyData && (
+          <div className="mb-6">
+            <div className="p-4 rounded-[12px] border border-brand-primary bg-brand-light flex items-center gap-3">
+              <MapPin className="h-5 w-5 text-brand-primary shrink-0" />
+              <div>
+                <p className="font-bold text-brand-dark text-sm">{companyData.name}</p>
+                <p className="text-xs text-brand-muted">
+                  {companyData.endereco}, {companyData.numero}{companyData.bairro ? ` — ${companyData.bairro}` : ""}
+                </p>
+                {companyData.cidade && <p className="text-xs text-brand-muted">{companyData.cidade}{companyData.estado ? ` - ${companyData.estado}` : ""}</p>}
+              </div>
             </div>
           </div>
         )}
 
-        {/* Form Inputs */}
-        <div className="flex flex-col gap-4 mb-8">
-          {selectedAddressId === "new" ? (
-            <>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-brand-muted uppercase">Rua</label>
-                <input 
-                  type="text" 
-                  placeholder="Ex: Av. Paulista" 
-                  value={addressStreet}
-                  onChange={(e) => setAddressStreet(e.target.value)}
-                  className="w-full bg-brand-light border border-brand-border px-4 py-3 rounded-[12px] text-sm font-semibold text-brand-dark focus:border-brand-primary outline-none transition-all"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-brand-muted uppercase">Cidade</label>
-                  <select 
-                    value={addressCity} 
-                    onChange={(e) => { setAddressCity(e.target.value); setAddressNeighborhood(""); }}
-                    className="w-full bg-brand-light border border-brand-border px-4 py-3 rounded-[12px] text-sm font-semibold outline-none"
+        {/* Endereços e Formulário (apenas para Entrega) */}
+        {deliveryMode === "delivery" && (
+          <>
+            {user && addresses.length > 0 && (
+              <div className="mb-6 flex flex-col gap-1">
+                <span className="text-[10px] font-bold tracking-widest text-brand-muted uppercase ml-1 mb-2">Meus endereços</span>
+                <div className="flex flex-col border border-brand-border rounded-[12px] overflow-hidden">
+                  <button
+                    onClick={handleSelectNewAddress}
+                    className={`p-4 border-b border-brand-border transition-all text-left flex items-center gap-3 ${
+                      selectedAddressId === "new"
+                        ? "bg-brand-light"
+                        : "bg-brand-surface hover:bg-brand-light"
+                    }`}
                   >
-                    <option value="">Selecione...</option>
-                    {availableCities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-brand-muted uppercase">Bairro</label>
-                  <select 
-                    value={availableNeighborhoods.find(n => n.name === addressNeighborhood)?.id || ""} 
-                    onChange={(e) => {
-                      const id = e.target.value;
-                      const name = availableNeighborhoods.find(n => n.id === id)?.name || "";
-                      setAddressNeighborhood(name);
-                    }}
-                    disabled={!addressCity}
-                    className="w-full bg-brand-light border border-brand-border px-4 py-3 rounded-[12px] text-sm font-semibold outline-none"
-                  >
-                    <option value="">Selecione...</option>
-                    {availableNeighborhoods.map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
-                  </select>
+                    <PlusCircle className="h-5 w-5 text-brand-primary" />
+                    <span className="text-sm font-bold text-brand-dark">Novo endereço</span>
+                  </button>
+
+                  {addresses.map((addr) => (
+                    <button
+                      key={addr.id}
+                      onClick={() => handleSelectAddress(addr)}
+                      className={`p-4 border-b border-brand-border last:border-0 transition-all text-left ${
+                        selectedAddressId === addr.id
+                          ? "bg-brand-light"
+                          : "bg-brand-surface hover:bg-brand-light"
+                      }`}
+                    >
+                      <p className="text-sm font-bold text-brand-dark">{addr.street}, {addr.number}</p>
+                      <p className="text-xs text-brand-muted">{addr.neighborhood}</p>
+                    </button>
+                  ))}
                 </div>
               </div>
+            )}
 
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-1 flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-brand-muted uppercase">Nº</label>
-                  <input 
-                    type="text" 
-                    placeholder="123" 
-                    value={addressNumber}
-                    onChange={(e) => setAddressNumber(e.target.value)}
-                    className="w-full bg-brand-light border border-brand-border px-4 py-3 rounded-[12px] text-sm font-semibold outline-none"
-                  />
-                </div>
-                <div className="col-span-2 flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-brand-muted uppercase">Complemento</label>
-                  <input 
-                    type="text" 
-                    placeholder="Apto, Bloco..." 
-                    value={addressComplement}
-                    onChange={(e) => setAddressComplement(e.target.value)}
-                    className="w-full bg-brand-light border border-brand-border px-4 py-3 rounded-[12px] text-sm font-semibold outline-none"
-                  />
-                </div>
-              </div>
+            <div className="flex flex-col gap-4 mb-8">
+              {selectedAddressId === "new" ? (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-brand-muted uppercase">Rua</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ex: Av. Paulista" 
+                      value={addressStreet}
+                      onChange={(e) => setAddressStreet(e.target.value)}
+                      className="w-full bg-brand-light border border-brand-border px-4 py-3 rounded-[12px] text-sm font-semibold text-brand-dark focus:border-brand-primary outline-none transition-all"
+                    />
+                  </div>
 
-              {user && (
-                <label className="flex items-center gap-2 cursor-pointer mt-1">
-                  <input
-                    type="checkbox"
-                    checked={saveForFuture}
-                    onChange={(e) => setSaveForFuture(e.target.checked)}
-                    className="w-4 h-4 rounded border-brand-border accent-brand-primary"
-                  />
-                  <span className="text-xs font-medium text-brand-muted">Salvar endereço para próximos pedidos</span>
-                </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-brand-muted uppercase">Cidade</label>
+                      <select 
+                        value={addressCity} 
+                        onChange={(e) => { setAddressCity(e.target.value); setAddressNeighborhood(""); }}
+                        className="w-full bg-brand-light border border-brand-border px-4 py-3 rounded-[12px] text-sm font-semibold outline-none"
+                      >
+                        <option value="">Selecione...</option>
+                        {availableCities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-brand-muted uppercase">Bairro</label>
+                      <select 
+                        value={availableNeighborhoods.find(n => n.name === addressNeighborhood)?.id || ""} 
+                        onChange={(e) => {
+                          const id = e.target.value;
+                          const name = availableNeighborhoods.find(n => n.id === id)?.name || "";
+                          setAddressNeighborhood(name);
+                        }}
+                        disabled={!addressCity}
+                        className="w-full bg-brand-light border border-brand-border px-4 py-3 rounded-[12px] text-sm font-semibold outline-none"
+                      >
+                        <option value="">Selecione...</option>
+                        {availableNeighborhoods.map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-1 flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-brand-muted uppercase">Nº</label>
+                      <input 
+                        type="text" 
+                        placeholder="123" 
+                        value={addressNumber}
+                        onChange={(e) => setAddressNumber(e.target.value)}
+                        className="w-full bg-brand-light border border-brand-border px-4 py-3 rounded-[12px] text-sm font-semibold outline-none"
+                      />
+                    </div>
+                    <div className="col-span-2 flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-brand-muted uppercase">Complemento</label>
+                      <input 
+                        type="text" 
+                        placeholder="Apto, Bloco..." 
+                        value={addressComplement}
+                        onChange={(e) => setAddressComplement(e.target.value)}
+                        className="w-full bg-brand-light border border-brand-border px-4 py-3 rounded-[12px] text-sm font-semibold outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {user && (
+                    <label className="flex items-center gap-2 cursor-pointer mt-1">
+                      <input
+                        type="checkbox"
+                        checked={saveForFuture}
+                        onChange={(e) => setSaveForFuture(e.target.checked)}
+                        className="w-4 h-4 rounded border-brand-border accent-brand-primary"
+                      />
+                      <span className="text-xs font-medium text-brand-muted">Salvar endereço para próximos pedidos</span>
+                    </label>
+                  )}
+                </>
+              ) : (
+                <div className="p-4 rounded-[12px] border border-brand-primary bg-brand-light flex items-center gap-3">
+                  <MapPin className="h-5 w-5 text-brand-primary" />
+                  <div>
+                    <p className="font-bold text-brand-dark text-sm">{addressStreet}, {addressNumber}</p>
+                    <p className="text-xs text-brand-muted">{addressNeighborhood}</p>
+                  </div>
+                </div>
               )}
-            </>
-          ) : (
-            <div className="p-4 rounded-[12px] border border-brand-primary bg-brand-light flex items-center gap-3">
-              <MapPin className="h-5 w-5 text-brand-primary" />
-              <div>
-                <p className="font-bold text-brand-dark text-sm">{addressStreet}, {addressNumber}</p>
-                <p className="text-xs text-brand-muted">{addressNeighborhood}</p>
-              </div>
             </div>
+          </>
           )}
 
           {/* Taxa */}
@@ -433,13 +456,12 @@ export default function IdentificationScreen({
               </div>
             </div>
           )}
-        </div>
 
         {/* Buttons */}
         <div className="flex flex-col gap-3 mt-4">
           <button 
             className="w-full bg-brand-primary hover:bg-brand-primaryHover text-white font-bold py-4 rounded-[12px] transition-all disabled:opacity-50" 
-            disabled={isSubmitting || (deliveryMode === "delivery" && (!addressStreet || !addressNumber || !addressNeighborhood || !isCityDeliveryEnabled || !isNeighborhoodSupported)) || (schedulingRequired && !schedulingConfigured)} 
+            disabled={isSubmitting || (deliveryMode === "delivery" && (!addressStreet || !addressNumber || !addressNeighborhood || !isCityDeliveryEnabled || !isNeighborhoodSupported)) || (schedulingRequired && !schedulingConfigured) || (requiresContact && !phoneFilled)} 
             onClick={handleConfirmAndSave}
           >
             {isSubmitting ? "ENVIANDO..." : deliveryMode === "pickup" ? "CONFIRMAR RETIRADA" : "CONFIRMAR E ENVIAR"}
