@@ -555,125 +555,125 @@ export default function StoreListingPage() {
                   </Link>
                 </div>
               ) : isAddressesOpen ? (
-                <div className="space-y-5">
-                  <div className="border-b border-[#EAEAEA] pb-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <h3 className="text-xl font-bold">Meus Endereços</h3>
-                        <p className="text-sm text-gray-500">Gerencie seus endereços no mesmo padrão da edição de perfil.</p>
-                      </div>
-                      {isEditing && (
-                        <span className="text-xs font-semibold uppercase text-[#FF6B00]">Modo edição</span>
-                      )}
-                    </div>
+                <>
+                  <div className="sticky top-0 bg-white border-b border-[#EAEAEA] px-5 py-4 flex items-center justify-between z-10">
+                    <button onClick={() => { setIsAddressesOpen(false); resetAddressForm(); }} className="flex items-center gap-1 text-sm font-bold text-[#666] hover:text-[#1F1F1F]">
+                      <X size={18} /> Cancelar
+                    </button>
+                    <h3 className="font-bold text-base">Meus Endereços</h3>
+                    {isEditing && (
+                      <span className="text-xs font-semibold uppercase text-[#FF6B00]">Modo edição</span>
+                    )}
                   </div>
-                  <div className="space-y-3 max-h-[34vh] overflow-y-auto">
-                    {addresses.map((addr) => (
-                      <div key={addr.id} className="p-4 bg-[#FAFAFA] rounded-2xl flex justify-between items-center border border-[#EAEAEA]">
+                  <div className="px-5 py-6 space-y-5">
+                    <div className="space-y-3 max-h-[34vh] overflow-y-auto">
+                      {addresses.map((addr) => (
+                        <div key={addr.id} className="p-4 bg-[#FAFAFA] rounded-2xl flex justify-between items-center border border-[#EAEAEA]">
+                          <div>
+                            <p className="font-bold text-sm">{addr.street}, {addr.number}</p>
+                            <p className="text-sm text-[#666]">{addr.neighborhood}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setIsEditing(addr.id);
+                                setAddressStreet(addr.street);
+                                setAddressNumber(addr.number);
+                                setAddressCity(addr.cityId || "");
+                                setAddressNeighborhood(addr.neighborhoodId || addr.neighborhood);
+                                setAddressComplement(addr.complement || "");
+                              }}
+                              className="p-2 rounded-lg bg-white border border-[#EAEAEA] hover:bg-gray-50"
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => handleDeleteAddress(addr.id)} className="p-2 rounded-lg bg-white border border-[#EAEAEA] text-red-600 hover:bg-red-50">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <form onSubmit={handleAddAddress} className="space-y-4 pt-4 border-t border-[#EAEAEA]">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+                        <div className="sm:col-span-3">
+                          <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Rua</label>
+                          <input
+                            required
+                            className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]"
+                            placeholder="Rua"
+                            value={addressStreet}
+                            onChange={(e) => setAddressStreet(e.target.value)}
+                          />
+                        </div>
+                        <div className="sm:col-span-1">
+                          <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Nº</label>
+                          <input
+                            required
+                            className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]"
+                            placeholder="Nº"
+                            value={addressNumber}
+                            onChange={(e) => setAddressNumber(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
-                          <p className="font-bold text-sm">{addr.street}, {addr.number}</p>
-                          <p className="text-sm text-[#666]">{addr.neighborhood}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setIsEditing(addr.id);
-                              setAddressStreet(addr.street);
-                              setAddressNumber(addr.number);
-                              setAddressCity(addr.cityId || "");
-                              setAddressNeighborhood(addr.neighborhoodId || addr.neighborhood);
-                              setAddressComplement(addr.complement || "");
-                            }}
-                            className="p-2 rounded-lg bg-white border border-[#EAEAEA] hover:bg-gray-50"
+                          <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Cidade</label>
+                          <select
+                            required
+                            className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]"
+                            value={addressCity}
+                            onChange={(e) => setAddressCity(e.target.value)}
                           >
-                            <ChevronRight className="h-4 w-4" />
-                          </button>
-                          <button onClick={() => handleDeleteAddress(addr.id)} className="p-2 rounded-lg bg-white border border-[#EAEAEA] text-red-600 hover:bg-red-50">
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                            <option value="">Selecione a cidade</option>
+                            {availableCities.map((c) => (
+                              <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                          </select>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                  <form onSubmit={handleAddAddress} className="space-y-4 pt-4 border-t border-[#EAEAEA] mt-2">
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-                      <div className="sm:col-span-3">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Rua</label>
-                        <input
-                          required
-                          className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]"
-                          placeholder="Rua"
-                          value={addressStreet}
-                          onChange={(e) => setAddressStreet(e.target.value)}
-                        />
-                      </div>
-                      <div className="sm:col-span-1">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Nº</label>
-                        <input
-                          required
-                          className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]"
-                          placeholder="Nº"
-                          value={addressNumber}
-                          onChange={(e) => setAddressNumber(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
-                        <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Cidade</label>
+                        <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Bairro</label>
                         <select
                           required
                           className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]"
-                          value={addressCity}
-                          onChange={(e) => setAddressCity(e.target.value)}
+                          value={addressNeighborhood}
+                          onChange={(e) => setAddressNeighborhood(e.target.value)}
+                          disabled={!addressCity}
                         >
-                          <option value="">Selecione a cidade</option>
-                          {availableCities.map((c) => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
+                          <option value="">Selecione o bairro</option>
+                          {availableNeighborhoods.map((n) => (
+                            <option key={n.id} value={n.id}>{n.name}</option>
                           ))}
                         </select>
                       </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Bairro</label>
-                      <select
-                        required
-                        className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]"
-                        value={addressNeighborhood}
-                        onChange={(e) => setAddressNeighborhood(e.target.value)}
-                        disabled={!addressCity}
-                      >
-                        <option value="">Selecione o bairro</option>
-                        {availableNeighborhoods.map((n) => (
-                          <option key={n.id} value={n.id}>{n.name}</option>
-                        ))}
-                      </select>
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Complemento</label>
-                    <input
-                      className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]"
-                      placeholder="Complemento"
-                      value={addressComplement}
-                      onChange={(e) => setAddressComplement(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <button
-                      type="submit"
-                      className="w-full h-12 bg-[#FF6B00] text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm"
-                      disabled={savingAddress}
-                    >
-                      {savingAddress ? "Salvando..." : isEditing ? <><Plus className="h-4 w-4" /> Salvar Alterações</> : <><Plus className="h-4 w-4" /> Adicionar Endereço</>}
-                    </button>
-                    {isEditing && (
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Complemento</label>
+                      <input
+                        className="w-full h-12 px-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA] text-sm outline-none focus:border-[#FF6B00]"
+                        placeholder="Complemento"
+                        value={addressComplement}
+                        onChange={(e) => setAddressComplement(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      <button
+                        type="submit"
+                        className="w-full h-12 bg-[#FF6B00] text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm"
+                        disabled={savingAddress}
+                      >
+                        {savingAddress ? "Salvando..." : isEditing ? <><Plus className="h-4 w-4" /> Salvar Alterações</> : <><Plus className="h-4 w-4" /> Adicionar Endereço</>}
+                      </button>
+                      {isEditing && (
                       <button type="button" onClick={resetAddressForm} className="w-full h-12 bg-[#F3F4F6] text-[#333] font-bold rounded-xl text-sm">
                         Cancelar edição
                       </button>
                     )}
-                  </div>
-                </form>
-              </div>
+                    </div>
+                  </form>
+                </div>
+              </>
               ) : (
                 <div className="space-y-6">
                   <div>
