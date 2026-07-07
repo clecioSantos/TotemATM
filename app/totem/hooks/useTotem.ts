@@ -379,6 +379,7 @@ export const useTotem = (companyId: string) => {
     } | null;
     deliveryMode?: string;
     deliveryFee?: number;
+    convenienceFee?: number;
     paymentMethod?: string;
     paymentStatus?: string;
     isScheduled?: boolean;
@@ -467,7 +468,8 @@ export const useTotem = (companyId: string) => {
       }
 
       const deliveryFee = identification.deliveryFee || 0;
-      const total = itemsTotal + deliveryFee;
+      const convenienceFee = identification.convenienceFee || 0;
+      const total = itemsTotal + deliveryFee + convenienceFee;
 
       const stored = getPersistedStoreInfo();
       const orderCompanyId = (stored && stored.companyId) || companyId;
@@ -497,6 +499,10 @@ export const useTotem = (companyId: string) => {
         orderData.scheduledDate = identification.scheduledDate;
         orderData.scheduledTime = identification.scheduledTime;
         orderData.scheduledAt = new Date(`${identification.scheduledDate}T${identification.scheduledTime}`);
+      }
+
+      if (identification.convenienceFee && identification.convenienceFee > 0) {
+        orderData.convenienceFee = identification.convenienceFee;
       }
 
       if (identification.requiresCustomerContact) {
