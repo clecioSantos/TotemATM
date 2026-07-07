@@ -169,6 +169,204 @@
   gap: 2px;
 }
 
+/* Extrato Financeiro */
+.extrato-card {
+  background: white;
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  margin-top: 24px;
+}
+
+.extrato-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.extrato-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.extrato-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.extrato-filter-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.extrato-filter-btn.active {
+  background: #09090b;
+  color: white;
+  border-color: #09090b;
+}
+
+.extrato-refresh {
+  padding: 6px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.extrato-refresh .spin { animation: spin 0.6s linear infinite; }
+
+.extrato-loading {
+  display: flex;
+  justify-content: center;
+  padding: 40px;
+}
+
+.extrato-loading .spin { animation: spin 0.6s linear infinite; }
+
+.extrato-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.summary-item {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.summary-item.total {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.summary-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.summary-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.summary-value.negative { color: #dc2626; }
+.summary-value.positive { color: #16a34a; }
+
+.extrato-table {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.extrato-table-header {
+  display: grid;
+  grid-template-columns: 90px 1fr 80px 90px 70px 90px 90px 24px;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.extrato-row {
+  border-top: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.extrato-row:hover { background: #fafafa; }
+.extrato-row.expanded { background: #f8fafc; }
+
+.extrato-row-main {
+  display: grid;
+  grid-template-columns: 90px 1fr 80px 90px 70px 90px 90px 24px;
+  gap: 8px;
+  padding: 12px 14px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.extrato-date { font-weight: 600; color: #64748b; }
+.extrato-customer { font-weight: 600; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.extrato-method {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.extrato-method.pix { background: #f0fdf4; color: #166534; }
+.extrato-method.card { background: #eff6ff; color: #1d4ed8; }
+
+.extrato-total { font-weight: 700; text-align: right; }
+.extrato-fee { text-align: right; color: #dc2626; font-weight: 600; }
+.extrato-commission { text-align: right; color: #dc2626; font-weight: 600; }
+.extrato-net { text-align: right; color: #16a34a; font-weight: 700; }
+.extrato-expand { color: #94a3b8; display: flex; justify-content: center; }
+
+.extrato-details {
+  padding: 12px 14px 14px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  color: #64748b;
+}
+
+.detail-item.total { border-top: 1px solid #e2e8f0; padding-top: 6px; margin-top: 2px; font-weight: 700; color: #0f172a; }
+.detail-item .negative { color: #dc2626; }
+.detail-item .positive { color: #16a34a; }
+
+.extrato-empty {
+  padding: 24px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 @media (max-width: 768px) {
   .financeiro-container {
     padding: 16px;
