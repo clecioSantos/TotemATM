@@ -115,9 +115,11 @@ body {
 @media (max-width: 768px) {
   .admin-content {
     margin-left: 0 !important;
+    padding-top: 60px;
   }
   .admin-content.content-expanded {
     margin-left: 0 !important;
+    padding-top: 60px;
   }
 }
 
