@@ -47,7 +47,7 @@
     "framer-motion": "^12.40.0",
     "lucide-react": "^0.475.0",
     "next": "^14.2.0",
-    "protobufjs": "^7.6.1",
+    "protobufjs": "^7.6.3",
     "qrcode.react": "^4.2.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
