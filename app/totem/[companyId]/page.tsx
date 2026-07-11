@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { doc, updateDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, orderBy, getDoc } from "firebase/firestore";
@@ -25,15 +27,18 @@ interface PageProps {
 }
 
 type TotemStep = 'WELCOME' | 'ORDERING' | 'IDENTIFICATION' | 'REVIEW' | 'PAYMENT' | 'FINISHED';
-
 export default function TotemPage() {
+  const [isMounted, setIsMounted] = useState(false);
   const params = useParams();
-  const companyId = params.companyId as string;
-  if (!companyId) return null;
+
   const [urlParams, setUrlParams] = useState<URLSearchParams>(() => {
     if (typeof window === "undefined") return new URLSearchParams();
     return new URLSearchParams(window.location.search);
   });
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -44,6 +49,11 @@ export default function TotemPage() {
     }, 500);
     return () => clearInterval(interval);
   }, [urlParams]);
+
+  if (!isMounted) return null;
+
+  const companyId = params.companyId as string;
+  if (!companyId) return null;
 
   const initialProduct = urlParams?.get("product") || undefined;
   const initialSize = urlParams?.get("size") || undefined;

@@ -3,7 +3,7 @@
 import { Product } from '@totem/shared/types';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { useCartStore } from 'cartStore';
+import { useCartStore } from '@/cartStore';
 
 interface ProductCardProps {
   product: Product;

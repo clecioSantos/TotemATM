@@ -5,14 +5,23 @@
       "dom",
       "dom.iterable",
       "esnext"
-    ], 
-    "baseUrl": ".",
+    ],
     "paths": {
-      "@/*": ["./*"], 
-      "@totem/shared/*": ["packages/shared/src/*"],
-      "@totem/hooks/*": ["app/totem/hooks/*"],
-      "@services/*": ["src/services/*"],
-      "@styles/*": ["src/styles/*"]
+      "@/*": [
+        "./*"
+      ],
+      "@totem/shared/*": [
+        "./packages/shared/src/*"
+      ],
+      "@totem/hooks/*": [
+        "./app/totem/hooks/*"
+      ],
+      "@services/*": [
+        "./src/services/*"
+      ],
+      "@styles/*": [
+        "./src/styles/*"
+      ]
     },
     "allowJs": true,
     "skipLibCheck": true,
@@ -21,7 +30,7 @@
     "incremental": true,
     "module": "esnext",
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -35,7 +44,8 @@
     "next-env.d.ts",
     ".next/types/**/*.ts",
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

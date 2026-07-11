@@ -290,7 +290,7 @@
   transition: left 0.2s ease;
 }
 
-..toggle-switch-button.active {
+.toggle-switch-button.active {
   background: #dcfce7;
   border-color: #86efac;
 }
