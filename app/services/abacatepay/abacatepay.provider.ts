@@ -100,7 +100,7 @@ export class AbacatePayProvider implements PaymentProvider {
     if (!signatureFromHeader) return false;
 
     try {
-      const mod = require("crypto") as typeof import("crypto");
+      const mod = require("crypto");
       const expectedSig = mod
         .createHmac("sha256", ABACATEPAY_PUBLIC_KEY)
         .update(Buffer.from(rawBody, "utf8"))
