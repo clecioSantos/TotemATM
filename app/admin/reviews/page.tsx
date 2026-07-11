@@ -75,8 +75,13 @@ export default function AdminReviewsPage() {
 
   if (loading) {
     return (
-      <div className="page-header">
-        <h2 className="page-title">Avaliações</h2>
+      <div className="condiments-page-container">
+        <header className="page-header">
+          <div className="header-text">
+            <h1 className="page-title">Avaliações</h1>
+            <p className="page-subtitle">Gerencie as avaliações dos seus clientes</p>
+          </div>
+        </header>
         <div className="loading-container">
           <div className="loading-spinner" />
         </div>
@@ -85,11 +90,13 @@ export default function AdminReviewsPage() {
   }
 
   return (
-    <div>
-      <div className="page-header">
-        <h2 className="page-title">Avaliações</h2>
-        <p className="page-subtitle">Gerencie as avaliações dos seus clientes</p>
-      </div>
+    <div className="condiments-page-container">
+      <header className="page-header">
+        <div className="header-text">
+          <h1 className="page-title">Avaliações</h1>
+          <p className="page-subtitle">Gerencie as avaliações dos seus clientes</p>
+        </div>
+      </header>
 
       <div className="reviews-metrics">
         <div className="metric-card metric-highlight">

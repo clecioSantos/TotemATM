@@ -79,21 +79,6 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
             {order.paymentMethod === 'credit_card' ? '💳 Cartão' : order.paymentMethod === 'PIX' ? '💠 PIX' : order.paymentMethod || '—'}
           </span>
           <strong className="order-total">R$ {order.total.toFixed(2)}</strong>
-          {order.status !== 'finished' && order.status !== 'cancelled' && order.status !== 'abandoned' && (
-            <button
-              className="cancel-btn-inline"
-              onClick={async (e) => {
-                e.stopPropagation();
-                if (await showConfirm("Deseja realmente cancelar este pedido?")) {
-                  onCancel(order.id);
-                }
-              }}
-              title="Cancelar pedido"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontSize: '12px', fontWeight: '600', color: '#dc2626', borderRadius: '6px' }}
-            >
-              Cancelar
-            </button>
-          )}
           <span className="expand-icon">{isExpanded ? '▲' : '▼'}</span>
         </div>
       </div>
@@ -198,7 +183,7 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
             </div>
           )}
 
-          {nextStatus && (
+          {order.status !== 'finished' && order.status !== 'cancelled' && order.status !== 'abandoned' && (
             <PermissionGate permission="editOrders">
               <div className="order-actions-footer">
                 <button 
@@ -212,12 +197,14 @@ export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
                 >
                   Cancelar Pedido
                 </button>
-                <button 
-                  className="action-btn-primary"
-                  onClick={(e) => { e.stopPropagation(); onStatusUpdate(order.id, nextStatus); }}
-                >
-                  Avançar para {statusMap[nextStatus].label}
-                </button>
+                {nextStatus && (
+                  <button 
+                    className="action-btn-primary"
+                    onClick={(e) => { e.stopPropagation(); onStatusUpdate(order.id, nextStatus); }}
+                  >
+                    Avançar para {statusMap[nextStatus].label}
+                  </button>
+                )}
               </div>
             </PermissionGate>
           )}

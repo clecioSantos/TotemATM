@@ -151,7 +151,7 @@ export default function FinanceiroPage() {
 
   if (loading) {
     return (
-      <div className="financeiro-container">
+      <div className="condiments-page-container">
         <div className="loading-spinner" />
       </div>
     );
@@ -160,11 +160,15 @@ export default function FinanceiroPage() {
   const isConnected = company?.mercadopago_connected === true;
 
   return (
-    <div className="financeiro-container">
-      <div className="financeiro-header">
-        <h1>Financeiro</h1>
-        <Wallet size={24} color="#64748b" />
-      </div>
+    <div className="condiments-page-container">
+      <header className="page-header">
+        <div className="header-text">
+          <h1 className="page-title">Financeiro</h1>
+          <p className="page-subtitle">Gerencie a integração com o Mercado Pago</p>
+        </div>
+      </header>
+
+      <main className="page-content">
 
       <div className="connection-card">
         <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, color: "#0f172a" }}>
@@ -390,6 +394,8 @@ export default function FinanceiroPage() {
           ) : null}
         </div>
       )}
+
+      </main>
 
       <HelpModal helpId={helpModal || ""} open={!!helpModal} onClose={() => setHelpModal(null)} />
     </div>
