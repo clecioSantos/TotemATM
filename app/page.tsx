@@ -41,7 +41,7 @@ const testimonials = [
 ];
 
 function LandingContent() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -52,9 +52,33 @@ function LandingContent() {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
-    window.location.href = "/totem";
-  }, [user]);
+    if (loading) return;
+    if (user) {
+      window.location.href = "/totem";
+    }
+  }, [user, loading]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <img src="/Logo.png" alt="Bora De Delivery" className="h-10 w-auto animate-pulse" />
+          <div className="w-8 h-8 border-4 border-[#FF6B00] border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (user) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-4 border-[#FF6B00] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-medium text-[#666]">Redirecionando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
