@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/app/admin/orders/AuthContext";
@@ -80,7 +80,7 @@ function AddressesManagementContent() {
     setNeighborhoods([]);
   }, [selectedCityId]);
 
-  // Carregar Configurações de Cidade
+  // Carregar configurações de Cidade
   useEffect(() => {
     if (!user?.companyId) return;
     const q = query(collection(firestore, "storeCitySettings"), where("companyId", "==", user.companyId));
@@ -112,7 +112,7 @@ function AddressesManagementContent() {
     return () => unsubscribe();
   }, [user?.companyId]);
 
-  // Ações de Cidade
+  // configurações de Cidade
   const handleDeleteCity = async (id: string) => {
     try {
       await deleteDoc(doc(firestore, "cities", id));
@@ -190,7 +190,7 @@ function AddressesManagementContent() {
       });
       await batch.commit();
       if (price > 0) await enableCityIfNeeded(cityId);
-      logger.info("ADDRESSES_PAGE", `Preços padronizados para cidade ${cityId}: R$${price}`);
+      logger.info("ADDRESSES_PAGE", `Preços atualizadopadronizados para cidade ${cityId}: R$${price}`);
       await showAlert("Preços atualizados com sucesso em todos os bairros!");
     } catch (error) {
       const errMsg = error instanceof FirestoreError
@@ -245,65 +245,7 @@ function AddressesManagementContent() {
         </div>
       </header>
 
-      {!isOwner && (
-        <div className="info-banner">
-          <ShieldAlert size={18} />
-          Apenas proprietários podem alterar os dados desta página.
-        </div>
-      )}
-
-      <CityTable
-        cities={cities}
-        selectedCityId={selectedCityId}
-        onSelectCity={setSelectedCityId}
-        onEditCity={(city) => setModalConfig({ type: 'city', data: city })}
-        onDeleteCity={handleDeleteCity}
-        isOwner={isOwner}
-        isAdmin={isAdmin}
-        onAddCity={() => setModalConfig({ type: 'city' })}
-        onSetDefaultPrice={(cityId: string) => setModalConfig({ type: 'city_price', data: { cityId } })}
-        citySettings={citySettings}
-        onToggleDelivery={handleToggleDelivery}
-      />
-
-      <div className="mb-6 p-4 bg-brand-surface rounded-xl border border-brand-border flex items-center justify-between">
-        <div>
-          <p className="font-bold text-sm text-brand-dark">Retirada na Loja</p>
-          <p className="text-xs text-brand-muted">Cliente pode retirar o pedido pessoalmente (frete grátis)</p>
-        </div>
-        <button
-          onClick={async () => {
-            if (!user?.companyId) return;
-            const newValue = !pickupEnabled;
-            setPickupEnabled(newValue);
-            try {
-              await updateDoc(doc(firestore, "companies", user.companyId), { pickupEnabled: newValue });
-            } catch (err) {
-              logger.error("ADDRESSES_PAGE", "Erro ao salvar pickupEnabled", err);
-              setPickupEnabled(!newValue);
-            }
-          }}
-          className={`toggle-switch-button ${pickupEnabled ? 'active' : ''}`}
-          aria-pressed={pickupEnabled}
-        >
-          <span className="toggle-thumb" />
-        </button>
-      </div>
-
-      <NeighborhoodTable 
-        neighborhoods={enrichedNeighborhoods}
-        selectedCityId={selectedCityId}
-          isOwner={isOwner}
-          isAdmin={isAdmin}
-          onAddNb={() => setModalConfig({ type: 'nb' })}
-          onEditNb={(nb) => setModalConfig({ type: 'nb', data: nb })}
-          onDeleteNb={async (id) => {
-            try { await deleteDoc(doc(firestore, "neighborhoods", id)); }
-            catch (error) { console.error("🔥 Erro ao remover bairro:", error); }
-          }}
-          onEditPrice={(nb) => setModalConfig({ type: 'price', data: nb })}
-          onToggleNb={handleToggleNb}
-        />
+<main className="page-content">{!isOwner && (<div className="info-banner"><ShieldAlert size={18} />Apenas proprietários podem alterar os dados desta página.</div>)}<CityTable cities={cities} selectedCityId={selectedCityId} onSelectCity={setSelectedCityId} onEditCity={(city) => setModalConfig({ type: 'city', data: city })} onDeleteCity={handleDeleteCity} isOwner={isOwner} isAdmin={isAdmin} onAddCity={() => setModalConfig({ type: 'city' })} onSetDefaultPrice={(cityId: string) => setModalConfig({ type: 'city_price', data: { cityId } })} citySettings={citySettings} onToggleDelivery={handleToggleDelivery} /><div className="mb-6 p-4 bg-brand-surface rounded-xl border border-brand-border flex items-center justify-between"><div><p className="font-bold text-sm text-brand-dark">Retirada na Loja</p><p className="text-xs text-brand-muted">Cliente pode retirar o pedido pessoalmente (frete grátis)</p></div><button onClick={async () => { if (!user?.companyId) return; const newValue = !pickupEnabled; setPickupEnabled(newValue); try { await updateDoc(doc(firestore, "companies", user.companyId), { pickupEnabled: newValue }); } catch (err) { logger.error("ADDRESSES_PAGE", "Erro ao salvar pickupEnabled", err); setPickupEnabled(!newValue); } }} className={`toggle-switch-button ${pickupEnabled ? 'active' : ''}`} aria-pressed={pickupEnabled}><span className="toggle-thumb" /></button></div><NeighborhoodTable neighborhoods={enrichedNeighborhoods} selectedCityId={selectedCityId} isOwner={isOwner} isAdmin={isAdmin} onAddNb={() => setModalConfig({ type: 'nb' })} onEditNb={(nb) => setModalConfig({ type: 'nb', data: nb })} onDeleteNb={async (id) => { try { await deleteDoc(doc(firestore, "neighborhoods", id)); } catch (error) { console.error("Erro ao remover bairro:", error); } }} onEditPrice={(nb) => setModalConfig({ type: 'price', data: nb })} onToggleNb={handleToggleNb} /></main>
 
       <Modal 
         isOpen={modalConfig.type !== null} 
@@ -400,3 +342,23 @@ export default function AddressesManagementPage() {
     </ErrorBoundary>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

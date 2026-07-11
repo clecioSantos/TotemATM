@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import { Trash2, Edit2, Plus, DollarSign, Truck } from "lucide-react";
@@ -35,7 +35,7 @@ export default function CityTable({
   return (
     <div className="table-card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px 16px 4px' }}>
-        <h4 className="column-label" style={{ margin: 0 }}>CIDADES</h4>
+        <h4 className="column-label" style={{ margin: 0, fontSize: '14px', fontWeight: 'bold' }}>CIDADES</h4>
         {isOwner && (
           <button className="add-btn-small" onClick={onAddCity} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: '900', color: '#ffbc0d', border: 'none', background: 'none', cursor: 'pointer' }}>
             <Plus size={14} /> NOVA CIDADE
@@ -69,26 +69,28 @@ export default function CityTable({
                   </td>
                   {(isOwner || isAdmin) && (
                     <td className="actions-cell">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); onToggleDelivery(city.id, !isDeliveryEnabled); }}
-                        className={`btn-action-text ${isDeliveryEnabled ? 'btn-active' : 'btn-inactive'}`}
-                      >
-                        <Truck size={14} />
-                        {isDeliveryEnabled ? "ENTREGA ATIVA" : "ATIVAR ENTREGA"}
-                      </button>
-
-                      {isOwner && (
-                        <button onClick={(e) => { e.stopPropagation(); onSetDefaultPrice(city.id); }} className="btn-action-text btn-price">
-                          <DollarSign size={14} /> PREÇO PADRÃO
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); onToggleDelivery(city.id, !isDeliveryEnabled); }}
+                          className={`btn-action-text ${isDeliveryEnabled ? 'btn-active' : 'btn-inactive'}`}
+                        >
+                          <Truck size={14} />
+                          {isDeliveryEnabled ? "ENTREGA ATIVA" : "ATIVAR ENTREGA"}
                         </button>
-                      )}
 
-                      {isOwner && (
-                        <>
-                          <button onClick={(e) => { e.stopPropagation(); onEditCity(city); }} className="btn-action btn-edit"><Edit2 size={14} /></button>
-                          <button onClick={async (e) => { e.stopPropagation(); if (await showConfirm('Excluir cidade?')) onDeleteCity(city.id); }} className="btn-action btn-delete"><Trash2 size={14} /></button>
-                        </>
-                      )}
+                        {isOwner && (
+                          <button onClick={(e) => { e.stopPropagation(); onSetDefaultPrice(city.id); }} className="btn-action-text btn-price">
+                            <DollarSign size={14} /> PREÇO PADRÃO
+                          </button>
+                        )}
+
+                        {isOwner && (
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button onClick={(e) => { e.stopPropagation(); onEditCity(city); }} className="action-btn action-btn-edit"><Edit2 size={14} /></button>
+                            <button onClick={async (e) => { e.stopPropagation(); if (await showConfirm('Excluir cidade?')) onDeleteCity(city.id); }} className="action-btn action-btn-delete"><Trash2 size={14} /></button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>
@@ -100,3 +102,7 @@ export default function CityTable({
     </div>
   );
 }
+
+
+
+

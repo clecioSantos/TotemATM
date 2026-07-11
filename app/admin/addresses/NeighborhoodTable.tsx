@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import { Trash2, Edit2, Plus, DollarSign, MapPinOff, MapPin } from "lucide-react";
@@ -31,7 +31,7 @@ export default function NeighborhoodTable({
   return (
     <div className="table-card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px 16px 4px' }}>
-        <h4 className="column-label" style={{ margin: 0 }}>BAIRROS</h4>
+        <h4 className="column-label" style={{ margin: 0, fontSize: '14px', fontWeight: 'bold' }}>BAIRROS</h4>
         {selectedCityId && isOwner && (
           <button className="add-btn-small" onClick={onAddNb} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: '900', color: '#ffbc0d', border: 'none', background: 'none', cursor: 'pointer' }}>
             <Plus size={14} /> NOVO BAIRRO
@@ -70,24 +70,26 @@ export default function NeighborhoodTable({
                     )}
                   </div>
                 </td>
-                {(isOwner || isAdmin) && (
-                  <td className="actions-cell" style={{ textAlign: 'right' }}>
-                    <button
-                      onClick={() => onToggleNb(nb.id, nb.enabled === false)}
-                      className={`btn-action-text ${nb.enabled !== false ? 'btn-active' : 'btn-inactive'}`}
-                      title={nb.enabled !== false ? "Desativar Bairro" : "Ativar Bairro"}
-                    >
-                      {nb.enabled !== false ? <MapPin size={12} /> : <MapPinOff size={12} />}
-                      {nb.enabled !== false ? "ATIVO" : "INATIVO"}
-                    </button>
-                    {isOwner && (
-                      <>
-                        <button onClick={() => onEditNb(nb)} className="btn-action btn-edit"><Edit2 size={14} /></button>
-                        <button onClick={async () => { if (await showConfirm('Excluir bairro?')) onDeleteNb(nb.id); }} className="btn-action btn-delete"><Trash2 size={14} /></button>
-                      </>
-                    )}
-                  </td>
-                )}
+                  {(isOwner || isAdmin) && (
+                    <td className="actions-cell">
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                        <button
+                          onClick={() => onToggleNb(nb.id, nb.enabled === false)}
+                          className={`btn-action-text ${nb.enabled !== false ? 'btn-active' : 'btn-inactive'}`}
+                          title={nb.enabled !== false ? "Desativar Bairro" : "Ativar Bairro"}
+                        >
+                          {nb.enabled !== false ? <MapPin size={12} /> : <MapPinOff size={12} />}
+                          {nb.enabled !== false ? "ATIVO" : "INATIVO"}
+                        </button>
+                        {isOwner && (
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button onClick={() => onEditNb(nb)} className="action-btn action-btn-edit"><Edit2 size={14} /></button>
+                            <button onClick={async () => { if (await showConfirm('Excluir bairro?')) onDeleteNb(nb.id); }} className="action-btn action-btn-delete"><Trash2 size={14} /></button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  )}
               </tr>
             ))}
           </tbody>
@@ -97,3 +99,6 @@ export default function NeighborhoodTable({
     </div>
   );
 }
+
+
+
