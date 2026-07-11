@@ -49,13 +49,7 @@ export async function GET(req: NextRequest) {
         startDate = null; // "all"
     }
 
-    let query = db.collection("orders")
-      .where("companyId", "==", companyId)
-      .where("paymentStatus", "==", "PAID");
-    
-    if (startDate) {
-      query = query.where("paidAt", ">=", startDate);
-    }
+    let query = db.collection("orders").where("companyId", "==", companyId);
 
     const snapshot = await query.get();
 
@@ -68,6 +62,14 @@ export async function GET(req: NextRequest) {
 
     for (const doc of snapshot.docs) {
       const data = doc.data();
+      
+      // Aplicar filtros manualmente para evitar erro de índice
+      const isPaid = data.paymentStatus === "PAID";
+      const paidAt = data.paidAt ? (data.paidAt.toDate ? data.paidAt.toDate() : new Date(data.paidAt)) : null;
+      const isAfterDate = !startDate || (paidAt && paidAt >= startDate);
+      
+      if (!isPaid || !isAfterDate) continue;
+
       const orderTotal = data.total || 0;
       const convenienceFeeValue = data.convenienceFee || 0;
       const method = data.paymentMethod === "credit_card" ? "credit_card" : "PIX";
@@ -87,7 +89,7 @@ export async function GET(req: NextRequest) {
         methodFee: Math.round((orderTotal * methodFeePercent) / 100 * 100) / 100,
         boraShare,
         storeNet,
-        paidAt: data.paidAt ? (data.paidAt.toDate ? data.paidAt.toDate() : new Date(data.paidAt)) : null,
+        paidAt,
         createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
       });
 
