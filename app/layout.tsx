@@ -6,7 +6,7 @@ import "./globals.css";
 
 import ConfirmProvider from "@/app/components/ConfirmProvider";
 import PushTokenRegistrar from "@/src/capacitor/PushTokenRegistrar";
-const LogTerminal = dynamic(() => import("@/app/components/LogTerminal"), { ssr: false });
+import LogTerminalWrapper from "@/app/components/LogTerminalWrapper";
 
 export const metadata = {
   title: 'Bora De Delivery',
@@ -42,7 +42,7 @@ export default function RootLayout({
             </CapacitorInit>
             <PushTokenRegistrar />
           </AuthProvider>
-          <LogTerminal />
+          <LogTerminalWrapper />
         </ErrorBoundary>
       </body>
     </html>

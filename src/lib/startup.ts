@@ -55,12 +55,12 @@ export function initializeApplication(): void {
   }
 
   logger.info("BOOT", "=== INICIANDO APLICAÇÃO ===", {
-    nodeVersion: process.version,
-    platform: process.platform,
-    nodeEnv: process.env.NODE_ENV,
-    cwd: process.cwd(),
+    nodeVersion: typeof process !== "undefined" ? process.version : "N/A",
+    platform: typeof process !== "undefined" ? process.platform : "N/A",
+    nodeEnv: typeof process !== "undefined" ? process.env.NODE_ENV : "N/A",
+    cwd: typeof process !== "undefined" ? process.cwd() : "N/A",
     memory: getMemoryMB(),
-    pid: process.pid,
+    pid: typeof process !== "undefined" ? process.pid : "N/A",
   });
 
   // Fase 1: Validação de ambiente (leve)
@@ -98,9 +98,13 @@ export function initializeApplication(): void {
   });
 
   // Fase 5: Tarefas secundárias (executam após o servidor estar pronto)
-  setImmediate(() => {
+  if (typeof setImmediate !== "undefined") {
+    setImmediate(() => {
+      initializeSecondaryServices();
+    });
+  } else {
     initializeSecondaryServices();
-  });
+  }
 }
 
 async function initializeSecondaryServices(): Promise<void> {

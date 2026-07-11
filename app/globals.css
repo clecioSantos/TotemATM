@@ -2,16 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Bora De Delivery Design Tokens */
-@import "../src/styles/abstracts/_variables.css";
-/* Base Styles */
-@import "../src/styles/base/_layout.css";
-/* UI Components */
-@import "../src/styles/components/buttons.css";
-@import "../src/styles/components/badges.css";
-@import "../src/styles/components/feedback.css";
-@import "../src/styles/components/modals.css";
-@import "../src/styles/components/inputs.css";
+:root {
+  --primary: oklch(60% 0.18 25);
+  --primary-hover: oklch(55% 0.18 25);
+  --primary-dark: oklch(45% 0.18 25);
+  --primary-rgb: 220, 38, 38;
+  --bg: #F7F7F7;
+  --bg-light: #FAFAFA;
+  --bg-muted: #E4E4E7;
+  --surface: #FFFFFF;
+  --white: #FFFFFF;
+  --fg: #202020;
+  --fg-muted: #666666;
+  --text-primary: #202020;
+  --text-secondary: #666666;
+  --text-muted: #A1A1AA;
+  --border: #EAEAEA;
+  --border-light: #E4E4E7;
+  --success: #00A650;
+  --alert: #FFB800;
+  --error: #FF4D4F;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-premium: 18px;
+  --radius-pill: 999px;
+  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-modal: 0 20px 40px rgba(0, 0, 0, 0.1);
+  --transition-default: all 0.2s ease;
+}
 
 body {
   margin: 0;
@@ -21,152 +41,48 @@ body {
   color: #202020;
 }
 
-.admin-layout {
-  display: flex;
-}
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+.header-text { display: flex; flex-direction: column; }
+.page-title { font-size: 28px; font-weight: 800; color: var(--fg); margin: 0; }
+.page-subtitle { font-size: 15px; color: var(--fg-muted); margin-top: 4px; }
+.page-content { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-soft); border: 1px solid var(--border); overflow: hidden; }
+.loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 80px 0; color: var(--fg-muted); font-size: 15px; }
+.spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: adminSpin 0.7s linear infinite; }
+@keyframes adminSpin { to { transform: rotate(360deg); } }
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 80px 0; color: var(--fg-muted); font-size: 15px; text-align: center; }
+.condiments-page-container { display: flex; flex-direction: column; gap: 32px; animation: pageFadeIn 0.3s ease; }
+@keyframes pageFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.table-card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-soft); border: 1px solid var(--border); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-card table { min-width: 100%; width: 100%; border-collapse: collapse; }
+.table-card th { padding: 16px 24px; background: var(--bg-light); color: var(--text-secondary); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; border-bottom: 1px solid var(--border); }
+.table-card td { padding: 14px 24px; border-bottom: 1px solid var(--border); color: var(--text-primary); font-size: 15px; }
+.table-card tr:last-child td { border-bottom: none; }
+.table-card tr:hover { background: #fafafa; }
 
-.admin-content {
-  flex: 1;
-  min-width: 0;
-  margin-left: 220px;
-  padding: 32px;
-  min-height: 100vh;
-  transition: margin-left 0.3s ease;
-  background: linear-gradient(135deg, #fff7ed 0%, #fef2f2 35%, #ffffff 100%);
-}
+.primary-button, .btn-primary { height: 48px; padding: 0 28px; background-color: #09090b; color: white; border: none; border-radius: var(--radius-md); font-size: 15px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: var(--transition-default); white-space: nowrap; }
+.primary-button:hover, .btn-primary:hover { background-color: #27272a; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+.primary-button:active, .btn-primary:active { transform: scale(0.98); }
+.primary-button:disabled, .btn-primary:disabled { background-color: var(--bg-muted); color: var(--text-muted); cursor: not-allowed; box-shadow: none; }
+.btn-action { border: none; background: none; cursor: pointer; font-weight: 600; font-size: 14px; padding: 6px 14px; border-radius: 8px; transition: all 0.15s ease; }
+.btn-edit { color: #09090b; background: #f4f4f5; }
+.btn-edit:hover { background: #e4e4e7; }
+.btn-delete { color: #ef4444; background: #fef2f2; }
+.btn-delete:hover { background: #fee2e2; }
 
-.admin-content.content-expanded {
-  margin-left: 60px;
-}
+.status-badge { padding: 6px 12px; border-radius: var(--radius-pill); font-weight: 700; font-size: 12px; text-transform: uppercase; display: inline-block; }
+.status-pending { background: #fee2e2; color: var(--error); }
+.status-preparing { background: #fef3c7; color: var(--alert); }
+.status-ready { background: #dcfce7; color: var(--success); }
+.status-finished { background: var(--border); color: var(--fg-muted); }
 
-.admin-page-shell {
-  width: 100%;
-  max-width: 1440px;
-  margin: 0 auto;
-}
+.loading-container { padding: 80px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; color: var(--fg-muted); }
+.loading-spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.admin-page-body {
-  min-height: calc(100vh - 64px);
-  background: #ffffff;
-  border-radius: 32px;
-  box-shadow: 0 40px 80px rgba(15, 23, 42, 0.08);
-  padding: 32px;
-  overflow: visible;
-  min-width: 0;
-  box-sizing: border-box;
-}
+.modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 3%; }
+.modal-card { background: var(--surface); width: 100%; max-width: 600px; border-radius: var(--radius-lg); padding: 32px; margin: 3%; box-shadow: var(--shadow-modal); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.modal-header h3 { font-size: 24px; margin: 0; color: var(--fg); }
 
-.table-wrapper,
-.product-table-wrapper,
-.promotions-table-wrapper,
-.condiment-table-wrapper,
-.details-table-wrapper {
-  overflow-x: auto;
-  width: 100%;
-  -webkit-overflow-scrolling: touch;
-}
-
-.admin-page-shell,
-.admin-page-body {
-  min-width: 0;
-}
-
-.admin-page-body .primary-button,
-.admin-page-body .btn-primary {
-  background-color: #f97316;
-  color: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 16px 40px rgba(249, 115, 22, 0.18);
-}
-
-.admin-page-body .primary-button:hover,
-.admin-page-body .btn-primary:hover {
-  background-color: #ea580c;
-  transform: translateY(-1px);
-  box-shadow: 0 20px 50px rgba(249, 115, 22, 0.24);
-}
-
-@media (max-width: 768px) {
-  .admin-content,
-  .admin-content.content-expanded {
-    margin-left: 0;
-    padding: 14px;
-    padding-top: 56px;
-  }
-
-  .admin-page-shell {
-    max-width: 100%;
-    padding: 0;
-  }
-
-  .admin-page-body {
-    min-height: auto;
-    border-radius: 20px;
-    padding: 18px;
-    overflow: visible;
-  }
-
-  .admin-page-body > * {
-    min-width: 0;
-  }
-}
-
-.sidebar-mobile-overlay {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .sidebar-mobile-overlay {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(2px);
-    z-index: 90;
-    cursor: pointer;
-    animation: fadeIn 0.2s ease-out;
-  }
-
-  .table-wrapper,
-  .product-table-wrapper,
-  .promotions-table-wrapper,
-  .condiment-table-wrapper,
-  .details-table-wrapper,
-  .table-card {
-    overflow-x: auto;
-    width: 100%;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .table-wrapper table,
-  .product-table-wrapper table,
-  .promotions-table-wrapper table,
-  .condiment-table-wrapper table,
-  .table-card table,
-  .p-table,
-  .c-table,
-  .promo-table,
-  .details-table {
-    min-width: 100%;
-  }
-
-  .details-table {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px) scale(0.96); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-
-  .animate-slide-up {
-    animation: slideUp 0.25s ease-out;
-  }
-}
+.form-input { width: 100%; padding: 15px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface); font-size: 1rem; transition: border-color 0.2s; }
+.form-input:focus { border-color: var(--primary); outline: none; }

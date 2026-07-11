@@ -37,6 +37,7 @@ export function stopMemoryMonitor(): void {
 }
 
 export function logMemoryUsage(): void {
+  if (typeof process === "undefined" || !process.memoryUsage) return;
   try {
     const usage = process.memoryUsage();
     const heapUsedMB = Math.round((usage.heapUsed / 1024 / 1024) * 100) / 100;
