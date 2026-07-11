@@ -297,6 +297,7 @@ export default function FinanceiroPage() {
             <h2><Receipt size={20} /> Extrato Financeiro</h2>
             <div className="extrato-filters">
               {[
+                { key: "day", label: "Dia" },
                 { key: "week", label: "Semana" },
                 { key: "month", label: "Mês" },
                 { key: "year", label: "Ano" },

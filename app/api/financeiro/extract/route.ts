@@ -30,19 +30,29 @@ export async function GET(req: NextRequest) {
     const creditCardFee = globalData.creditCardFee || 0;
 
     const now = new Date();
-    let startDate: Date | null = null;
-    if (period === "week") {
-      startDate = new Date(now);
-      startDate.setDate(startDate.getDate() - 7);
-    } else if (period === "month") {
-      startDate = new Date(now);
-      startDate.setMonth(startDate.getMonth() - 1);
-    } else if (period === "year") {
-      startDate = new Date(now);
-      startDate.setFullYear(startDate.getFullYear() - 1);
+    let startDate: Date | null = new Date();
+
+    switch (period) {
+      case "day":
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      case "week":
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case "month":
+        startDate.setMonth(now.getMonth() - 1);
+        break;
+      case "year":
+        startDate.setFullYear(now.getFullYear() - 1);
+        break;
+      default:
+        startDate = null; // "all"
     }
 
-    let query = db.collection("orders").where("companyId", "==", companyId).where("paymentStatus", "==", "PAID");
+    let query = db.collection("orders")
+      .where("companyId", "==", companyId)
+      .where("paymentStatus", "==", "PAID");
+    
     if (startDate) {
       query = query.where("paidAt", ">=", startDate);
     }
