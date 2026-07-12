@@ -34,6 +34,7 @@ const CLIENT_VARS: EnvVarRule[] = [
   { name: "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID", required: true, description: "Firebase Client Messaging Sender ID" },
   { name: "NEXT_PUBLIC_FIREBASE_APP_ID", required: true, description: "Firebase Client App ID" },
   { name: "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID", required: false, description: "Firebase Client Measurement ID" },
+  { name: "NEXT_PUBLIC_FIREBASE_VAPID_KEY", required: false, description: "Firebase VAPID Key para web push notifications" },
 ];
 
 function checkVars(rules: EnvVarRule[], environment: string): { missing: string[]; optionalMissing: string[] } {

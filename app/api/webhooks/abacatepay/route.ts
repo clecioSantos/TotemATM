@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AbacatePayProvider } from "@/app/services/abacatepay/abacatepay.provider";
-import { markOrderAsPaid } from "@/src/services/payment/services/order-payment.service";
+import { processApprovedPayment } from "@/src/services/payment/services/order-payment.service";
 import { logger } from "@/src/lib/logger";
 
 export async function POST(req: NextRequest) {
@@ -52,7 +52,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (event.event === "transparent.completed" && event.status === "PAID") {
-      await markOrderAsPaid(event.orderId);
+      await processApprovedPayment({
+        orderId: event.orderId,
+        paymentId: event.paymentId,
+        provider: "abacatepay",
+      });
       logger.info("ABACATEPAY_WEBHOOK", `Pagamento aprovado para pedido ${event.orderId}`);
     } else {
       logger.info("ABACATEPAY_WEBHOOK", `Evento não-PAID recebido: ${event.event} para pedido ${event.orderId}`);

@@ -59,15 +59,23 @@ export async function processApprovedPayment(params: {
       storeId,
     });
 
-    // Notificar loja e registrar uso de cupom
-    try {
-      const db = getAdminDb();
-      const orderDoc = await db.collection("orders").doc(orderId).get();
-      const orderData = orderDoc.data();
-      const companyId = orderData?.companyId || storeId;
+      // Notificar loja e registrar uso de cupom
+      try {
+        const db = getAdminDb();
+        const orderDoc = await db.collection("orders").doc(orderId).get();
+        const orderData = orderDoc.data();
+        const companyId = orderData?.companyId || storeId;
 
-      // Notificar loja sobre novo pedido
-      if (companyId) {
+        logger.info("ORDER_PAYMENT", "processApprovedPayment: dados do pedido", {
+          orderId,
+          companyIdFromOrder: orderData?.companyId,
+          storeId,
+          resolvedCompanyId: companyId,
+          hasOrderData: !!orderData,
+        });
+
+        // Notificar loja sobre novo pedido
+        if (companyId) {
         const customerName = orderData?.customerName || orderData?.userName || "Cliente";
         const itemCount = orderData?.items?.length || 0;
         pushSender.sendToStore(companyId, {

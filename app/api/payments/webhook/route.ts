@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/src/lib/logger";
-import { markOrderAsPaid } from "@/src/services/payment/services/order-payment.service";
+import { processApprovedPayment } from "@/src/services/payment/services/order-payment.service";
 
 export async function POST(req: NextRequest) {
   try {
@@ -44,7 +44,15 @@ export async function POST(req: NextRequest) {
     }
 
     if (status === "PAID") {
-      await markOrderAsPaid(orderId);
+      const paymentId = String(payload.id || payload.charges?.[0]?.id || "webhook_" + Date.now());
+      const provider = payload.provider || (payload.charges ? "mercadopago" : "webhook");
+
+      await processApprovedPayment({
+        orderId,
+        paymentId,
+        provider,
+      });
+
       logger.info("WEBHOOK", `Pagamento confirmado para o pedido: ${orderId}`);
     } else {
       logger.info("WEBHOOK", `Status não-PAID recebido: ${status} para pedido ${orderId}`);

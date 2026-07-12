@@ -11,16 +11,24 @@ export const pushSender = {
   async sendToUser(uid: string, payload: PushPayload): Promise<void> {
     try {
       const db = getAdminDb();
-      const tokensSnap = await db.collection("push_tokens")
+      const allTokensSnap = await db.collection("push_tokens")
         .where("uid", "==", uid)
-        .where("active", "==", true)
         .get();
 
-      const tokens = tokensSnap.docs.map((d) => d.data().token as string);
+      let tokens = allTokensSnap.docs
+        .filter((d) => d.data().active === true)
+        .map((d) => d.data().token as string);
+
       if (tokens.length === 0) {
         logger.warn("PUSH_SEND", "Nenhum token ativo para o usuário", { uid });
         return;
       }
+
+      logger.info("PUSH_SEND", "Enviando push para usuário", {
+        uid,
+        tokensCount: tokens.length,
+        preview: tokens[0]?.slice(0, 24),
+      });
 
       const messaging = getAdminMessaging();
       const response = await messaging.sendEachForMulticast({
@@ -28,6 +36,10 @@ export const pushSender = {
         notification: { title: payload.title, body: payload.body },
         data: payload.data || {},
       });
+
+      const successCount = response.successCount;
+      const failureCount = response.failureCount;
+      logger.info("PUSH_SEND", "Resultado do envio", { uid, successCount, failureCount });
 
       await handleSendResponse(response, tokens, uid);
     } catch (error) {
@@ -38,11 +50,33 @@ export const pushSender = {
   async sendToStore(companyId: string, payload: PushPayload): Promise<void> {
     try {
       const db = getAdminDb();
+
+      // Diagnóstico: listar TODOS os registros no banco
+      try {
+        const allSnap = await db.collection("push_tokens").limit(10).get();
+        const registros = allSnap.docs.map((d) => ({
+          docId: d.id,
+          uid: d.data().uid,
+          ativo: d.data().active,
+          plat: d.data().platform,
+          preview: (d.data().token as string)?.slice(0, 24),
+        }));
+        logger.info("PUSH_SEND", "Diagnóstico - registros push_tokens:", { total: allSnap.docs.length, registros });
+      } catch (diagErr) {
+        logger.error("PUSH_SEND", "Diagnóstico - erro ao ler", diagErr);
+      }
+
       const usersSnap = await db.collection("users")
         .where("companyId", "==", companyId)
         .get();
 
       const uids = usersSnap.docs.map((d) => d.id);
+
+      logger.info("PUSH_SEND", "sendToStore", {
+        companyId,
+        usersFound: uids.length,
+        uids,
+      });
 
       for (const uid of uids) {
         await pushSender.sendToUser(uid, payload);
