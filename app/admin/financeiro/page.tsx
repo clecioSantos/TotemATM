@@ -330,7 +330,7 @@ export default function FinanceiroPage() {
                   <span className="summary-value">R$ {extractData.summary.totalReceived.toFixed(2)}</span>
                 </div>
                   <div className="summary-item">
-                    <span className="summary-label"><CreditCard size={14} />Comissão do Bora ({extractData.summary.commissionPercent}%)</span>
+                    <span className="summary-label"><CreditCard size={14} />Comissão + Taxas ({extractData.summary.commissionPercent}%)</span>
                     <span className="summary-value negative">R$ {(extractData.summary.totalBoraCommission + extractData.summary.totalMethodFees).toFixed(2)}</span>
                   </div>
                   <div className="summary-item">
@@ -349,7 +349,6 @@ export default function FinanceiroPage() {
                   <span>Cliente</span>
                   <span>Pagamento</span>
                   <span>Total</span>
-                  <span>Taxa</span>
                   <span>Comissão</span>
                   <span>Líquido</span>
                   <span />
@@ -367,7 +366,6 @@ export default function FinanceiroPage() {
                           {order.paymentMethod === "PIX" ? "💠 PIX" : "💳 Cartão"}
                         </span>
                         <span className="extrato-total">R$ {order.total.toFixed(2)}</span>
-                        <span className="extrato-fee">R$ {order.methodFee.toFixed(2)}</span>
                         <span className="extrato-commission">R$ {order.boraShare.toFixed(2)}</span>
                         <span className="extrato-net">R$ {order.storeNet.toFixed(2)}</span>
                         <span className="extrato-expand">{expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</span>
@@ -376,7 +374,10 @@ export default function FinanceiroPage() {
                         <div className="extrato-details">
                           <div className="detail-item"><span>Pedido</span><span>#{order.id.slice(-6).toUpperCase()}</span></div>
                           <div className="detail-item"><span>Valor Bruto</span><span>R$ {order.total.toFixed(2)}</span></div>
-                          <div className="detail-item"><span>Taxas + Comissão</span><span className="negative">-R$ {(order.methodFee + order.commissionBase).toFixed(2)}</span></div>
+                          <div className="detail-item"><span>Comissão + Taxas</span><span className="negative">-R$ {(order.methodFee + order.commissionBase + (order.couponDiscount || 0)).toFixed(2)}</span></div>
+                          {order.couponDiscount > 0 && (
+                            <div className="detail-item"><span>Desconto Cupom (Owner)</span><span className="positive">+R$ {order.couponDiscount.toFixed(2)}</span></div>
+                          )}
                           <div className="detail-item"><span>Taxa de Conveniência</span><span className="negative">-R$ {order.convenienceFee.toFixed(2)}</span></div>
                           <div className="detail-item total"><span>Líquido</span><span className="positive">R$ {order.storeNet.toFixed(2)}</span></div>
                         </div>

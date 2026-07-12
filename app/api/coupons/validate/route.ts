@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { code, storeId, subtotal, customerId, deliveryMode, paymentMethod } = body;
+    const { code, storeId, subtotal, customerId, deliveryMode, paymentMethod, totalOrder } = body;
 
     logger.info("COUPON_VALIDATE", `[${requestId}] Validando cupom`, {
       code,
@@ -27,7 +27,6 @@ export async function POST(req: NextRequest) {
     const db = getAdminDb();
     const couponsRef = db.collection("coupons");
     const snap = await couponsRef
-      .where("storeId", "==", storeId)
       .where("code", "==", code.toUpperCase().trim())
       .limit(1)
       .get();
@@ -38,6 +37,19 @@ export async function POST(req: NextRequest) {
 
     const doc = snap.docs[0];
     const coupon = { id: doc.id, ...doc.data() } as any;
+
+    // Validar acesso do owner: verificar storeIds
+    if (coupon.createdByRole === "owner") {
+      const storeIds = coupon.storeIds || [];
+      if (storeIds.length > 0 && !storeIds.includes(storeId)) {
+        return NextResponse.json({ valid: false, reason: "Cupom não disponível para esta loja." });
+      }
+    } else {
+      // Admin coupon: verificar storeId
+      if (coupon.storeId !== storeId) {
+        return NextResponse.json({ valid: false, reason: "Cupom não encontrado." });
+      }
+    }
 
     // 2. Ativo
     if (!coupon.active) {
@@ -127,6 +139,33 @@ export async function POST(req: NextRequest) {
     }
 
     discountValue = Math.round(discountValue * 100) / 100;
+
+    // 12. Para cupons de owner, verificar se o desconto não excede a comissão do Bora
+    if (coupon.createdByRole === "owner" && discountValue > 0) {
+      try {
+        const companySnap = await db.collection("companies").doc(storeId).get();
+        const companyData = companySnap.data();
+        const commissionPercent = companyData?.platform_commission_percent || 0;
+        const globalSnap = await db.collection("settings").doc("global").get();
+        const globalData = globalSnap.exists ? globalSnap.data() : {};
+        const pixFee = globalData?.pixFee || 0;
+        const creditCardFee = globalData?.creditCardFee || 0;
+        const convenienceFee = globalData?.convenienceFee || 0;
+        const methodFee = paymentMethod === "credit_card" ? creditCardFee : pixFee;
+        const effectiveRate = Math.max(0, commissionPercent - methodFee);
+        const orderValueTotal = totalOrder || subtotal; // fallback para subtotal se totalOrder não for passado
+        const boraCommission = (orderValueTotal * effectiveRate) / 100 + convenienceFee;
+
+        if (discountValue > boraCommission) {
+          return NextResponse.json({
+            valid: false,
+            reason: `O desconto do cupom (R$ ${discountValue.toFixed(2)}) excede o limite permitido para esta loja.`,
+          });
+        }
+      } catch (e) {
+        logger.warn("COUPON_VALIDATE", `[${requestId}] Erro ao verificar comissão para cupom owner`, e);
+      }
+    }
 
     return NextResponse.json({
       valid: true,

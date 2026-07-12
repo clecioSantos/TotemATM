@@ -74,10 +74,50 @@ export async function GET(req: NextRequest) {
       const convenienceFeeValue = data.convenienceFee || 0;
       const method = data.paymentMethod === "credit_card" ? "credit_card" : "PIX";
       const methodFeePercent = method === "credit_card" ? creditCardFee : pixFee;
-      const effectiveRate = Math.max(0, commissionPercent - methodFeePercent);
-      const baseFee = Math.round((orderTotal * effectiveRate) / 100 * 100) / 100;
+
+      // BaseFee calculado sobre a comissão cheia (sem descontar taxa do banco)
+      let baseFee = Math.round((orderTotal * commissionPercent) / 100 * 100) / 100;
+      const methodFeeValue = Math.round((orderTotal * methodFeePercent) / 100 * 100) / 100;
+      let couponDiscountApplied = 0;
+      let isOwnerCoupon = false;
+
+      // Verificar se o pedido usou cupom de owner (desconto absorvido pelo Bora)
+      if (data.couponId && data.discountValue) {
+        try {
+          const couponDoc = await db.collection("coupons").doc(data.couponId).get();
+          if (couponDoc.exists) {
+            const couponData = couponDoc.data();
+            isOwnerCoupon = couponData?.createdByRole === "owner";
+            logger.info("EXTRACT_COUPON", "Verificando cupom do pedido", {
+              orderId: doc.id,
+              couponId: data.couponId,
+              discountValue: data.discountValue,
+              createdByRole: couponData?.createdByRole,
+              isOwnerCoupon,
+            });
+            if (isOwnerCoupon) {
+              couponDiscountApplied = data.discountValue || 0;
+              const fullTotal = orderTotal + couponDiscountApplied;
+              const commissionOnFull = Math.round((fullTotal * commissionPercent) / 100 * 100) / 100;
+              baseFee = Math.max(0, commissionOnFull - couponDiscountApplied);
+              logger.info("EXTRACT_COUPON", "Owner coupon aplicado", {
+                orderId: doc.id,
+                orderTotal,
+                discount: couponDiscountApplied,
+                fullTotal,
+                commissionOnFull,
+                newBaseFee: baseFee,
+              });
+            }
+          }
+        } catch (e) {
+          // Se não conseguir ler o cupom, usa o cálculo padrão
+        }
+      }
+
       const boraShare = baseFee + convenienceFeeValue;
-      const storeNet = orderTotal - boraShare;
+      // Store net = orderTotal - comissão - taxa do banco - conveniência
+      const storeNet = orderTotal - baseFee - methodFeeValue - convenienceFeeValue;
 
       orders.push({
         id: doc.id,
@@ -86,16 +126,17 @@ export async function GET(req: NextRequest) {
         paymentMethod: method,
         convenienceFee: convenienceFeeValue,
         commissionBase: baseFee,
-        methodFee: Math.round((orderTotal * methodFeePercent) / 100 * 100) / 100,
+        methodFee: methodFeeValue,
         boraShare,
         storeNet,
+        couponDiscount: isOwnerCoupon ? couponDiscountApplied : 0,
         paidAt,
         createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
       });
 
       totalReceived += orderTotal;
       totalBoraCommission += baseFee;
-      totalMethodFees += Math.round((orderTotal * methodFeePercent) / 100 * 100) / 100;
+      totalMethodFees += methodFeeValue;
       totalConvenienceFees += convenienceFeeValue;
       totalStoreNet += storeNet;
     }

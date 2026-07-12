@@ -67,11 +67,25 @@ export default function PaymentScreen({ orderId, total, originalTotal, companyId
   }, [companyId]);
 
   const methodFee = method === "credit_card" ? creditCardFee : pixFee;
-  const effectiveRate = Math.max(0, commissionPercent - methodFee);
   const splitTotal = pixOnlyBlocked ? displayTotal : total;
-  const baseFee = (splitTotal * effectiveRate) / 100;
-  const boraShare = baseFee + convenienceFee;
-  const storeShare = splitTotal - boraShare;
+  const couponDiscount = appliedCoupon?.discountValue || 0;
+
+  // Comissão sobre a taxa cheia, taxa do banco separada
+  let baseFee: number;
+  let boraShare: number;
+  let storeShare: number;
+
+  if (couponDiscount > 0) {
+    const fullTotal = splitTotal + couponDiscount;
+    const commissionOnFull = (fullTotal * commissionPercent) / 100;
+    baseFee = Math.max(0, commissionOnFull - couponDiscount);
+    boraShare = baseFee + convenienceFee;
+    storeShare = splitTotal - baseFee - methodFee - convenienceFee;
+  } else {
+    baseFee = (splitTotal * commissionPercent) / 100;
+    boraShare = baseFee + convenienceFee;
+    storeShare = splitTotal - baseFee - methodFee - convenienceFee;
+  }
 
   return (
     <div className="min-h-screen w-screen bg-gradient-to-b from-brand-light to-gray-100 flex items-center justify-center p-4 lg:p-8">
@@ -125,27 +139,20 @@ export default function PaymentScreen({ orderId, total, originalTotal, companyId
           <>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3 text-xs space-y-1">
               <p className="font-bold text-amber-800 mb-1">💰 Split de Pagamento</p>
-              <div className="flex justify-between text-amber-700">
-                <span>Comissão da Loja</span>
-                <span className="font-semibold">{commissionPercent}%</span>
-              </div>
-              <div className="flex justify-between text-amber-700">
-                <span>Taxa do {method === "credit_card" ? "Cartão" : "PIX"}</span>
-                <span className="font-semibold">-{methodFee}%</span>
-              </div>
               <div className="flex justify-between text-amber-800 font-semibold">
-                <span>Taxa Efetiva</span>
-                <span>{effectiveRate}%</span>
-              </div>
-              <hr className="border-amber-300" />
-              <div className="flex justify-between text-amber-700">
-                <span>Comissão ({effectiveRate}%)</span>
-                <span className="font-semibold">R$ {baseFee.toFixed(2)}</span>
+                <span>Comissão + Taxas ({commissionPercent}% + {methodFee}%)</span>
+                <span>R$ {(baseFee + methodFee).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-amber-700">
                 <span>Taxa de Conveniência</span>
                 <span className="font-semibold">R$ {convenienceFee.toFixed(2)}</span>
               </div>
+              {appliedCoupon && (
+                <div className="flex justify-between text-amber-700">
+                  <span>Desconto Cupom (Owner)</span>
+                  <span className="font-semibold text-red-600">-R$ {couponDiscount.toFixed(2)}</span>
+                </div>
+              )}
               <div className="border-t border-amber-300 pt-1 mt-1 flex justify-between font-bold text-amber-900">
                 <span>Total Bora</span>
                 <span>R$ {boraShare.toFixed(2)}</span>

@@ -12,7 +12,8 @@ import {
   ArrowLeft,
   Calendar,
   MessageSquare,
-  Shield
+  Shield,
+  Ticket
 } from "lucide-react";
 // Assuming CSS from admin will work or we will need to create/import own
 import "../../admin/components/Sidebar/page.css"; 
@@ -32,9 +33,11 @@ export default function OwnerSidebar({ collapsed, onToggle }: SidebarProps) {
     { name: "Eventos", path: "/owner/events", icon: <Calendar size={20} /> },
     { name: "Mensagens", path: "/owner/contacts", icon: <MessageSquare size={20} /> },
     { name: "LGPD e Privacidade", path: "/owner/lgpd", icon: <Shield size={20} /> },
+    { name: "Cupons", path: "/owner/coupons", icon: <Ticket size={20} /> },
   ];
 
   return (
+    <>
     <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : "sidebar-expanded"}`}>
       <div className="sidebar-top">
         {!collapsed && (
@@ -73,5 +76,17 @@ export default function OwnerSidebar({ collapsed, onToggle }: SidebarProps) {
         </Link>
       </div>
     </aside>
+
+      {/* Mobile menu button */}
+      {collapsed && (
+        <button
+          className="mobile-sidebar-open-button"
+          onClick={onToggle}
+          aria-label="Abrir menu"
+        >
+          <Menu size={22} />
+        </button>
+      )}
+    </>
   );
 }

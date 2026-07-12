@@ -9,15 +9,22 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const storeId = searchParams.get("storeId");
+    const ownerId = searchParams.get("ownerId");
 
-    if (!storeId) {
-      return NextResponse.json({ success: false, error: "storeId é obrigatório" }, { status: 400 });
+    if (!storeId && !ownerId) {
+      return NextResponse.json({ success: false, error: "storeId ou ownerId é obrigatório" }, { status: 400 });
     }
 
     const db = getAdminDb();
-    const snap = await db.collection("coupons")
-      .where("storeId", "==", storeId)
-      .get();
+    let query: any = db.collection("coupons");
+
+    if (ownerId) {
+      query = query.where("ownerId", "==", ownerId);
+    } else {
+      query = query.where("storeId", "==", storeId);
+    }
+
+    const snap = await query.get();
 
     const coupons = snap.docs
       .map((d: any) => ({ id: d.id, ...d.data() }))
@@ -37,11 +44,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { storeId, code, type, value, minOrderValue, maxDiscount, usageLimit, perCustomerLimit, firstPurchaseOnly, deliveryOnly, pickupOnly, pixOnly, active, startDate, endDate } = body;
+    const { storeId, code, type, value, minOrderValue, maxDiscount, usageLimit, perCustomerLimit, firstPurchaseOnly, deliveryOnly, pickupOnly, pixOnly, active, startDate, endDate, ownerId, storeIds, createdByRole } = body;
 
-    if (!storeId || !code || !type || value == null) {
+    if ((!storeId && !ownerId) || !code || !type || value == null) {
       return NextResponse.json(
-        { success: false, error: "storeId, code, type e value são obrigatórios" },
+        { success: false, error: "storeId (ou ownerId), code, type e value são obrigatórios" },
         { status: 400 }
       );
     }
@@ -84,22 +91,35 @@ export async function POST(req: NextRequest) {
     }
 
     const db = getAdminDb();
-    const existing = await db.collection("coupons")
-      .where("storeId", "==", storeId)
-      .where("code", "==", normalizedCode)
-      .limit(1)
-      .get();
 
-    if (!existing.empty) {
-      return NextResponse.json(
-        { success: false, error: "Já existe um cupom com este código para esta loja" },
-        { status: 400 }
-      );
+    // Verificar duplicidade - owner coupons usam ownerId, admin usam storeId
+    if (ownerId) {
+      const existing = await db.collection("coupons")
+        .where("ownerId", "==", ownerId)
+        .where("code", "==", normalizedCode)
+        .limit(1)
+        .get();
+      if (!existing.empty) {
+        return NextResponse.json(
+          { success: false, error: "Já existe um cupom com este código" },
+          { status: 400 }
+        );
+      }
+    } else {
+      const existing = await db.collection("coupons")
+        .where("storeId", "==", storeId)
+        .where("code", "==", normalizedCode)
+        .limit(1)
+        .get();
+      if (!existing.empty) {
+        return NextResponse.json(
+          { success: false, error: "Já existe um cupom com este código para esta loja" },
+          { status: 400 }
+        );
+      }
     }
 
-    const docRef = db.collection("coupons").doc();
-    await docRef.set({
-      storeId,
+    const docData: any = {
       code: normalizedCode,
       type,
       value,
@@ -117,7 +137,19 @@ export async function POST(req: NextRequest) {
       endDate: endDate || null,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
-    });
+    };
+
+    if (ownerId) {
+      docData.ownerId = ownerId;
+      docData.createdByRole = createdByRole || "owner";
+      docData.storeIds = storeIds || [];
+    } else {
+      docData.storeId = storeId;
+      docData.createdByRole = "admin";
+    }
+
+    const docRef = db.collection("coupons").doc();
+    await docRef.set(docData);
 
     logger.info("API_COUPONS", "Cupom criado", { id: docRef.id, code: normalizedCode, storeId });
 

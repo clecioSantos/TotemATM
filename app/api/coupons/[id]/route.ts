@@ -18,7 +18,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const fields = [
       "type", "value", "minOrderValue", "maxDiscount", "usageLimit",
       "perCustomerLimit", "firstPurchaseOnly", "deliveryOnly", "pickupOnly", "pixOnly",
-      "active", "startDate", "endDate"
+      "active", "startDate", "endDate", "storeIds"
     ];
 
     for (const field of fields) {

@@ -82,6 +82,7 @@ export default function OrderSummaryScreen({
           customerId: user?.uid,
           deliveryMode,
           paymentMethod: "PIX",
+          totalOrder: subtotal + deliveryFee + convenienceFee,
         }),
       });
       const data = await res.json();

@@ -2,7 +2,16 @@
 
 import { useState, useEffect } from "react";
 import OwnerSidebar from "./components/OwnerSidebar";
+import { AuthProvider, useAuth } from "@/app/admin/orders/AuthContext";
 import "../globals.css";
+import "../admin/page.css";
+
+function OwnerGuard({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+
+  if (!user) return null;
+  return <>{children}</>;
+}
 
 export default function OwnerLayout({
   children,
@@ -19,6 +28,7 @@ export default function OwnerLayout({
   }, []);
 
   return (
+    <AuthProvider>
     <div className="admin-layout">
       {!collapsed && (
         <div 
@@ -29,8 +39,11 @@ export default function OwnerLayout({
 
       <OwnerSidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
       <main className={`admin-content ${collapsed ? "content-expanded" : ""}`}>
-        {children}
+        <OwnerGuard>
+          {children}
+        </OwnerGuard>
       </main>
     </div>
+    </AuthProvider>
   );
 }
