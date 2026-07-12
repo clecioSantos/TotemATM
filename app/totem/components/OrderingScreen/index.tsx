@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Product, Category, CartItem, Condiment, CategoryFlavor, SelectedSize, SelectedFlavor, ProductSize, Promotion } from "@totem/shared/types";
 import { ShoppingBag, Trash2, Plus, Minus, X, ArrowLeft, Store, Star, Bell, Tag, MapPin } from "lucide-react";
 import { firestore } from "@/src/services/firebase";
@@ -84,7 +84,8 @@ export default function OrderingScreen({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
   const [detailScrollY, setDetailScrollY] = useState(0);
-  const [activeCategory, setActiveCategory] = useState<string>("featured");
+  const [activeCategory, setActiveCategory] = useState<string>("all");
+  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const userClosedRef = useRef(false);
@@ -171,7 +172,21 @@ export default function OrderingScreen({
 
   const handleScroll = useCallback(() => {
     if (scrollRef.current) {
-      setScrollY(scrollRef.current.scrollTop);
+      const top = scrollRef.current.scrollTop;
+      setScrollY(top);
+
+      // Detecta qual categoria está visível
+      const scrollContainer = scrollRef.current;
+      let currentCat = "all";
+      for (const [catId, el] of Object.entries(categoryRefs.current)) {
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        const containerRect = scrollContainer.getBoundingClientRect();
+        if (rect.top - containerRect.top < 200) {
+          currentCat = catId;
+        }
+      }
+      setActiveCategory(currentCat);
     }
   }, []);
 
@@ -291,11 +306,24 @@ export default function OrderingScreen({
     ? (effectivePrice + selectedFlavors.reduce((sum, f) => sum + (f.preco || 0), 0) + selectedCondiments.reduce((sum, c) => sum + c.price, 0) + requiredGroupsTotal) * quantity
     : 0;
 
-  const filteredProducts = activeCategory === "all" 
-    ? products 
-    : activeCategory === "featured"
-    ? products.filter(p => p.featured || hasPromotion(p.id, p))
-    : products.filter(p => p.categoryId === activeCategory);
+  // Produtos agrupados por categoria para exibição em lista contínua
+  const sortedCategories = useMemo(() => {
+    return categories
+      .filter((c) => products.some((p) => p.categoryId === c.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [categories, products]);
+
+  const featuredProducts = useMemo(() => {
+    return products.filter(p => p.featured || hasPromotion(p.id, p));
+  }, [products]);
+
+  const productsByCategory = useMemo(() => {
+    const map: Record<string, Product[]> = {};
+    for (const cat of sortedCategories) {
+      map[cat.id] = products.filter(p => p.categoryId === cat.id);
+    }
+    return map;
+  }, [products, sortedCategories]);
 
   const requiredItemsPrice = (item: any) =>
     item.selectedRequiredItems?.reduce((s: number, rg: any) => s + rg.items.reduce((ss: number, i: any) => ss + (Number(i.additionalPrice) || 0), 0), 0) || 0;
@@ -310,6 +338,69 @@ export default function OrderingScreen({
   const hasRegularItems = cart.some(item => item.id.includes('-regular-'));
 
   const isClosed = companyOpen === false;
+
+  const renderProduct = (product: Product) => {
+    const promo = getProductPromotion?.(product.id);
+    const dayDiscount = getDayDiscount(product);
+    const hasAnyPromo = promo !== undefined || dayDiscount !== null;
+    const displayPrice = getPrice(product);
+    const promoStock = getPromoStock(product.id);
+    return (
+      <div
+        key={product.id}
+        className="bg-white rounded-[16px] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-gray-200/60 p-3 lg:p-5 flex flex-row items-center cursor-pointer transition-all duration-200 hover:translate-y-[-2px] hover:shadow-md"
+        onClick={() => { setSelectedProduct(product); setDetailScrollY(0); }}
+      >
+        <div className="relative w-[30%] lg:w-[25%] aspect-[4/3] shrink-0 rounded-xl overflow-hidden">
+          <img
+            src={product.imageUrl || "https://placehold.co/400x400?text=Sem+Imagem"}
+            alt={product.name}
+            className="h-full w-full object-cover"
+          />
+          {hasAnyPromo && (
+            <div className="absolute top-1 left-1 bg-[#FF6B00] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow">
+              PROMOÇÃO
+            </div>
+          )}
+        </div>
+        <div className="flex-1 ml-3 flex flex-col justify-center">
+          <div className="flex items-center gap-2">
+            <h3 className="text-[16px] font-bold text-gray-900 mb-0.5">{product.name}</h3>
+            {promoStock && promoStock.limit - promoStock.sold <= 5 && (
+              <span className="text-[8px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                ÚLTIMAS UNIDADES
+              </span>
+            )}
+          </div>
+          <p className="text-[13px] text-gray-500 mb-1 line-clamp-2">{product.description}</p>
+          {hasAnyPromo ? (
+            <div className="flex items-center gap-2">
+              <span className="text-[16px] font-bold text-brand-primary">
+                R$ {displayPrice.toFixed(2)}
+              </span>
+              <span className="text-[12px] text-gray-400 line-through">
+                R$ {product.price.toFixed(2)}
+              </span>
+              {promo?.promotionType === "percentage_discount" && (
+                <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
+                  {promo.percentageOff}% OFF
+                </span>
+              )}
+              {dayDiscount && !promo && (
+                <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
+                  {dayDiscount}% OFF
+                </span>
+              )}
+            </div>
+          ) : (
+            <span className="text-[20px] font-bold text-brand-primary">
+              R$ {product.price.toFixed(2)}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="flex h-screen w-screen bg-brand-light overflow-hidden text-brand-dark font-sans select-none">
@@ -431,32 +522,45 @@ export default function OrderingScreen({
             </div>
           )}
 
-          {/* Categories - sticky, follows banner */}
+          {/* Categories - sticky, scrolls to section */}
           <div className="sticky top-0 z-20 bg-white border-b border-gray-200/60 p-4 flex gap-2 overflow-x-auto no-scrollbar">
             <button
-              onClick={() => setActiveCategory("featured")}
-              className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold transition-colors ${
-                activeCategory === "featured"
-                  ? "bg-brand-primary text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              ⭐ Destaques
-            </button>
-            <button
-              onClick={() => setActiveCategory("all")}
+              onClick={() => {
+                setActiveCategory("all");
+                scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+              }}
               className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold transition-colors ${
                 activeCategory === "all"
                   ? "bg-brand-primary text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              Todos
+              Início
             </button>
-            {categories.map(cat => (
+            {featuredProducts.length > 0 && (
+              <button
+                onClick={() => {
+                  setActiveCategory("featured");
+                  const el = categoryRefs.current["featured"];
+                  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold transition-colors ${
+                  activeCategory === "featured"
+                    ? "bg-brand-primary text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                ⭐ Destaques
+              </button>
+            )}
+            {sortedCategories.map(cat => (
               <button
                 key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
+                onClick={() => {
+                  setActiveCategory(cat.id);
+                  const el = categoryRefs.current[cat.id];
+                  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
                 className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold transition-colors ${
                   activeCategory === cat.id
                     ? "bg-brand-primary text-white"
@@ -468,68 +572,24 @@ export default function OrderingScreen({
             ))}
           </div>
 
-          {/* Products list */}
+          {/* Products list - grouped by category */}
           <div className="p-4 space-y-4 lg:max-w-4xl lg:mx-auto lg:p-6 lg:space-y-5">
-            {filteredProducts.map(product => {
-              const promo = getProductPromotion?.(product.id);
-              const dayDiscount = getDayDiscount(product);
-              const hasAnyPromo = promo !== undefined || dayDiscount !== null;
-              const displayPrice = getPrice(product);
-              const promoStock = getPromoStock(product.id);
+            {/* Destaques */}
+            {featuredProducts.length > 0 && (
+              <div ref={(el) => { categoryRefs.current["featured"] = el; }} className="scroll-mt-16">
+                <h2 className="text-lg font-black text-gray-900 mb-3">⭐ Destaques</h2>
+                {featuredProducts.map(product => renderProduct(product))}
+              </div>
+            )}
 
+            {/* Categorias */}
+            {sortedCategories.map(cat => {
+              const catProducts = productsByCategory[cat.id];
+              if (!catProducts?.length) return null;
               return (
-                <div
-                  key={product.id}
-                  className="bg-white rounded-[16px] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-gray-200/60 p-3 lg:p-5 flex flex-row items-center cursor-pointer transition-all duration-200 hover:translate-y-[-2px] hover:shadow-md"
-                  onClick={() => { setSelectedProduct(product); setDetailScrollY(0); }}
-                >
-                  <div className="relative w-[30%] lg:w-[25%] aspect-[4/3] shrink-0 rounded-xl overflow-hidden">
-                    <img
-                      src={product.imageUrl || "https://placehold.co/400x400?text=Sem+Imagem"}
-                      alt={product.name}
-                      className="h-full w-full object-cover"
-                    />
-                    {hasAnyPromo && (
-                      <div className="absolute top-1 left-1 bg-[#FF6B00] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow">
-                        PROMOÇÃO
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 ml-3 flex flex-col justify-center">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-[16px] font-bold text-gray-900 mb-0.5">{product.name}</h3>
-                      {promoStock && promoStock.limit - promoStock.sold <= 5 && (
-                        <span className="text-[8px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                          ÚLTIMAS UNIDADES
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[13px] text-gray-500 mb-1 line-clamp-2">{product.description}</p>
-                    {hasAnyPromo ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-[16px] font-bold text-brand-primary">
-                          R$ {displayPrice.toFixed(2)}
-                        </span>
-                        <span className="text-[12px] text-gray-400 line-through">
-                          R$ {product.price.toFixed(2)}
-                        </span>
-                        {promo?.promotionType === "percentage_discount" && (
-                          <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
-                            {promo.percentageOff}% OFF
-                          </span>
-                        )}
-                        {dayDiscount && !promo && (
-                          <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
-                            {dayDiscount}% OFF
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-[20px] font-bold text-brand-primary">
-                        R$ {product.price.toFixed(2)}
-                      </span>
-                    )}
-                  </div>
+                <div key={cat.id} ref={(el) => { categoryRefs.current[cat.id] = el; }} className="scroll-mt-16">
+                  <h2 className="text-lg font-black text-gray-900 mb-3">{cat.name}</h2>
+                  {catProducts.map(product => renderProduct(product))}
                 </div>
               );
             })}
