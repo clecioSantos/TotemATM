@@ -498,15 +498,34 @@ function ConfigurationsContent() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Tempo Máximo</label>
-                    <input
-                      type="number"
-                      name="tempoPreparoMax"
-                      value={companyData.tempoPreparoMax || ""}
-                      onChange={handleChange}
-                      className="form-input"
-                    />
+                      <input
+                        type="number"
+                        name="tempoPreparoMax"
+                        value={companyData.tempoPreparoMax || ""}
+                        onChange={handleChange}
+                        className="form-input"
+                      />
+                    </div>
                   </div>
-                </div>
+
+                  <div className="company-form-section">
+                    <h4 className="form-section-title">Valor Mínimo do Pedido</h4>
+                    <div className="prep-time-grid">
+                      <div className="form-group">
+                        <label className="form-label">Valor mínimo (R$)</label>
+                        <input
+                          type="number"
+                          name="minOrderValue"
+                          value={companyData.minOrderValue ?? 0}
+                          onChange={(e) => setCompanyData((prev: any) => ({ ...prev, minOrderValue: parseFloat(e.target.value) || 0 }))}
+                          min="0"
+                          step="0.5"
+                          className="form-input"
+                        />
+                        <p className="text-xs text-brand-muted mt-1">Pedidos com valor abaixo disso não serão aceitos. 0 = sem mínimo.</p>
+                      </div>
+                    </div>
+                  </div>
               </div>
 
               <div className="company-form-section">

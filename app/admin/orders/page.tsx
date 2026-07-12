@@ -6,7 +6,8 @@ import { useCondiments } from "@/app/admin/condiments/hooks/useCondiments";
 import OrderItem from "@/app/admin/orders/components/OrderItem";
 import OrderForm from "@/app/admin/orders/components/OrderForm";
 import Modal from "@/app/admin/components/Modal";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import { logger } from "@/src/lib/logger";
 import "./page.css";
@@ -16,7 +17,23 @@ function OrdersContent() {
   const { products } = useProducts();
   const { condiments } = useCondiments();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const focusOrderId = searchParams.get("orderId");
+
+  // Encontra o status do pedido focado para definir o filtro inicial
+  const focusOrder = useMemo(() => {
+    if (!focusOrderId) return null;
+    return orders.find((o) => o.id === focusOrderId) || null;
+  }, [focusOrderId, orders]);
+
   const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  // Quando o pedido focado carregar, ajusta o filtro para exibi-lo
+  useEffect(() => {
+    if (focusOrder?.status && statusFilter !== focusOrder.status) {
+      setStatusFilter(focusOrder.status);
+    }
+  }, [focusOrder?.status]);
 
   const statuses = [
     { id: "all", label: "Todos" },
@@ -81,6 +98,7 @@ function OrdersContent() {
                 order={order} 
                 onStatusUpdate={(id, next) => updateOrderStatus(id, next)}
                 onCancel={(id) => updateOrderStatus(id, 'cancelled')}
+                defaultExpanded={order.id === focusOrderId}
               />
             ))}
           </div>

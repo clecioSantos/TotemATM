@@ -337,6 +337,20 @@ export default function EditStorePage() {
         </div>
 
         <div>
+          <label className="block text-sm font-medium text-gray-700">Valor Mínimo do Pedido (R$)</label>
+          <p className="text-xs text-gray-500 mb-1">Pedidos com valor abaixo disso não serão aceitos. 0 = sem mínimo.</p>
+          <input
+            type="number"
+            name="minOrderValue"
+            value={formData.minOrderValue ?? 0}
+            onChange={(e) => setFormData({ ...formData, minOrderValue: parseFloat(e.target.value) || 0 })}
+            min="0"
+            step="0.5"
+            className="border p-2 w-32"
+          />
+        </div>
+
+        <div>
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"

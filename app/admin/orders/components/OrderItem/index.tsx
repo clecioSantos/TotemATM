@@ -11,11 +11,12 @@ interface Props {
   order: Order;
   onStatusUpdate: (id: string, nextStatus: Order['status']) => void;
   onCancel: (id: string) => void;
+  defaultExpanded?: boolean;
 }
 
-export default function OrderItem({ order, onStatusUpdate, onCancel }: Props) {
+export default function OrderItem({ order, onStatusUpdate, onCancel, defaultExpanded }: Props) {
   const { showConfirm } = useConfirm();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded || false);
 
   const isPickup = order.deliveryMode === "pickup";
 

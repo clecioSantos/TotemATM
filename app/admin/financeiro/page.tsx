@@ -123,7 +123,7 @@ export default function FinanceiroPage() {
     }
   };
 
-  const [extractPeriod, setExtractPeriod] = useState("all");
+  const [extractPeriod, setExtractPeriod] = useState("day");
   const [extractData, setExtractData] = useState<any>(null);
   const [extractLoading, setExtractLoading] = useState(false);
   const [extractExpanded, setExtractExpanded] = useState<Record<string, boolean>>({});
@@ -329,15 +329,11 @@ export default function FinanceiroPage() {
                   <span className="summary-label"><TrendingUp size={14} /> Recebido</span>
                   <span className="summary-value">R$ {extractData.summary.totalReceived.toFixed(2)}</span>
                 </div>
-                <div className="summary-item">
-                  <span className="summary-label"><Percent size={14} /> Comissão Bora ({extractData.summary.commissionPercent}%)</span>
-                  <span className="summary-value negative">R$ {extractData.summary.totalBoraCommission.toFixed(2)}</span>
-                </div>
-                <div className="summary-item">
-                  <span className="summary-label"><CreditCard size={14} /> Taxas ({extractData.summary.pixFee}% PIX / {extractData.summary.creditCardFee}% Cartão)</span>
-                  <span className="summary-value negative">R$ {extractData.summary.totalMethodFees.toFixed(2)}</span>
-                </div>
-                <div className="summary-item">
+                  <div className="summary-item">
+                    <span className="summary-label"><CreditCard size={14} />Comissão do Bora ({extractData.summary.commissionPercent}%)</span>
+                    <span className="summary-value negative">R$ {(extractData.summary.totalBoraCommission + extractData.summary.totalMethodFees).toFixed(2)}</span>
+                  </div>
+                  <div className="summary-item">
                   <span className="summary-label"><DollarSign size={14} /> Conveniência</span>
                   <span className="summary-value negative">R$ {extractData.summary.totalConvenienceFees.toFixed(2)}</span>
                 </div>
@@ -380,8 +376,7 @@ export default function FinanceiroPage() {
                         <div className="extrato-details">
                           <div className="detail-item"><span>Pedido</span><span>#{order.id.slice(-6).toUpperCase()}</span></div>
                           <div className="detail-item"><span>Valor Bruto</span><span>R$ {order.total.toFixed(2)}</span></div>
-                          <div className="detail-item"><span>Taxa do {order.paymentMethod === "PIX" ? "PIX" : "Cartão"}</span><span className="negative">-R$ {order.methodFee.toFixed(2)}</span></div>
-                          <div className="detail-item"><span>Comissão Bora</span><span className="negative">-R$ {order.commissionBase.toFixed(2)}</span></div>
+                          <div className="detail-item"><span>Taxas + Comissão</span><span className="negative">-R$ {(order.methodFee + order.commissionBase).toFixed(2)}</span></div>
                           <div className="detail-item"><span>Taxa de Conveniência</span><span className="negative">-R$ {order.convenienceFee.toFixed(2)}</span></div>
                           <div className="detail-item total"><span>Líquido</span><span className="positive">R$ {order.storeNet.toFixed(2)}</span></div>
                         </div>

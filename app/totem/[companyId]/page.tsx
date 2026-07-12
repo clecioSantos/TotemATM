@@ -379,6 +379,7 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
     promotions,
     getProductPromotion,
     getPromotionalPrice,
+    minOrderValue,
   } = useTotem(companyId);
 
   const handleToggleFavorite = useCallback(async (productId: string, config: any) => {
@@ -493,6 +494,16 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
       }
 
       const baseTotal = cartTotal + reviewDeliveryFee + convenienceFee;
+
+      if (minOrderValue > 0 && baseTotal < minOrderValue) {
+        setToast({
+          message: `Pedido mínimo de R$ ${minOrderValue.toFixed(2)}. Seu carrinho está com R$ ${baseTotal.toFixed(2)}.`,
+          type: "error",
+        });
+        setIsProcessingPayment(false);
+        return;
+      }
+
       setOriginalTotal(baseTotal);
       let total = baseTotal;
       if (appliedCoupon) {
@@ -660,6 +671,7 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
             deliveryNeighborhood={deliveryNeighborhood}
             deliveryComplement={deliveryComplement}
             convenienceFee={convenienceFee}
+            minOrderValue={minOrderValue}
             onCouponChange={(c) => setAppliedCoupon(c)}
             onConfirm={handleProceedToPayment}
             onBack={() => setStep('IDENTIFICATION')}

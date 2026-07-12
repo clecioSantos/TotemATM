@@ -29,6 +29,7 @@ interface OrderSummaryScreenProps {
   deliveryNeighborhood: string;
   deliveryComplement: string;
   convenienceFee: number;
+  minOrderValue: number;
   onCouponChange: (coupon: CouponApplied | null) => void;
   onConfirm: () => void;
   onBack: () => void;
@@ -37,7 +38,7 @@ interface OrderSummaryScreenProps {
 export default function OrderSummaryScreen({
   companyId, companyName, cart, cartTotal,
   deliveryFee, deliveryMode, deliveryStreet, deliveryNumber,
-  deliveryNeighborhood, deliveryComplement, convenienceFee,
+  deliveryNeighborhood, deliveryComplement, convenienceFee, minOrderValue,
   onCouponChange, onConfirm, onBack,
 }: OrderSummaryScreenProps) {
   const { user } = useAuth();
@@ -251,6 +252,12 @@ export default function OrderSummaryScreen({
               {delivery === 0 ? "Grátis" : `R$ ${delivery.toFixed(2)}`}
             </span>
           </div>
+          {minOrderValue > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-brand-muted">Pedido mínimo</span>
+              <span className="font-semibold text-brand-dark">R$ {minOrderValue.toFixed(2)}</span>
+            </div>
+          )}
           {convenience > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-brand-muted">Taxa de Conveniência</span>
@@ -268,6 +275,16 @@ export default function OrderSummaryScreen({
             <span className="font-bold text-lg text-brand-primary">R$ {total.toFixed(2)}</span>
           </div>
         </div>
+
+        {minOrderValue > 0 && total < minOrderValue && (
+          <div className="px-6">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+              <p className="text-xs font-bold text-red-700 text-center">
+                Pedido mínimo: R$ {minOrderValue.toFixed(2)}. Adicione mais R$ {(minOrderValue - total).toFixed(2)} ao carrinho.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Confirmar */}
         <div className="px-6 pb-6">

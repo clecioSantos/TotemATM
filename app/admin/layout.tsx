@@ -6,6 +6,7 @@ import Sidebar from "./components/Sidebar";
 import { AuthProvider, useAuth } from "@/app/admin/orders/AuthContext";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import "../globals.css";
+import "./page.css";
 
 function AdminGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();

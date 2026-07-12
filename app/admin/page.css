@@ -1135,20 +1135,7 @@ body {
   min-height: 100vh;
 }
 
-/* Page container - shared by all CRUD pages */
-.condiments-page-container {
-  padding: 24px;
-  animation: fadeIn 0.3s ease;
-  max-width: 1200px;
-  margin: 0 auto;
-}
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Page header with title and action button */
 .page-header {
   display: flex;
   align-items: center;
@@ -1467,11 +1454,7 @@ table tr:last-child td, .data-table tr:last-child td {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .condiments-page-container {
-    padding: 0;
-  }
-
-  .page-header {
+    .page-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
