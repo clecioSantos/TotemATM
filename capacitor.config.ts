@@ -2,7 +2,7 @@ import { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "com.boradelivery.app",
-  appName: "Bora Delivery",
+  appName: "Bora de Delivery",
   webDir: "out",
   server: {
     url: "https://www.boradedelivery.com",

@@ -573,7 +573,7 @@ export default function OrderingScreen({
           </div>
 
           {/* Products list - grouped by category */}
-          <div className="p-4 space-y-4 lg:max-w-4xl lg:mx-auto lg:p-6 lg:space-y-5">
+          <div className="p-4 space-y-4 lg:max-w-4xl lg:mx-auto lg:p-6 lg:space-y-5 pb-24">
             {/* Destaques */}
             {featuredProducts.length > 0 && (
               <div ref={(el) => { categoryRefs.current["featured"] = el; }} className="scroll-mt-16">
