@@ -139,6 +139,7 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
   const [toast, setToast] = useState<{ message: string; type?: "error" | "info" } | null>(null);
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [reviewDeliveryFee, setReviewDeliveryFee] = useState(0);
+  const [deliveryDiscountAmount, setDeliveryDiscountAmount] = useState(0);
   const [reviewDeliveryMode, setReviewDeliveryMode] = useState<string>("delivery");
   const [convenienceFee, setConvenienceFee] = useState(0);
   const [favorites, setFavorites] = useState<Record<string, any>>({});
@@ -380,6 +381,9 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
     getProductPromotion,
     getPromotionalPrice,
     minOrderValue,
+    deliveryDiscountEnabled,
+    deliveryDiscountMinOrder,
+    deliveryDiscountValue,
   } = useTotem(companyId);
 
   const handleToggleFavorite = useCallback(async (productId: string, config: any) => {
@@ -478,7 +482,18 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
       }
     }
 
-    setReviewDeliveryFee(deliveryFee);
+    // Aplicar desconto no frete
+    let effectiveDeliveryFee = deliveryFee;
+    let discountAmount = 0;
+    if (deliveryDiscountEnabled && deliveryMode !== "pickup" && cartTotal > 0) {
+      if (cartTotal >= deliveryDiscountMinOrder) {
+        discountAmount = Math.min(deliveryDiscountValue, effectiveDeliveryFee);
+        effectiveDeliveryFee -= discountAmount;
+      }
+    }
+    setDeliveryDiscountAmount(discountAmount);
+
+    setReviewDeliveryFee(effectiveDeliveryFee);
     setReviewDeliveryMode(deliveryMode || "delivery");
     setStep('REVIEW');
   };
@@ -620,6 +635,9 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
       updateItemObservation,
       clearCart,
     },
+    deliveryDiscountEnabled,
+    deliveryDiscountMinOrder,
+    deliveryDiscountValue,
     onFinish: () => {
       if (!user) {
         try { localStorage.setItem("totem_pending_step", "IDENTIFICATION"); } catch {}
@@ -672,6 +690,7 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
             deliveryComplement={deliveryComplement}
             convenienceFee={convenienceFee}
             minOrderValue={minOrderValue}
+            deliveryDiscountAmount={deliveryDiscountAmount}
             onCouponChange={(c) => setAppliedCoupon(c)}
             onConfirm={handleProceedToPayment}
             onBack={() => setStep('IDENTIFICATION')}
@@ -755,24 +774,28 @@ function TotemContent({ params, initialProductId, initialSize, initialCondiments
               </div>
             )}
             <IdentificationScreen
-              addressStreet={deliveryStreet}
-              setAddressStreet={setDeliveryStreet}
-              addressCity={deliveryCity}
-              setAddressCity={setDeliveryCity}
-              addressNumber={deliveryNumber}
-              setAddressNumber={setDeliveryNumber}
-              addressNeighborhood={deliveryNeighborhood}
-              setAddressNeighborhood={setDeliveryNeighborhood}
-              addressComplement={deliveryComplement}
-              setAddressComplement={setDeliveryComplement}
-              onConfirm={handleFinish}
-              onBack={() => setStep('ORDERING')}
-              companyId={companyId}
-              schedulingRequired={hasRequiredScheduling}
-              schedulingConfigured={!!(scheduledDate && scheduledTime)}
-              requiresContact={requiresContact}
-              phoneFilled={!!orderContactPhone.trim()}
-            />
+                addressStreet={deliveryStreet}
+                setAddressStreet={setDeliveryStreet}
+                addressCity={deliveryCity}
+                setAddressCity={setDeliveryCity}
+                addressNumber={deliveryNumber}
+                setAddressNumber={setDeliveryNumber}
+                addressNeighborhood={deliveryNeighborhood}
+                setAddressNeighborhood={setDeliveryNeighborhood}
+                addressComplement={deliveryComplement}
+                setAddressComplement={setDeliveryComplement}
+                onConfirm={handleFinish}
+                onBack={() => setStep('ORDERING')}
+                companyId={companyId}
+                schedulingRequired={hasRequiredScheduling}
+                schedulingConfigured={!!(scheduledDate && scheduledTime)}
+                requiresContact={requiresContact}
+                phoneFilled={!!orderContactPhone.trim()}
+                cartTotal={cartTotal}
+                deliveryDiscountEnabled={deliveryDiscountEnabled}
+                deliveryDiscountMinOrder={deliveryDiscountMinOrder}
+                deliveryDiscountValue={deliveryDiscountValue}
+              />
           </div>
         );
       case 'PAYMENT':

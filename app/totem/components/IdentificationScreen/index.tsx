@@ -33,6 +33,10 @@ interface IdentificationScreenProps {
   schedulingConfigured?: boolean;
   requiresContact?: boolean;
   phoneFilled?: boolean;
+  cartTotal?: number;
+  deliveryDiscountEnabled?: boolean;
+  deliveryDiscountMinOrder?: number;
+  deliveryDiscountValue?: number;
 }
 
 function getCartCompanyId(): string | null {
@@ -47,7 +51,7 @@ function getCartCompanyId(): string | null {
 }
 
 export default function IdentificationScreen({
-  addressStreet, setAddressStreet, addressCity, setAddressCity, addressNumber, setAddressNumber, addressNeighborhood, setAddressNeighborhood, addressComplement, setAddressComplement, onConfirm, onBack, companyId: companyIdProp, schedulingRequired, schedulingConfigured, requiresContact, phoneFilled
+  addressStreet, setAddressStreet, addressCity, setAddressCity, addressNumber, setAddressNumber, addressNeighborhood, setAddressNeighborhood, addressComplement, setAddressComplement, onConfirm, onBack, companyId: companyIdProp, schedulingRequired, schedulingConfigured, requiresContact, phoneFilled, cartTotal = 0, deliveryDiscountEnabled = false, deliveryDiscountMinOrder = 0, deliveryDiscountValue = 0
 }: IdentificationScreenProps) {
   const { user } = useAuth();
   const params = useParams();
@@ -94,6 +98,11 @@ export default function IdentificationScreen({
 
   const costSetting = deliveryCosts.find(c => c.neighborhoodId === currentNbId);
   const deliveryPrice = deliveryMode === "pickup" ? 0 : Number(costSetting?.deliveryPrice ?? 0);
+
+  // Aplicar desconto no frete na exibição
+  const effectiveDeliveryFee = deliveryDiscountEnabled && deliveryMode !== "pickup" && cartTotal >= deliveryDiscountMinOrder
+    ? Math.max(0, deliveryPrice - Math.min(deliveryDiscountValue, deliveryPrice))
+    : deliveryPrice;
 
   // O bairro é suportado apenas se a flag enabled for true
   const isNeighborhoodSupported = costSetting?.enabled === true;
@@ -434,8 +443,23 @@ export default function IdentificationScreen({
                 {deliveryMode === "pickup" ? "Retirada" : "Taxa de Entrega"}
               </span>
               <span className="text-base font-bold text-brand-primary">
-                {deliveryPrice === 0 ? "GRÁTIS" : `R$ ${deliveryPrice.toFixed(2)}`}
+                {effectiveDeliveryFee === 0 ? "GRÁTIS" : `R$ ${effectiveDeliveryFee.toFixed(2)}`}
               </span>
+            </div>
+          )}
+
+          {/* Mensagem de desconto no frete */}
+          {deliveryDiscountEnabled && deliveryMode !== "pickup" && deliveryPrice > 0 && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-[12px]">
+              {cartTotal >= deliveryDiscountMinOrder ? (
+                <p className="text-xs font-bold text-green-700">
+                  ✅ Frete com desconto de R$ {(deliveryPrice - effectiveDeliveryFee).toFixed(2)} aplicado!
+                </p>
+              ) : deliveryDiscountMinOrder > 0 && (
+                <p className="text-xs font-bold text-amber-700">
+                  🎉 Adicione mais R$ {(deliveryDiscountMinOrder - cartTotal).toFixed(2)} ao carrinho e ganhe desconto no frete!
+                </p>
+              )}
             </div>
           )}
 

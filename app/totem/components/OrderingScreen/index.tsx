@@ -44,6 +44,9 @@ interface OrderingScreenProps {
   initialRequiredSelections?: Record<string, string[]>;
   isFavorite?: (productId: string) => boolean;
   onToggleFavorite?: (productId: string, config: { size?: string; condiments: string[]; flavors: string[]; quantity: number; requiredSelections: Record<string, string[]> }) => void;
+  deliveryDiscountEnabled?: boolean;
+  deliveryDiscountMinOrder?: number;
+  deliveryDiscountValue?: number;
 }
 
 const BANNER_HEIGHT = 168;
@@ -80,6 +83,9 @@ export default function OrderingScreen({
   initialRequiredSelections,
   isFavorite,
   onToggleFavorite,
+  deliveryDiscountEnabled = false,
+  deliveryDiscountMinOrder = 0,
+  deliveryDiscountValue = 0,
 }: OrderingScreenProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
@@ -519,6 +525,16 @@ export default function OrderingScreen({
               >
                 Ver ofertas
               </button>
+            </div>
+          )}
+
+          {/* Delivery discount message */}
+          {deliveryDiscountEnabled && deliveryDiscountMinOrder > 0 && cartTotal > 0 && cartTotal < deliveryDiscountMinOrder && (
+            <div className="mx-4 mt-4 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
+              <span className="text-sm">🎉</span>
+              <p className="text-xs font-bold text-green-700">
+                Adicione mais R$ {(deliveryDiscountMinOrder - cartTotal).toFixed(2)} ao carrinho e ganhe desconto no frete!
+              </p>
             </div>
           )}
 
