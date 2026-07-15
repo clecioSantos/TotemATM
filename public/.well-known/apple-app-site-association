@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAM_ID.com.boradelivery.app",
+        "paths": ["/totem/*", "/admin/*", "/owner/*", "/login", "/register"]
+      }
+    ]
+  }
+}

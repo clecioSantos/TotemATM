@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Bora Delivery</string>
-    <string name="title_activity_main">Bora Delivery</string>
+    <string name="app_name">Bora de Delivery</string>
+    <string name="title_activity_main">Bora de Delivery</string>
     <string name="package_name">com.boradelivery.app</string>
     <string name="custom_url_scheme">com.boradelivery.app</string>
 </resources>

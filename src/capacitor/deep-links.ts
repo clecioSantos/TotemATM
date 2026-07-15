@@ -14,10 +14,13 @@ export function initDeepLinks(): void {
     const url = data.url;
     if (!url) return;
 
-    // Parse boradelivery://path/to/page?param=value
     try {
       const parsed = new URL(url);
-      const path = parsed.hostname + parsed.pathname;
+
+      // Para HTTPS App Links: "https://boradedelivery.com/totem/..."
+      // Para custom scheme: "boradelivery://totem/..."
+      // Ambos devem resultar em path = "/totem/..."
+      const path = parsed.pathname || "/";
       const params: Record<string, string> = {};
       parsed.searchParams.forEach((v, k) => { params[k] = v; });
 

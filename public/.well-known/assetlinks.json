@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.boradelivery.app",
+      "sha256_cert_fingerprints": [
+        "93:00:95:86:F5:BF:D5:50:FA:60:00:01:55:C4:81:FE:DE:69:3A:E7:F6:25:C4:D6:B1:55:2A:C6:CC:24:05:E5"
+      ]
+    }
+  }
+]
