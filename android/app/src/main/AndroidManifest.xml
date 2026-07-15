@@ -32,6 +32,24 @@
                     android:host="boradedelivery.com"
                     android:pathPrefix="/" />
             </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="www.boradedelivery.com"
+                    android:pathPrefix="/" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="boradedelivery-6aec0.firebaseapp.com"
+                    android:pathPrefix="/" />
+            </intent-filter>
 
             <!-- Deep Links: Custom Scheme -->
             <intent-filter>

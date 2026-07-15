@@ -909,7 +909,9 @@ export default function OrderingScreen({
                         .join("|");
                       params.set("req", req);
                     }
-                    const shareUrl = `${window.location.origin}/totem/${companyId}?${params.toString()}`;
+                    const origin = window.location.origin.replace("https://www.", "https://");
+                    const shareUrl = `${origin}/totem/${companyId}?${params.toString()}`;
+                    const appUrl = `boradelivery://totem/${companyId}?${params.toString()}`;
                     const shareData = {
                       title: selectedProduct.name,
                       text: `Olha só esse produto da ${companyName || "Bora"}: ${selectedProduct.name}${selectedProduct.description ? ` - ${selectedProduct.description}` : ""}`,
