@@ -52,6 +52,9 @@ export const useTotem = (companyId: string) => {
   const [reviewCount, setReviewCount] = useState(0);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [minOrderValue, setMinOrderValue] = useState<number>(0);
+  const [deliveryDiscountEnabled, setDeliveryDiscountEnabled] = useState(false);
+  const [deliveryDiscountMinOrder, setDeliveryDiscountMinOrder] = useState(0);
+  const [deliveryDiscountValue, setDeliveryDiscountValue] = useState(0);
 
   useEffect(() => {
     if (!db?.app?.options?.projectId || !companyId) {
@@ -74,6 +77,9 @@ export const useTotem = (companyId: string) => {
           setAverageRating(data.averageRating || 0);
           setReviewCount(data.reviewCount || 0);
           setMinOrderValue(data.minOrderValue || 0);
+          setDeliveryDiscountEnabled(data.deliveryDiscountEnabled === true);
+          setDeliveryDiscountMinOrder(data.deliveryDiscountMinOrder || 0);
+          setDeliveryDiscountValue(data.deliveryDiscountValue || 0);
         }
       } catch (error) {
         logger.error("useTotem", "Erro ao buscar empresa", error);
@@ -600,5 +606,8 @@ export const useTotem = (companyId: string) => {
     getProductPromotion,
     getPromotionalPrice,
     minOrderValue,
+    deliveryDiscountEnabled,
+    deliveryDiscountMinOrder,
+    deliveryDiscountValue,
   };
 };

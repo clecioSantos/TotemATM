@@ -30,6 +30,7 @@ interface OrderSummaryScreenProps {
   deliveryComplement: string;
   convenienceFee: number;
   minOrderValue: number;
+  deliveryDiscountAmount?: number;
   onCouponChange: (coupon: CouponApplied | null) => void;
   onConfirm: () => void;
   onBack: () => void;
@@ -39,6 +40,7 @@ export default function OrderSummaryScreen({
   companyId, companyName, cart, cartTotal,
   deliveryFee, deliveryMode, deliveryStreet, deliveryNumber,
   deliveryNeighborhood, deliveryComplement, convenienceFee, minOrderValue,
+  deliveryDiscountAmount = 0,
   onCouponChange, onConfirm, onBack,
 }: OrderSummaryScreenProps) {
   const { user } = useAuth();
@@ -250,9 +252,15 @@ export default function OrderSummaryScreen({
           <div className="flex justify-between text-sm">
             <span className="text-brand-muted">{deliveryMode === "pickup" ? "Retirada" : "Entrega"}</span>
             <span className="font-semibold text-brand-dark">
-              {delivery === 0 ? "Grátis" : `R$ ${delivery.toFixed(2)}`}
+              {delivery === 0 && deliveryDiscountAmount === 0 ? "Grátis" : `R$ ${(delivery + deliveryDiscountAmount).toFixed(2)}`}
             </span>
           </div>
+          {deliveryDiscountAmount > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-green-600 font-medium">Desconto no Frete</span>
+              <span className="font-semibold text-green-600">-R$ {deliveryDiscountAmount.toFixed(2)}</span>
+            </div>
+          )}
           {minOrderValue > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-brand-muted">Pedido mínimo</span>
