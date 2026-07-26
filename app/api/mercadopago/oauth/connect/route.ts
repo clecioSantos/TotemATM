@@ -6,14 +6,16 @@ import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 
-function getBaseUrl(): string {
+function getBaseUrl(req: NextRequest): string {
   if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
   if (process.env.MERCADOPAGO_REDIRECT_URI) {
     try {
       return new URL(process.env.MERCADOPAGO_REDIRECT_URI).origin;
     } catch {}
   }
-  return "http://localhost:3000";
+  const host = req.headers.get("host") || "localhost:3000";
+  const protocol = req.headers.get("x-forwarded-proto") || "http";
+  return `${protocol}://${host}`;
 }
 
 export async function GET(req: NextRequest) {
@@ -22,9 +24,10 @@ export async function GET(req: NextRequest) {
     const companyId = searchParams.get("companyId") || "";
     const userId = searchParams.get("userId") || "";
     const redirect = searchParams.get("redirect") || "";
+    const direct = searchParams.get("direct") === "1";
 
     const state = crypto.randomBytes(32).toString("hex");
-    const baseUrl = getBaseUrl();
+    const baseUrl = getBaseUrl(req);
 
     const db = getAdminDb();
     await db.collection("mercadopago_oauth_states").doc(state).set({
@@ -37,6 +40,10 @@ export async function GET(req: NextRequest) {
     });
 
     const url = MercadoPagoService.buildOAuthUrl(state);
+
+    if (direct) {
+      return NextResponse.redirect(url);
+    }
 
     return NextResponse.json({ url });
   } catch (error) {

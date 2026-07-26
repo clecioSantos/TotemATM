@@ -50,24 +50,9 @@ export default function FinanceiroPage() {
     return () => unsub();
   }, []);
 
-  const handleConnect = async () => {
+  const handleConnect = () => {
     if (!companyId) return;
-    setConnecting(true);
-    try {
-      const params = new URLSearchParams({ companyId, userId: companyId });
-      const res = await fetch(`/api/mercadopago/oauth/connect?${params.toString()}`);
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        await showAlert("Erro ao conectar com Mercado Pago.");
-      }
-    } catch (err) {
-      console.error("Erro ao conectar:", err);
-      await showAlert("Erro ao conectar com Mercado Pago.");
-    } finally {
-      setConnecting(false);
-    }
+    window.location.href = `/api/mercadopago/oauth/connect?companyId=${companyId}&userId=${companyId}&direct=1`;
   };
 
   const handleDisconnect = async () => {

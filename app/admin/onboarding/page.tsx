@@ -574,8 +574,8 @@ function MercadoPagoStep({ companyId, done, refetch }: { companyId?: string; don
     getDoc(doc(firestore, "companies", companyId)).then((s) => { if (s.exists()) setMpConnected(s.data().mercadopago_connected === true); setLoading(false); });
   }, [companyId]);
 
-  const connect = async () => {
-    try { const res = await fetch(`/api/mercadopago/oauth/connect?companyId=${companyId}&redirect=/admin/onboarding`); const data = await res.json(); if (data.url) window.location.href = data.url; } catch (e) { console.error(e); }
+  const connect = () => {
+    window.location.href = `/api/mercadopago/oauth/connect?companyId=${companyId}&redirect=/admin/onboarding&direct=1`;
   };
   const disconnect = async () => {
     if (!companyId) return;
