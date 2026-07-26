@@ -205,10 +205,17 @@ function OnboardingContent() {
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4">
           <div className="max-w-2xl mx-auto flex items-center justify-between">
             <button onClick={goBack} disabled={currentIndex === 0} className="flex items-center gap-1 text-sm font-semibold text-gray-500 hover:text-gray-700 disabled:opacity-30"><ChevronLeft size={18} /> Anterior</button>
-            <button onClick={goNext}
-              disabled={currentStep === "catalog" ? !(steps.category && steps.product) : !(steps as any)[currentStep]}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all ${(currentStep === "catalog" ? steps.category && steps.product : (steps as any)[currentStep]) ? "bg-orange-600 text-white hover:bg-orange-700" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
-            >Próximo <ChevronRight size={18} /></button>
+            <div className="flex items-center gap-3">
+              {currentStep === "catalog" && (
+                <button onClick={goNext} className="flex items-center gap-1 text-sm font-semibold text-gray-400 hover:text-gray-600 transition-colors">
+                  Pular <ChevronRight size={18} />
+                </button>
+              )}
+              <button onClick={goNext}
+                disabled={currentStep === "catalog" ? !(steps.category && steps.product) : !(steps as any)[currentStep]}
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all ${(currentStep === "catalog" ? steps.category && steps.product : (steps as any)[currentStep]) ? "bg-orange-600 text-white hover:bg-orange-700" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
+              >Próximo <ChevronRight size={18} /></button>
+            </div>
           </div>
         </div>
       )}
