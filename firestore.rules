@@ -16,14 +16,17 @@ service cloud.firestore {
             && get(/databases/$(database)/documents/companies/$(companyId)).data.ownerId == request.auth.uid));
     }
 
+    function isStoreMember(companyId) {
+      return isAuth()
+        && companyId != null
+        && companyId != "default"
+        && exists(/databases/$(database)/documents/companies/$(companyId))
+        && get(/databases/$(database)/documents/companies/$(companyId)).data.userIds != null
+        && request.auth.uid in get(/databases/$(database)/documents/companies/$(companyId)).data.userIds;
+    }
+
     function isStoreAdmin(companyId) {
-      return isOwner(companyId)
-        || (isAuth()
-            && companyId != null
-            && companyId != "default"
-            && exists(/databases/$(database)/documents/companies/$(companyId))
-            && get(/databases/$(database)/documents/companies/$(companyId)).data.adminIds != null
-            && request.auth.uid in get(/databases/$(database)/documents/companies/$(companyId)).data.adminIds);
+      return isOwner(companyId) || isStoreMember(companyId);
     }
 
     function isSystemAdmin() {
@@ -106,6 +109,7 @@ service cloud.firestore {
       allow update, delete: if isAuth() && (
         isOwner(companyId)
         || (resource.data.adminIds != null && request.auth.uid in resource.data.adminIds)
+        || (resource.data.userIds != null && request.auth.uid in resource.data.userIds)
         || (resource.data.ownerId == null && resource.data.adminIds == null)
       );
     }

@@ -23,6 +23,7 @@ export default function EditStorePage() {
   const [formData, setFormData] = useState<any>(null);
   const [users, setUsers] = useState<StoreUser[]>([]);
   const [previousCommission, setPreviousCommission] = useState<number | null>(null);
+  const [previousOwnerId, setPreviousOwnerId] = useState<string>("");
 
   const estadosBrasileiros = [
     "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", 
@@ -88,6 +89,7 @@ export default function EditStorePage() {
           setFormData({ ...data, platform_commission_percent: data.platform_commission_percent ?? 6.00 });
           setUsers(data.users || []);
           setPreviousCommission(data.platform_commission_percent ?? 6.00);
+          setPreviousOwnerId(data.ownerId || "");
         }
       } catch (error) {
         console.error("🔥 Erro ao buscar loja:", error);
@@ -191,9 +193,6 @@ export default function EditStorePage() {
 
       const { userIds, adminIds } = computeStoreIds(users);
       const updateData: Record<string, unknown> = { ...formData, users, userIds, adminIds };
-      if (!updateData.ownerId) {
-        updateData.ownerId = auth.currentUser?.uid;
-      }
       console.log("[DEBUG] adminIds being sent:", adminIds);
 
       const newCommission = formData.platform_commission_percent ?? 6.00;
@@ -216,15 +215,18 @@ export default function EditStorePage() {
       await updateDoc(doc(firestore, "companies", storeId), updateData);
       console.log("[DEBUG] updateDoc SUCCESS");
 
+      const newOwnerId = formData.ownerId;
       for (const storeUser of users) {
         try {
           const userRef = doc(firestore, "users", storeUser.uid);
           const userSnap = await getDoc(userRef);
-          if (userSnap.exists() && userSnap.data().companyId !== storeId) {
-            console.log("[DEBUG] Updating user profile:", storeUser.uid);
+          const isOwner = storeUser.uid === newOwnerId;
+          const role = isOwner ? "owner" : (storeUser.role === "admin" ? "admin" : "collaborator");
+          if (!userSnap.exists() || userSnap.data().companyId !== storeId || (isOwner && userSnap.data().role !== "owner") || (!isOwner && userSnap.data().role === "owner")) {
+            console.log("[DEBUG] Updating user profile:", storeUser.uid, "-> role:", role);
             await updateDoc(userRef, {
               companyId: storeId,
-              role: storeUser.role === "admin" ? "admin" : "collaborator",
+              role,
             });
             console.log("[DEBUG] User profile updated:", storeUser.uid);
           }
@@ -232,7 +234,22 @@ export default function EditStorePage() {
           console.error(`[DEBUG] Erro ao atualizar perfil do usuário ${storeUser.uid}:`, err);
         }
       }
+      if (previousOwnerId && previousOwnerId !== newOwnerId && !users.some((u) => u.uid === previousOwnerId)) {
+        try {
+          const oldOwnerRef = doc(firestore, "users", previousOwnerId);
+          const oldOwnerSnap = await getDoc(oldOwnerRef);
+          if (oldOwnerSnap.exists() && oldOwnerSnap.data().companyId === storeId) {
+            await updateDoc(oldOwnerRef, { role: "admin" });
+          }
+        } catch (err) {
+          console.error(`[DEBUG] Erro ao atualizar role do antigo proprietário ${previousOwnerId}:`, err);
+        }
+      }
 
+      try {
+        const token = await auth.currentUser?.getIdToken(true);
+        if (token) await fetch("/api/auth/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idToken: token }) });
+      } catch (_) {}
       await showAlert("Loja atualizada!");
       router.push("/owner/stores");
     } catch (error) {
@@ -397,6 +414,27 @@ export default function EditStorePage() {
             </div>
         </div>
 
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Proprietário da Loja <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={formData.ownerId || ""}
+            onChange={(e) => setFormData((prev: any) => ({ ...prev, ownerId: e.target.value }))}
+            required
+            className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+          >
+            <option value="">Selecione o proprietário</option>
+            {users.map((u) => (
+              <option key={u.uid} value={u.uid}>
+                {u.name} ({u.email})
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500 mt-1">
+            O proprietário terá acesso total à loja e ao painel de controle.
+          </p>
+        </div>
         <StoreUsersSection users={users} onChange={setUsers} companyId={storeId} />
         <div className="md:col-span-2 flex gap-4 mt-4">
           <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded flex-1">
