@@ -19,14 +19,14 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
       return;
     }
     const role = (user as any)?.role;
-    if (role !== "admin" && role !== "owner") {
+    if (role !== "admin" && role !== "owner" && role !== "collaborator") {
       router.replace("/totem");
     }
   }, [user, isLoading, router]);
 
   if (isLoading || !user) return null;
   const role = (user as any)?.role;
-  if (role !== "admin" && role !== "owner") return null;
+  if (role !== "admin" && role !== "owner" && role !== "collaborator") return null;
 
   return <>{children}</>;
 }

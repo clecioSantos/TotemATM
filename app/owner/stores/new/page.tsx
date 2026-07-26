@@ -22,12 +22,11 @@ export default function NewStorePage() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
-        setOwnerId(firebaseUser.uid);
         setUsers([
           {
             uid: firebaseUser.uid,
             email: firebaseUser.email || "",
-            name: firebaseUser.displayName || "Proprietário",
+            name: firebaseUser.displayName || "Administrador",
             role: "admin",
             permissions: { ...adminStorePermissions },
           },
@@ -200,15 +199,20 @@ export default function NewStorePage() {
 
       for (const storeUser of users) {
         try {
+          const role = storeUser.uid === ownerId ? "owner" : (storeUser.role === "admin" ? "admin" : "collaborator");
           await updateDoc(doc(firestore, "users", storeUser.uid), {
             companyId,
-            role: storeUser.role === "admin" ? "admin" : "collaborator",
+            role,
           });
         } catch (err) {
           console.error(`Erro ao atualizar perfil do usuário ${storeUser.uid}:`, err);
         }
       }
 
+      try {
+        const token = await auth.currentUser?.getIdToken(true);
+        if (token) await fetch("/api/auth/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idToken: token }) });
+      } catch (_) {}
       await showAlert("Loja criada com sucesso!");
       router.push("/owner/stores");
     } catch (error) {
@@ -409,6 +413,27 @@ export default function NewStorePage() {
           <label htmlFor="enabled" className="text-sm font-medium text-gray-700">
             Loja ativa (disponível para pedidos)
           </label>
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Proprietário da Loja <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={ownerId}
+            onChange={(e) => setOwnerId(e.target.value)}
+            required
+            className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+          >
+            <option value="">Selecione o proprietário</option>
+            {users.map((u) => (
+              <option key={u.uid} value={u.uid}>
+                {u.name} ({u.email})
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500 mt-1">
+            O proprietário terá acesso total à loja e ao painel de controle.
+          </p>
         </div>
         <StoreUsersSection users={users} onChange={setUsers} />
         <div className="md:col-span-2 flex gap-4 mt-4">

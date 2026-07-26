@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { collection, onSnapshot, query, orderBy, limit, Timestamp, where, doc, getDocs, updateDoc } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase";
 import { useAuth } from "@totem/shared/types/AuthProvider";
@@ -504,6 +505,7 @@ function WeeklyPerformance({ thisWeek, lastWeek }: { thisWeek: any[]; lastWeek: 
 // ─── Main Dashboard ────────────────────────────────────────────────────────
 
 function AdminDashboardContent() {
+  const router = useRouter();
   const { user } = useAuth();
   const { status: setupStatus } = useStoreSetupStatus(user?.companyId);
 
@@ -798,7 +800,7 @@ function AdminDashboardContent() {
           <p className="dashboard-page-description">Acompanhe pedidos, vendas e a configuração da loja em um painel unificado.</p>
         </div>
         {setupStatus && !setupStatus.canOpen ? (
-          <button onClick={() => window.location.href = "/admin/onboarding"} className="dashboard-page-action">
+          <button onClick={() => router.push("/admin/onboarding")} className="dashboard-page-action">
             Finalizar configuração
           </button>
         ) : (
@@ -810,7 +812,7 @@ function AdminDashboardContent() {
       <div className="dashboard-view">
         <AlertBanner alerts={alerts} />
         {setupStatus && !setupStatus.canOpen && (
-          <div className="setup-status-card" onClick={() => window.location.href = "/admin/onboarding"}>
+          <div className="setup-status-card" onClick={() => router.push("/admin/onboarding")}>
           <div className="setup-status-left">
             <div className="setup-status-icon">
               <Package size={18} />
@@ -924,7 +926,7 @@ function AdminDashboardContent() {
             </p>
             <div className="flex flex-col gap-3">
               <button
-                onClick={() => { setShowOnboardingPrompt(false); window.location.href = "/admin/onboarding"; }}
+                onClick={() => { setShowOnboardingPrompt(false); router.push("/admin/onboarding"); }}
                 className="w-full py-3 bg-orange-600 text-white font-bold rounded-xl hover:bg-orange-700 transition-all"
               >
                 Iniciar Configuração
