@@ -7,10 +7,11 @@ export const dynamic = "force-dynamic";
 
 function getRedirectBaseUrl(storedBaseUrl?: string, req?: NextRequest): string {
   if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
-  if (storedBaseUrl) return storedBaseUrl;
   const host = req?.headers.get("host") || "localhost:3000";
   const protocol = req?.headers.get("x-forwarded-proto") || "http";
-  return `${protocol}://${host}`;
+  const requestBaseUrl = `${protocol}://${host}`;
+  if (storedBaseUrl && !storedBaseUrl.includes("localhost")) return storedBaseUrl;
+  return requestBaseUrl;
 }
 
 export async function GET(req: NextRequest) {

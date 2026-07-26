@@ -30,11 +30,32 @@ export default function OwnerClientsPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
+  const [userStores, setUserStores] = useState<Record<string, { storeId: string; storeName: string; role: string }[]>>({});
+
   useEffect(() => {
     const unsub = onSnapshot(collection(firestore, "users"), (snap) => {
       const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       setClients(all.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || "")));
       setLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(firestore, "companies"), (snap) => {
+      const userMap: Record<string, { storeId: string; storeName: string; role: string }[]> = {};
+      snap.docs.forEach((d) => {
+        const data = d.data();
+        if (Array.isArray(data.users)) {
+          data.users.forEach((u: any) => {
+            if (u.uid && (u.role === "admin" || u.role === "collaborator")) {
+              if (!userMap[u.uid]) userMap[u.uid] = [];
+              userMap[u.uid].push({ storeId: d.id, storeName: data.name || "Sem nome", role: u.role });
+            }
+          });
+        }
+      });
+      setUserStores(userMap);
     });
     return () => unsub();
   }, []);
@@ -129,6 +150,15 @@ export default function OwnerClientsPage() {
                     </div>
                     <span className="text-[10px] font-bold text-[#999]">{profilePercent(c)}%</span>
                   </div>
+                  {userStores[c.id] && userStores[c.id].length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {userStores[c.id].map((s) => (
+                        <span key={s.storeId} className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${s.role === "admin" ? "bg-purple-50 text-purple-700" : "bg-blue-50 text-blue-700"}`}>
+                          {s.storeName}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <ChevronRight size={18} className="text-[#ccc] shrink-0" />
               </Link>
