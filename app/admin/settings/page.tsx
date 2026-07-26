@@ -78,8 +78,7 @@ function ConfigurationsContent() {
 
   useEffect(() => {
     if (user?.companyId && typeof window !== 'undefined') {
-      const origin = window.location.origin.replace("https://www.", "https://");
-      const url = `${origin}/totem/${user.companyId}`;
+      const url = `${window.location.origin}/totem/${user.companyId}`;
       setTotemUrl(url);
     }
   }, [user]);
