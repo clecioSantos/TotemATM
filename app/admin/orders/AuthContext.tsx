@@ -25,7 +25,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (firebaseUser) {
           const userDoc = await getDoc(doc(firestore, "users", firebaseUser.uid));
           if (userDoc.exists()) {
-            setUser(userDoc.data() as UserProfile);
+            const profile = userDoc.data() as UserProfile;
+            setUser(profile);
+            document.cookie = `user-role=${profile.role}; path=/; max-age=432000; sameSite=lax`;
           } else {
             setUser({
               uid: firebaseUser.uid,
